@@ -5,13 +5,17 @@ import { NextResponse } from "next/server";
 const PROTECTED_PREFIXES = ["/app", "/admin"];
 
 function hasSessionCookie(req: NextRequest) {
-  const c = req.cookies;
-  return Boolean(
-    c.get("__Secure-authjs.session-token") ||
-      c.get("authjs.session-token") ||
-      c.get("__Secure-next-auth.session-token") ||
-      c.get("next-auth.session-token")
-  );
+  try {
+    const c = req.cookies;
+    return Boolean(
+      c.get("__Secure-authjs.session-token") ||
+        c.get("authjs.session-token") ||
+        c.get("__Secure-next-auth.session-token") ||
+        c.get("next-auth.session-token")
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function middleware(req: NextRequest) {
@@ -19,14 +23,29 @@ export function middleware(req: NextRequest) {
   try {
     if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (!hasSessionCookie(req)) {
-        const signInUrl = new URL("/signin", req.url);
-        signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
-        return NextResponse.redirect(signInUrl);
+        try {
+          const signInUrl = new URL("/signin", req.url);
+          signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+          return NextResponse.redirect(signInUrl);
+        } catch {
+          return NextResponse.redirect("/signin");
+        }
       }
     }
   } catch (error) {
-    console.error("Middleware session check failed:", error);
-    return NextResponse.redirect(new URL("/signin", req.url));
+    const host = req.headers.get("host") ?? "unknown";
+    const hasCookie = hasSessionCookie(req);
+    console.error(
+      `[MW] middleware failed path=${pathname} host=${host} hasCookie=${hasCookie}`,
+      error
+    );
+    try {
+      const signInUrl = new URL("/signin", req.url);
+      signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+      return NextResponse.redirect(signInUrl);
+    } catch {
+      return NextResponse.redirect("/signin");
+    }
   }
   return NextResponse.next();
 }
