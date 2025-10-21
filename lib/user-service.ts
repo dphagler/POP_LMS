@@ -3,28 +3,71 @@ import { prisma } from "./prisma";
 
 const DEFAULT_ORG_NAME = "POP Initiative";
 
-export async function getOrCreateUserForEmail(email: string, name?: string | null) {
-  const existing = await prisma.user.findUnique({ where: { email } });
+type UserProfile = {
+  name?: string | null;
+  image?: string | null;
+};
+
+type PrismaClientLike = typeof prisma;
+
+export async function getOrCreateUserForEmail(
+  email: string,
+  profile?: UserProfile,
+  client: PrismaClientLike = prisma
+) {
+  const { name, image } = profile ?? {};
+
+  const existing = await client.user.findUnique({ where: { email } });
   if (existing) {
+    const data: { name?: string | null; image?: string | null } = {};
+
+    if (typeof name !== "undefined" && existing.name !== name) {
+      data.name = name;
+    }
+
+    if (typeof image !== "undefined" && existing.image !== image) {
+      data.image = image;
+    }
+
+    if (Object.keys(data).length > 0) {
+      return client.user.update({
+        where: { id: existing.id },
+        data,
+      });
+    }
+
     return existing;
   }
 
-  const org = await prisma.organization.upsert({
+  const org = await client.organization.upsert({
     where: { name: DEFAULT_ORG_NAME },
     update: {},
     create: {
-      name: DEFAULT_ORG_NAME
-    }
+      name: DEFAULT_ORG_NAME,
+    },
   });
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name,
-      orgId: org.id,
-      role: UserRole.LEARNER
-    }
-  });
+  const data: {
+    email: string;
+    name?: string | null;
+    image?: string | null;
+    orgId: string;
+    role: UserRole;
+  } = {
+    email,
+    orgId: org.id,
+    role: UserRole.LEARNER,
+  };
 
-  return user;
+  if (typeof name !== "undefined") {
+    data.name = name;
+  }
+
+  if (typeof image !== "undefined") {
+    data.image = image;
+  }
+
+  return client.user.create({
+    data,
+  });
 }
