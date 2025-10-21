@@ -20,32 +20,30 @@ function hasSessionCookie(req: NextRequest) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (req.method === "HEAD" || req.method === "OPTIONS") {
+    return NextResponse.next();
+  }
+
+  const buildSignInUrl = () => {
+    const signInUrl = req.nextUrl.clone();
+    signInUrl.pathname = "/signin";
+    signInUrl.search = "";
+    signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+    return signInUrl;
+  };
+
   try {
     if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (!hasSessionCookie(req)) {
-        try {
-          const signInUrl = new URL("/signin", req.url);
-          signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
-          return NextResponse.redirect(signInUrl);
-        } catch {
-          return NextResponse.redirect("/signin");
-        }
+        return NextResponse.redirect(buildSignInUrl());
       }
     }
-  } catch (error) {
+  } catch (_error) {
     const host = req.headers.get("host") ?? "unknown";
     const hasCookie = hasSessionCookie(req);
-    console.error(
-      `[MW] middleware failed path=${pathname} host=${host} hasCookie=${hasCookie}`,
-      error
-    );
-    try {
-      const signInUrl = new URL("/signin", req.url);
-      signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
-      return NextResponse.redirect(signInUrl);
-    } catch {
-      return NextResponse.redirect("/signin");
-    }
+    console.error("[MW]", pathname, host, hasCookie);
+    return NextResponse.redirect(buildSignInUrl());
   }
   return NextResponse.next();
 }
