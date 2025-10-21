@@ -7,15 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
-interface LessonPageProps {
-  params: { id: string };
-}
+type LessonPageParams = { id: string };
+
+type LessonPageProps = {
+  params?: Promise<LessonPageParams>;
+};
 
 export default async function LessonPage({ params }: LessonPageProps) {
+  if (!params) {
+    notFound();
+  }
+
+  const { id } = await params;
   const session = await requireUser();
   const { id: userId, orgId } = session.user;
   const lesson = await prisma.lesson.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       module: { include: { course: true } },
       quiz: { include: { questions: true } },

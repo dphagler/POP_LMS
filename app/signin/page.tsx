@@ -4,15 +4,22 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
-export default async function SignInPage({ searchParams }: { searchParams: { callbackUrl?: string } }) {
+type SignInSearchParams = { callbackUrl?: string };
+
+type SignInPageProps = {
+  searchParams?: Promise<SignInSearchParams>;
+};
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const session = await auth();
   if (session?.user) {
-    redirect(searchParams?.callbackUrl ?? "/app");
+    redirect(resolvedSearchParams?.callbackUrl ?? "/app");
   }
 
   async function handleSignIn() {
     "use server";
-    await signIn("google", { redirectTo: searchParams?.callbackUrl ?? "/app" });
+    await signIn("google", { redirectTo: resolvedSearchParams?.callbackUrl ?? "/app" });
   }
 
   return (
