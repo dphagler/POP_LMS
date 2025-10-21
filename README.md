@@ -21,7 +21,7 @@ Production-ready learning management starter built with Next.js 15, Auth.js, Pri
 
 2. Provision a [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres/quickstart) database and set `DATABASE_URL` in `.env.local`.
 
-3. Add Google OAuth credentials, Auth.js secrets, and optional integrations to `.env.local`.
+3. Add Google OAuth credentials, Auth.js secrets, and optional integrations to `.env.local`. When deploying to Vercel, configure `NEXTAUTH_URL=https://pop-lms.vercel.app` (or your custom domain) and `AUTH_TRUST_HOST=true` in both Preview and Production environments so Auth.js can validate callbacks.
 
 4. Install dependencies and run initial migrations (requires pnpm):
 
