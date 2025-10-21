@@ -1,0 +1,5 @@
+{
+  "name": "@tailwindcss/postcss",
+  "version": "4.1.15",
+  "main": "index.js"
+}

@@ -84,6 +84,9 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: file:packages/tailwindcss-postcss
+        version: file:packages/tailwindcss-postcss
       '@types/node':
         specifier: ^24.9.1
         version: 24.9.1
@@ -119,6 +122,12 @@ importers:
         version: 5.9.3
 
 packages:
+
+  file:packages/tailwindcss-postcss:
+    resolution: {directory: packages/tailwindcss-postcss, type: directory}
+    name: '@tailwindcss/postcss'
+    version: 4.1.15
+    dev: true
 
   '@actions/core@1.11.1':
     resolution: {integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==}
