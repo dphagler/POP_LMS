@@ -47,6 +47,26 @@ Production-ready learning management starter built with Next.js 15, Auth.js, Pri
 
 Visit `http://localhost:3000` to view the marketing page, `http://localhost:3000/signin` to authenticate with Google, and `/app` or `/admin` for learner/admin views.
 
+## Admin access
+
+Authenticated users default to the `LEARNER` role. To unlock the admin dashboard for your Google account:
+
+1. Launch Prisma Studio and edit your user record:
+
+   ```bash
+   pnpm prisma studio
+   ```
+
+2. Locate your Google-authenticated user and update `role` to `ADMIN`.
+
+Alternatively, you can promote an account from the command line with the helper script:
+
+```bash
+pnpm ts-node scripts/promote-admin.ts you@example.com
+```
+
+The script updates the matching `User` record to `role = "ADMIN"` and prints the result.
+
 ## YouTube heartbeat testing
 
 1. Sign in as the seeded admin (`admin@poplms.dev`).
