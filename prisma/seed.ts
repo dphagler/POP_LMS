@@ -4,9 +4,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   const org = await prisma.organization.upsert({
-    where: { name: "POP Initiative" },
+    where: { id: "seed-org" },
     update: {},
     create: {
+      id: "seed-org",
       name: "POP Initiative",
       themeJson: {
         primary: "222.2 47.4% 11.2%",
