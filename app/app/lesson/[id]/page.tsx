@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser, assertSameOrg } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { progressByUserAndLesson } from "@/lib/prisma-helpers";
 import { YouTubeLessonPlayer } from "@/components/lesson/YouTubeLessonPlayer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ interface LessonPageProps {
 
 export default async function LessonPage({ params }: LessonPageProps) {
   const session = await requireUser();
+  const { id: userId, orgId } = session.user;
   const lesson = await prisma.lesson.findUnique({
     where: { id: params.id },
     include: {
@@ -26,15 +28,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
     notFound();
   }
 
-  assertSameOrg(lesson.module.course.orgId, session.user?.orgId ?? null);
+  assertSameOrg(lesson.module.course.orgId, orgId);
 
   const progress = await prisma.progress.findUnique({
-    where: {
-      userId_lessonId: {
-        userId: session.user!.id,
-        lessonId: lesson.id
-      }
-    }
+    where: progressByUserAndLesson(userId, lesson.id)
   });
 
   const watchedSeconds = progress?.watchedSeconds ?? 0;

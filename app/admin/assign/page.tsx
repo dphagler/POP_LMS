@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { sendInviteEmail } from "@/lib/email";
@@ -6,14 +7,16 @@ import { Button } from "@/components/ui/button";
 
 export default async function AssignmentPage() {
   const session = await requireRole("ADMIN");
-  const orgId = session.user?.orgId;
+  const { id: userId, orgId } = session.user;
 
   if (!orgId) {
     throw new Error("Organization not found for admin user");
   }
 
+  const adminOrgId: string = orgId;
+
   const courses = await prisma.course.findMany({
-    where: { orgId },
+    where: { orgId: adminOrgId },
     include: { modules: true }
   });
 
@@ -29,10 +32,10 @@ export default async function AssignmentPage() {
 
     const assignment = await prisma.assignment.create({
       data: {
-        orgId,
+        orgId: adminOrgId,
         courseId,
         moduleId,
-        createdBy: session.user!.id
+        createdBy: userId
       }
     });
 
@@ -45,7 +48,7 @@ export default async function AssignmentPage() {
       await sendInviteEmail(email, `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/signin`);
     }
 
-    return assignment.id;
+    redirect(`/admin/assign?assignment=${assignment.id}`);
   }
 
   return (

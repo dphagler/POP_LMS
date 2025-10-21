@@ -1,19 +1,34 @@
+import type { Session } from "next-auth";
+import { UserRole } from "@prisma/client";
+import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { NextResponse } from "next/server";
 
+type SessionWithUser = Session & {
+  user: Session["user"] & {
+    id: string;
+    orgId: string | null;
+    role: UserRole;
+  };
+};
+
+function ensureSession(session: Session | null): asserts session is SessionWithUser {
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+}
+
 export async function requireUser() {
   const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
+  ensureSession(session);
   return session;
 }
 
 export async function requireRole(role: "ADMIN" | "INSTRUCTOR" | "LEARNER") {
   const session = await requireUser();
   const order = ["LEARNER", "INSTRUCTOR", "ADMIN"];
-  const sessionRole = session.user?.role ?? "LEARNER";
+  const sessionRole = session.user.role ?? "LEARNER";
   if (order.indexOf(sessionRole) < order.indexOf(role)) {
     throw new Error("Forbidden");
   }
