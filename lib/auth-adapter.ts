@@ -12,7 +12,7 @@ type BuildAdapterOptions = {
 
 export function buildAuthAdapter({
   prismaClient = prisma,
-  prismaAdapter = PrismaAdapter,
+  prismaAdapter = PrismaAdapter as unknown as (client: PrismaClient) => Adapter,
   getOrCreateUserForEmailFn = getOrCreateUserForEmail,
 }: BuildAdapterOptions = {}): Adapter {
   const baseAdapter = prismaAdapter(prismaClient);

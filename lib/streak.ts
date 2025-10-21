@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { userBadgeByUserAndBadge } from "./prisma-helpers";
 
 const STREAK_BADGE_CODE = "streak-3";
 const STREAK_LENGTH = 3;
@@ -45,12 +46,7 @@ export async function computeStreak(userId: string) {
     });
 
     await prisma.userBadge.upsert({
-      where: {
-        userId_badgeId: {
-          userId,
-          badgeId: badge.id
-        }
-      },
+      where: userBadgeByUserAndBadge(userId, badge.id),
       update: {},
       create: {
         userId,
