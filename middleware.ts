@@ -16,12 +16,17 @@ function hasSessionCookie(req: NextRequest) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
-    if (!hasSessionCookie(req)) {
-      const signInUrl = new URL("/signin", req.url);
-      signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
-      return NextResponse.redirect(signInUrl);
+  try {
+    if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (!hasSessionCookie(req)) {
+        const signInUrl = new URL("/signin", req.url);
+        signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+        return NextResponse.redirect(signInUrl);
+      }
     }
+  } catch (error) {
+    console.error("Middleware session check failed:", error);
+    return NextResponse.redirect(new URL("/signin", req.url));
   }
   return NextResponse.next();
 }
