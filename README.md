@@ -31,11 +31,13 @@ Production-ready learning management starter built with Next.js 15, Auth.js, Pri
    pnpm prisma:migrate
    ```
 
-5. Seed the database with demo content:
+5. Seed the database with the POP Initiative org and demo admin (required before enabling Google auth):
 
    ```bash
-   pnpm prisma:seed
+   pnpm prisma db seed
    ```
+
+   This upsert ensures the "POP Initiative" organization exists before Auth.js attempts to link Google accounts.
 
 6. Start the dev server:
 
@@ -68,7 +70,7 @@ Visit `http://localhost:3000` to view the marketing page, `http://localhost:3000
 - `pnpm prisma:push` – push Prisma schema to the database
 - `pnpm prisma:migrate` – run/create migrations
 - `pnpm prisma:generate` – generate Prisma client
-- `pnpm prisma:seed` – seed database with starter data
+- `pnpm prisma db seed` – seed database with the POP Initiative org and admin
 
 ## CI
 
