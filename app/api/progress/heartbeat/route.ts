@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { requireUser, assertSameOrg } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
+import { progressByUserAndLesson } from "@/lib/prisma-helpers";
 
 export async function POST(request: Request) {
   const session = await requireUser();
+  const { id: userId, orgId } = session.user;
   const { lessonId, currentTime, duration, isVisible } = await request.json();
 
   if (!lessonId || typeof currentTime !== "number" || typeof duration !== "number") {
@@ -20,36 +22,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
-  assertSameOrg(lesson.module.course.orgId, session.user?.orgId ?? null);
+  assertSameOrg(lesson.module.course.orgId, orgId);
 
   const now = new Date();
   const clampedDuration = Math.max(lesson.durationS, duration, 1);
   const safeCurrent = Math.max(0, Math.min(Math.floor(currentTime), clampedDuration));
 
   const existing = await prisma.progress.findUnique({
-    where: {
-      userId_lessonId: {
-        userId: session.user!.id,
-        lessonId: lesson.id
-      }
-    }
+    where: progressByUserAndLesson(userId, lesson.id)
   });
 
   const watchedSeconds = Math.max(existing?.watchedSeconds ?? 0, safeCurrent);
 
   const progress = await prisma.progress.upsert({
-    where: {
-      userId_lessonId: {
-        userId: session.user!.id,
-        lessonId: lesson.id
-      }
-    },
+    where: progressByUserAndLesson(userId, lesson.id),
     update: {
       watchedSeconds,
       lastHeartbeatAt: now
     },
     create: {
-      userId: session.user!.id,
+      userId,
       lessonId: lesson.id,
       watchedSeconds,
       lastHeartbeatAt: now
@@ -64,10 +56,10 @@ export async function POST(request: Request) {
 
   if (isComplete !== progress.isComplete) {
     await prisma.progress.update({
-      where: { userId_lessonId: { userId: session.user!.id, lessonId: lesson.id } },
+      where: progressByUserAndLesson(userId, lesson.id),
       data: { isComplete: isComplete }
     });
-    await computeStreak(session.user!.id);
+    await computeStreak(userId);
   }
 
   return NextResponse.json({ ok: true, watchedSeconds, isComplete });

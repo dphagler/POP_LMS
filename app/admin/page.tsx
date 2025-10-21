@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 
 export default async function AdminDashboard() {
   const session = await requireRole("ADMIN");
-  const orgId = session.user?.orgId;
+  const { orgId } = session.user;
+
+  if (!orgId) {
+    throw new Error("Organization not found for admin user");
+  }
 
   const [userCount, courseCount, groupCount] = await Promise.all([
     prisma.user.count({ where: { orgId } }),

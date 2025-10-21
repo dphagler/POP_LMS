@@ -39,13 +39,17 @@ export async function getOrCreateUserForEmail(
     return existing;
   }
 
-  const org = await client.organization.upsert({
+  let org = await client.organization.findFirst({
     where: { name: DEFAULT_ORG_NAME },
-    update: {},
-    create: {
-      name: DEFAULT_ORG_NAME,
-    },
   });
+
+  if (!org) {
+    org = await client.organization.create({
+      data: {
+        name: DEFAULT_ORG_NAME,
+      },
+    });
+  }
 
   const data: {
     email: string;

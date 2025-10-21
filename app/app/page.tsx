@@ -10,7 +10,11 @@ import { Progress } from "@/components/ui/progress";
 
 export default async function LearnerDashboard() {
   const session = await requireUser();
-  const orgId = session.user?.orgId;
+  const { id: userId, orgId } = session.user;
+
+  if (!orgId) {
+    throw new Error("Organization not found for learner");
+  }
 
   const [lessons, badges, progresses] = await Promise.all([
     prisma.lesson.findMany({
@@ -19,16 +23,16 @@ export default async function LearnerDashboard() {
       orderBy: { title: "asc" }
     }),
     prisma.userBadge.findMany({
-      where: { userId: session.user!.id },
+      where: { userId },
       include: { badge: true }
     }),
     prisma.progress.findMany({
-      where: { userId: session.user!.id },
+      where: { userId },
       include: { lesson: true }
     })
   ]);
 
-  const streak = await computeStreak(session.user!.id);
+  const streak = await computeStreak(userId);
   const upNext = lessons[0];
   const completion = progresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
   const total = Math.max(progresses.length, 1);

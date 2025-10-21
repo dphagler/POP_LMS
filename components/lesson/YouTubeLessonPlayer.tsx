@@ -2,6 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
+type YouTubePlayerEvent = {
+  data: number;
+};
+
+type YouTubePlayerInstance = {
+  getCurrentTime: () => number;
+  destroy: () => void;
+};
+
 interface YouTubeLessonPlayerProps {
   lessonId: string;
   youtubeId: string;
@@ -10,13 +19,29 @@ interface YouTubeLessonPlayerProps {
 
 declare global {
   interface Window {
-    YT?: any;
+    YT?: {
+      Player: new (
+        element: HTMLElement,
+        options: {
+          videoId: string;
+          playerVars?: Record<string, unknown>;
+          events?: {
+            onStateChange?: (event: YouTubePlayerEvent) => void;
+          };
+        }
+      ) => YouTubePlayerInstance;
+      PlayerState: {
+        PLAYING: number;
+        PAUSED: number;
+        ENDED: number;
+      };
+    };
     onYouTubeIframeAPIReady?: () => void;
   }
 }
 
 export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLessonPlayerProps) {
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -36,7 +61,7 @@ export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLe
           modestbranding: 1
         },
         events: {
-          onStateChange: (event) => {
+          onStateChange: (event: YouTubePlayerEvent) => {
             if (event.data === window.YT?.PlayerState.PLAYING) {
               startHeartbeat();
             }
