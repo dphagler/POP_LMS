@@ -1,1 +1,10 @@
 node_modules
+.next
+out
+.env.local
+.env
+.vercel
+pnpm-debug.log*
+
+# Prisma
+prisma/generated
