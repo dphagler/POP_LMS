@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireUser, assertSameOrg } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
-import { progressByUserAndLesson } from "@/lib/prisma-helpers";
 
 export async function POST(request: Request) {
   const session = await requireUser();
@@ -28,25 +27,28 @@ export async function POST(request: Request) {
   const clampedDuration = Math.max(lesson.durationS, duration, 1);
   const safeCurrent = Math.max(0, Math.min(Math.floor(currentTime), clampedDuration));
 
-  const existing = await prisma.progress.findUnique({
-    where: progressByUserAndLesson(userId, lesson.id)
+  const existing = await prisma.progress.findFirst({
+    where: { userId, lessonId: lesson.id }
   });
 
   const watchedSeconds = Math.max(existing?.watchedSeconds ?? 0, safeCurrent);
 
-  const progress = await prisma.progress.upsert({
-    where: progressByUserAndLesson(userId, lesson.id),
-    update: {
-      watchedSeconds,
-      lastHeartbeatAt: now
-    },
-    create: {
-      userId,
-      lessonId: lesson.id,
-      watchedSeconds,
-      lastHeartbeatAt: now
-    }
-  });
+  const progress = existing
+    ? await prisma.progress.update({
+        where: { id: existing.id },
+        data: {
+          watchedSeconds,
+          lastHeartbeatAt: now
+        }
+      })
+    : await prisma.progress.create({
+        data: {
+          userId,
+          lessonId: lesson.id,
+          watchedSeconds,
+          lastHeartbeatAt: now
+        }
+      });
 
   let isComplete = progress.isComplete;
   const threshold = Math.round(clampedDuration * 0.95);
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
 
   if (isComplete !== progress.isComplete) {
     await prisma.progress.update({
-      where: progressByUserAndLesson(userId, lesson.id),
+      where: { id: progress.id },
       data: { isComplete: isComplete }
     });
     await computeStreak(userId);
