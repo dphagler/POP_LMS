@@ -15,7 +15,7 @@ type SessionWithUser = Session & {
 
 function ensureSession(session: Session | null): asserts session is SessionWithUser {
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect("/signin");
   }
 }
 
