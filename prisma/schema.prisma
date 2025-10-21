@@ -1,3 +1,6 @@
+// prisma/schema.prisma
+
+// ------------- Data source & generator (top-level) -------------
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -7,89 +10,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Organization {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  themeJson Json?
-  createdAt DateTime @default(now())
-  users     User[]
-  courses   Course[]
-  groups    OrgGroup[]
-}
-
-model User {
-  id        String   @id @default(cuid())
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  email     String   @unique
-  name      String?
-  image     String?
-  role      UserRole @default(LEARNER)
-  createdAt DateTime @default(now())
-  progresses Progress[]
-  quizResponses QuizResponse[]
-  reflections  ReflectionResponse[]
-  badges       UserBadge[]
-}
-
+// ------------- Enums -------------
 enum UserRole {
   ADMIN
   INSTRUCTOR
   LEARNER
-}
-
-model Course {
-  id        String   @id @default(cuid())
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  title     String
-  description String?
-  modules   Module[]
-  createdAt DateTime @default(now())
-}
-
-model Module {
-  id        String   @id @default(cuid())
-  courseId  String
-  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title     String
-  order     Int      @default(0)
-  lessons   Lesson[]
-}
-
-model Lesson {
-  id        String   @id @default(cuid())
-  moduleId  String
-  module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title     String
-  youtubeId String
-  durationS Int
-  requiresFullWatch Boolean @default(true)
-  quiz      Quiz?
-  reflection Reflection?
-  progresses Progress[]
-}
-
-model Assignment {
-  id        String   @id @default(cuid())
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id])
-  courseId  String?
-  course    Course? @relation(fields: [courseId], references: [id])
-  moduleId  String?
-  module    Module? @relation(fields: [moduleId], references: [id])
-  createdBy String
-  createdAt DateTime @default(now())
-  enrollments Enrollment[]
-}
-
-model Enrollment {
-  id          String @id @default(cuid())
-  userId      String
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignmentId String
-  assignment  Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  status      EnrollmentStatus @default(ACTIVE)
 }
 
 enum EnrollmentStatus {
@@ -98,101 +23,221 @@ enum EnrollmentStatus {
   ARCHIVED
 }
 
-model Progress {
-  id        String   @id @default(cuid())
-  userId    String
-  lessonId  String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  watchedSeconds Int @default(0)
-  lastHeartbeatAt DateTime?
-  isComplete Boolean @default(false)
-
-  @@unique([userId, lessonId])
-}
-
-model Quiz {
-  id        String @id @default(cuid())
-  lessonId  String @unique
-  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  questions QuizQuestion[]
-}
-
-model QuizQuestion {
-  id        String @id @default(cuid())
-  quizId    String
-  quiz      Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  type      QuestionType
-  prompt    String
-  options   Json?
-  correctKey String?
-}
-
 enum QuestionType {
   MCQ
 }
 
+// ------------- Models -------------
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  themeJson Json?
+  createdAt DateTime @default(now())
+
+  // back-relations
+  users       User[]
+  courses     Course[]
+  groups      OrgGroup[]
+  assignments Assignment[]
+}
+
+model User {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  email     String       @unique
+  name      String?
+  image     String?
+  role      UserRole     @default(LEARNER)
+  createdAt DateTime     @default(now())
+
+  // back-relations
+  progresses       Progress[]
+  quizResponses    QuizResponse[]
+  reflections      ReflectionResponse[]
+  badges           UserBadge[]
+  enrollments      Enrollment[]
+  groupMemberships GroupMember[]
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  createdAt   DateTime     @default(now())
+
+  // back-relations
+  modules     Module[]
+  assignments Assignment[]
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int    @default(0)
+
+  // back-relations
+  lessons     Lesson[]
+  assignments Assignment[]
+}
+
+model Lesson {
+  id                String  @id @default(cuid())
+  moduleId          String
+  module            Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title             String
+  youtubeId         String
+  durationS         Int
+  requiresFullWatch Boolean @default(true)
+
+  // one-to-ones
+  quiz       Quiz?
+  reflection Reflection?
+
+  // back-relations
+  progresses Progress[]
+}
+
+model Assignment {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  moduleId String?
+  module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // back-relations
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  status EnrollmentStatus @default(ACTIVE)
+}
+
+model Progress {
+  id              String    @id @default(cuid())
+  userId          String
+  lessonId        String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  watchedSeconds  Int       @default(0)
+  lastHeartbeatAt DateTime?
+  isComplete      Boolean   @default(false)
+}
+
+model Quiz {
+  id       String @id @default(cuid())
+  lessonId String @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // back-relations
+  questions QuizQuestion[]
+}
+
+model QuizQuestion {
+  id         String       @id @default(cuid())
+  quizId     String
+  quiz       Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type       QuestionType
+  prompt     String
+  options    Json? // for MCQ
+  correctKey String? // for MCQ
+
+  // back-relations
+  responses QuizResponse[]
+}
+
 model QuizResponse {
-  id          String @id @default(cuid())
-  userId      String
-  questionId  String
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question    QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  answer      String
-  isCorrect   Boolean
-  createdAt   DateTime @default(now())
+  id         String @id @default(cuid())
+  userId     String
+  questionId String
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  answer    String
+  isCorrect Boolean
+  createdAt DateTime @default(now())
 }
 
 model Reflection {
-  id        String @id @default(cuid())
-  lessonId  String @unique
-  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  prompt    String
+  id       String @id @default(cuid())
+  lessonId String @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  prompt   String
+
+  // back-relations
+  responses ReflectionResponse[]
 }
 
 model ReflectionResponse {
-  id        String @id @default(cuid())
-  userId    String
+  id           String @id @default(cuid())
+  userId       String
   reflectionId String
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   reflection Reflection @relation(fields: [reflectionId], references: [id], onDelete: Cascade)
+
   text      String
   score     Int?
-  aiScored  Boolean @default(false)
+  aiScored  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
 model Badge {
-  id        String @id @default(cuid())
-  code      String @unique
-  name      String
-  criteria  Json
-  imageUrl  String?
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  criteria Json
+  imageUrl String?
+
+  // back-relations
+  userBadges UserBadge[]
 }
 
 model UserBadge {
-  id        String @id @default(cuid())
-  userId    String
-  badgeId   String
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge     Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-  earnedAt  DateTime @default(now())
+  id      String @id @default(cuid())
+  userId  String
+  badgeId String
 
-  @@unique([userId, badgeId])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  earnedAt DateTime @default(now())
 }
 
 model OrgGroup {
-  id      String @id @default(cuid())
-  orgId   String
-  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  name    String
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name  String
+
+  // back-relations
   members GroupMember[]
 }
 
 model GroupMember {
-  id       String @id @default(cuid())
-  groupId  String
-  userId   String
-  group    OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  groupId String
+  userId  String
+
+  group OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
