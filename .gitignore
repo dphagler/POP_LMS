@@ -5,6 +5,7 @@ out
 .env
 .vercel
 pnpm-debug.log*
+*.tsbuildinfo
 
 # Prisma
 prisma/generated
