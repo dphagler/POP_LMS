@@ -256,9 +256,9 @@ function SyncReport({ summary }: { summary: SyncSummary }) {
   return (
     <div className="w-full self-stretch rounded-lg border border-border/60 bg-card/60 p-4 text-left shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Sync report
-        </h3>
+        </p>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <StatusBadge action="created" count={totals.created} />
           <StatusBadge action="updated" count={totals.updated} />
