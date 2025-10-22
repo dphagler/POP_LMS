@@ -46,7 +46,7 @@ export function AppearanceSettings() {
   return (
     <div className="space-y-6 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Theme</h2>
+        <h2 className="text-slate-100">Theme</h2>
         <p className="text-sm text-muted-foreground">
           Choose how POP Initiative looks on this device. Your selection is saved in this browser.
         </p>
