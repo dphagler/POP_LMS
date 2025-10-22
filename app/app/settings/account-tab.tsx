@@ -11,7 +11,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
   const initialPasswordState: ChangePasswordFormState = { status: "idle" };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
       <header className="space-y-1">
         <h2 className="text-balance">Account security</h2>
         <p className="text-sm text-muted-foreground">
