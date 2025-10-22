@@ -6,6 +6,7 @@ out
 .vercel
 pnpm-debug.log*
 *.tsbuildinfo
+analytics-snapshot.csv
 
 # Prisma
 prisma/generated
