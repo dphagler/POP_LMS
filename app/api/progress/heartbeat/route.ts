@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, assertSameOrg } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { computeStreak } from "@/lib/streak";
+import { syncLessonCompletion } from "@/lib/lesson-progress";
 import { createRequestLogger, serializeError } from "@/lib/logger";
 
 export async function POST(request: Request) {
@@ -94,19 +94,7 @@ export async function POST(request: Request) {
           }
         });
 
-    let isComplete = progress.isComplete;
-    const threshold = Math.round(clampedDuration * 0.95);
-    if (lesson.requiresFullWatch && progress.watchedSeconds >= threshold && isVisible !== false) {
-      isComplete = true;
-    }
-
-    if (isComplete !== progress.isComplete) {
-      await prisma.progress.update({
-        where: { id: progress.id },
-        data: { isComplete: isComplete }
-      });
-      await computeStreak(userId);
-    }
+    const { isComplete } = await syncLessonCompletion({ userId, lessonId: lesson.id });
 
     return NextResponse.json({
       ok: true,
