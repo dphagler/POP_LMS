@@ -161,11 +161,11 @@ export default async function LearnerDashboard() {
     <div className="grid gap-6 lg:grid-cols-3">
       <section id="today" aria-labelledby="today-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="space-y-2">
+          <CardHeader className="gap-3 pb-4">
             <CardTitle id="today-card">Today</CardTitle>
             <CardDescription>Start today&apos;s lesson to keep your momentum.</CardDescription>
           </CardHeader>
-          <CardContent className="flex h-full flex-col gap-6">
+          <CardContent className="flex h-full flex-col gap-4">
             <div className="flex items-center justify-between">
               <Badge variant="secondary">Streak: {streak} days</Badge>
               {hasAssignments ? (
@@ -174,7 +174,7 @@ export default async function LearnerDashboard() {
                 </p>
               ) : null}
             </div>
-            <div className="rounded-lg border bg-muted/40 p-4">
+            <div className="rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
               {upNext ? (
                 <div className="flex flex-col gap-4">
                   <div className="space-y-1">
@@ -210,7 +210,7 @@ export default async function LearnerDashboard() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="space-y-4 text-sm text-muted-foreground">
                   <p>You&apos;re all set for now. We&apos;ll add your next lesson as soon as it&apos;s assigned.</p>
                   {isAdmin ? (
                     <Button variant="outline" asChild>
@@ -238,7 +238,7 @@ export default async function LearnerDashboard() {
 
       <section id="up-next" aria-labelledby="resume-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="space-y-2">
+          <CardHeader className="gap-3 pb-4">
             <CardTitle id="resume-card">Up next</CardTitle>
             <CardDescription>Resume in-progress lessons or preview what&apos;s coming.</CardDescription>
           </CardHeader>
@@ -255,7 +255,10 @@ export default async function LearnerDashboard() {
                     : "Preview what&apos;s coming up.";
 
               return (
-                <div key={lesson.id} className="space-y-3 rounded-lg border p-4">
+                <div
+                  key={lesson.id}
+                  className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <p className="font-medium leading-tight">{lesson.title}</p>
@@ -281,7 +284,7 @@ export default async function LearnerDashboard() {
               );
             })}
             {queueLessons.length === 0 && (
-              <div className="space-y-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+              <div className="space-y-4 rounded-xl border border-dashed border-slate-200/30 bg-white/10 p-6 text-sm text-muted-foreground shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/10">
                 <p>No other lessons waiting in your queue.</p>
                 {allLessonsComplete ? (
                   <p>Enjoy the breather—new lessons will appear here once they&apos;re assigned.</p>
@@ -305,12 +308,12 @@ export default async function LearnerDashboard() {
 
       <section id="completed" aria-labelledby="review-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="space-y-2">
+          <CardHeader className="gap-3 pb-4">
             <CardTitle id="review-card">Completed</CardTitle>
             <CardDescription>Review recent wins and celebrate your progress.</CardDescription>
           </CardHeader>
-          <CardContent className="flex h-full flex-col gap-6">
-            <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
+          <CardContent className="flex h-full flex-col gap-4">
+            <div className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
               <p className="text-sm font-medium">Badges</p>
               {badges.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -331,7 +334,7 @@ export default async function LearnerDashboard() {
               {completedLessons.map((item) => (
                 <div
                   key={item.id}
-                  className="space-y-3 rounded-lg border p-4"
+                  className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
@@ -356,7 +359,7 @@ export default async function LearnerDashboard() {
                 </div>
               ))}
               {completedLessons.length === 0 && (
-                <div className="space-y-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="space-y-4 rounded-xl border border-dashed border-slate-200/30 bg-white/10 p-6 text-sm text-muted-foreground shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/10">
                   <p>Lessons you finish will show up here for quick review.</p>
                   {!hasAssignments && isAdmin ? (
                     <Button variant="outline" asChild>

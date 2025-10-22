@@ -43,12 +43,12 @@ export default async function AdminGroupsPage() {
   const importMembers = importGroupMembersAction.bind(null, orgId);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="text-3xl font-semibold">Groups</CardTitle>
-            <CardDescription>
+            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Organize learners into cohorts and manage their memberships. Import members from CSV to keep rosters in sync.
             </CardDescription>
           </div>
@@ -62,10 +62,12 @@ export default async function AdminGroupsPage() {
         </CardHeader>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="space-y-2">
+      <Card>
+        <CardHeader className="space-y-2 pb-4">
           <CardTitle>Create a new group</CardTitle>
-          <CardDescription>Groups help you enroll cohorts into assignments and manage learners at scale.</CardDescription>
+          <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
+            Groups help you enroll cohorts into assignments and manage learners at scale.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={createGroup} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
@@ -80,10 +82,10 @@ export default async function AdminGroupsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="space-y-2">
+      <Card>
+        <CardHeader className="space-y-2 pb-4">
           <CardTitle>Current groups</CardTitle>
-          <CardDescription>
+          <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
             {groups.length === 0
               ? "No groups yet. Create one to get started."
               : `${groups.length} group${groups.length === 1 ? "" : "s"} with ${memberCount} total membership${memberCount === 1 ? "" : "s"}.`}
