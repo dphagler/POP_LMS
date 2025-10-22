@@ -40,9 +40,6 @@ export function middleware(req: NextRequest) {
       }
     }
   } catch (_error) {
-    const host = req.headers.get("host") ?? "unknown";
-    const hasCookie = hasSessionCookie(req);
-    console.error("[MW]", pathname, host, hasCookie);
     return NextResponse.redirect(buildSignInUrl());
   }
   return NextResponse.next();
