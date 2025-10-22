@@ -1,8 +1,8 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/authz";
 import { fetchPublishedCourses, getMissingSanityEnvVars } from "@/lib/sanity";
 import { prisma } from "@/lib/prisma";
+import { createRequestLogger, serializeError, type Logger } from "@/lib/logger";
 
 type SummaryCounts = {
   created: number;
@@ -20,17 +20,16 @@ type SyncRequestBody = {
   dryRun?: boolean;
 };
 
-async function readJsonBody(request: Request, requestId: string): Promise<SyncRequestBody> {
+async function readJsonBody(request: Request, logger: Logger): Promise<SyncRequestBody> {
   const contentType = request.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     try {
       return (await request.json()) as SyncRequestBody;
     } catch (error) {
-      console.warn({
+      logger.warn({
         event: "admin.sanity_sync.invalid_json",
-        requestId,
         message: "Falling back to default payload due to invalid JSON body",
-        error: error instanceof Error ? error.message : String(error)
+        error: serializeError(error)
       });
       return {};
     }
@@ -39,7 +38,7 @@ async function readJsonBody(request: Request, requestId: string): Promise<SyncRe
 }
 
 export async function POST(request: Request) {
-  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  const { logger, requestId } = createRequestLogger(request, { route: "admin.sanity_sync" });
   const startedAt = Date.now();
   let orgId: string | undefined;
 
@@ -48,9 +47,8 @@ export async function POST(request: Request) {
     orgId = session.user?.orgId ?? undefined;
 
     if (!orgId) {
-      console.warn({
+      logger.warn({
         event: "admin.sanity_sync.missing_org",
-        requestId,
         message: "Organization missing on admin session"
       });
       return NextResponse.json({ error: "Organization not found.", requestId }, { status: 400 });
@@ -58,9 +56,8 @@ export async function POST(request: Request) {
 
     const missingEnvVars = getMissingSanityEnvVars();
     if (missingEnvVars.length > 0) {
-      console.warn({
+      logger.warn({
         event: "admin.sanity_sync.missing_env",
-        requestId,
         orgId,
         missingEnvVars
       });
@@ -74,22 +71,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await readJsonBody(request, requestId);
+    const body = await readJsonBody(request, logger);
     const dryRun = Boolean(body?.dryRun);
     const limit = dryRun ? 5 : undefined;
 
-    console.info({
+    logger.info({
       event: "admin.sanity_sync.start",
-      requestId,
       orgId,
       dryRun
     });
 
     const courses = (await fetchPublishedCourses({ limit })) as any[];
 
-    console.info({
+    logger.info({
       event: "admin.sanity_sync.fetched",
-      requestId,
       orgId,
       dryRun,
       fetchedCourses: courses.length
@@ -221,9 +216,8 @@ export async function POST(request: Request) {
 
     const durationMs = Date.now() - startedAt;
 
-    console.info({
+    logger.info({
       event: "admin.sanity_sync.complete",
-      requestId,
       orgId,
       dryRun,
       summary,
@@ -233,21 +227,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, dryRun, summary, requestId });
   } catch (error) {
     if (error instanceof Error && error.message === "Forbidden") {
-      console.warn({
+      logger.warn({
         event: "admin.sanity_sync.forbidden",
-        requestId,
         orgId,
         message: "User attempted to access sync without sufficient permissions"
       });
       return NextResponse.json({ error: "Forbidden", requestId }, { status: 403 });
     }
 
-    console.error({
+    logger.error({
       event: "admin.sanity_sync.error",
-      requestId,
       orgId,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      error: serializeError(error)
     });
 
     return NextResponse.json(

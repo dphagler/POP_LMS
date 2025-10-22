@@ -1,4 +1,5 @@
 // middleware.ts (cookie check version shown; works with v4/v5)
+import { randomUUID } from "crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -19,10 +20,15 @@ function hasSessionCookie(req: NextRequest) {
 }
 
 export function middleware(req: NextRequest) {
+  const requestId = req.headers.get("x-request-id") ?? randomUUID();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-request-id", requestId);
   const { pathname } = req.nextUrl;
 
   if (req.method === "HEAD" || req.method === "OPTIONS") {
-    return NextResponse.next();
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 
   const buildSignInUrl = () => {
@@ -33,16 +39,24 @@ export function middleware(req: NextRequest) {
     return signInUrl;
   };
 
+  let shouldRedirect = false;
+
   try {
     if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (!hasSessionCookie(req)) {
-        return NextResponse.redirect(buildSignInUrl());
+        shouldRedirect = true;
       }
     }
   } catch (_error) {
-    return NextResponse.redirect(buildSignInUrl());
+    shouldRedirect = true;
   }
-  return NextResponse.next();
+
+  const response = shouldRedirect
+    ? NextResponse.redirect(buildSignInUrl())
+    : NextResponse.next({ request: { headers: requestHeaders } });
+
+  response.headers.set("x-request-id", requestId);
+  return response;
 }
 
-export const config = { matcher: ["/app/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/app/:path*", "/admin/:path*", "/api/:path*"] };
