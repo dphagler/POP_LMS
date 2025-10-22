@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -317,8 +318,12 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           className="w-full justify-between rounded-md px-3 py-2 text-sm text-destructive hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={handleSignOut}
           aria-busy={isPending}
+          disabled={isPending}
         >
-          Sign out
+          <span className="flex w-full items-center justify-between gap-2">
+            <span>Sign out</span>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+          </span>
         </Button>
       </div>
     </div>

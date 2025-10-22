@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,6 +36,11 @@ export function ProfileSettingsForm({
   const [toast, setToast] = useState<SettingsToastMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const avatarInputId = useId();
+  const avatarDescriptionId = useId();
+  const displayNameHelpId = useId();
+  const successMessageId = useId();
+  const errorMessageId = useId();
 
   useEffect(() => {
     setDisplayName(initialName);
@@ -135,6 +140,18 @@ export function ProfileSettingsForm({
     }
   };
 
+  const statusIds: string[] = [];
+  if (state.status === "success") {
+    statusIds.push(successMessageId);
+  }
+  if (state.status === "error") {
+    statusIds.push(errorMessageId);
+  }
+
+  const avatarDescribedBy = [avatarDescriptionId, ...statusIds].join(" ") || undefined;
+  const displayNameDescribedBy = [displayNameHelpId, ...statusIds].join(" ") || undefined;
+  const hasError = state.status === "error";
+
   return (
     <>
       <form action={formAction} className="space-y-6 p-6">
@@ -147,14 +164,17 @@ export function ProfileSettingsForm({
           <div className="flex-1 space-y-3">
             <div>
               <h2 className="text-base font-semibold">Profile photo</h2>
-              <p className="text-sm text-muted-foreground">
+              <p id={avatarDescriptionId} className="text-sm text-muted-foreground">
                 Use a square image (recommended 240px or larger). PNG or JPG files up to 4 MB are supported.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <label htmlFor={avatarInputId} className="sr-only">
+                Upload profile photo
+              </label>
               <input
                 ref={fileInputRef}
-                id="avatar"
+                id={avatarInputId}
                 name="avatar"
                 type="file"
                 accept="image/*"
@@ -164,6 +184,8 @@ export function ProfileSettingsForm({
                   "block min-w-[220px] text-sm file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground file:hover:bg-primary/90",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 )}
+                aria-describedby={avatarDescribedBy}
+                aria-invalid={hasError || undefined}
               />
               <Button
                 type="button"
@@ -192,8 +214,10 @@ export function ProfileSettingsForm({
             required
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             disabled={pending}
+            aria-describedby={displayNameDescribedBy}
+            aria-invalid={hasError || undefined}
           />
-          <p className="text-xs text-muted-foreground">
+          <p id={displayNameHelpId} className="text-xs text-muted-foreground">
             This name will appear on certificates and progress reports.
           </p>
         </div>
@@ -206,10 +230,10 @@ export function ProfileSettingsForm({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <div aria-live="polite" className="sr-only">
+          <div id={successMessageId} aria-live="polite" className="sr-only">
             {state.status === "success" ? state.message : null}
           </div>
-          <div aria-live="assertive" className="sr-only">
+          <div id={errorMessageId} aria-live="assertive" className="sr-only">
             {state.status === "error" ? state.message : null}
           </div>
           <Button type="submit" disabled={pending} className="sm:w-auto">
