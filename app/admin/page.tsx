@@ -84,6 +84,17 @@ export default async function AdminDashboard() {
       </Card>
       <Card>
         <CardHeader>
+          <CardTitle>Analytics</CardTitle>
+          <CardDescription>Track assignments, active learners, and completion rates.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href="/admin/analytics">View analytics snapshot</Link>
+          </Button>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle>Groups</CardTitle>
           <CardDescription>Create cohorts and manage CSV roster uploads.</CardDescription>
         </CardHeader>
