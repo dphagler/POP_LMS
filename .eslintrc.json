@@ -3,5 +3,23 @@
   "extends": ["next/core-web-vitals", "prettier"],
   "parserOptions": {
     "project": "./tsconfig.json"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["middleware.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "@/lib/logger", "message": "Edge middleware cannot import the logger." },
+              { "name": "@/lib/prisma", "message": "Edge middleware cannot import Prisma." },
+              { "name": "@/lib/redis", "message": "Edge middleware cannot import Redis helpers." },
+              { "name": "@/lib/rate-limit", "message": "Edge middleware cannot import server-only rate limiting." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
