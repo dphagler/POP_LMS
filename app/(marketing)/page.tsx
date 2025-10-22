@@ -6,6 +6,7 @@ import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageFadeIn } from "@/components/layout/page-fade-in";
 
 const benefits = [
   {
@@ -36,7 +37,7 @@ const benefits = [
 
 export default function MarketingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50">
+    <PageFadeIn className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50" role="main">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
           className="absolute left-1/2 top-32 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-to-r from-sky-400/60 via-fuchsia-400/50 to-amber-300/40 blur-3xl"
@@ -183,6 +184,6 @@ export default function MarketingPage() {
           </nav>
         </div>
       </footer>
-    </main>
+    </PageFadeIn>
   );
 }

@@ -64,7 +64,7 @@ export function ThemeModeToggle({ className }: { className?: string }) {
         aria-label={`Theme set to ${activeOption.label}${systemStatus}. Toggle theme menu.`}
         title={`Theme set to ${activeOption.label}${systemStatus}`}
         onClick={() => setOpen((previous) => !previous)}
-        className="rounded-full"
+        className="rounded-full transition-colors duration-500 ease-in-out"
       >
         <ActiveIcon className="h-5 w-5" aria-hidden />
         <span className="sr-only" aria-live="polite">
@@ -90,7 +90,7 @@ export function ThemeModeToggle({ className }: { className?: string }) {
               role="menuitemradio"
               aria-checked={isActive}
               className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition-colors duration-200 ease-in-out hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 isActive ? "text-foreground" : "text-muted-foreground"
               )}
               onClick={() => handleSelect(option.value)}
