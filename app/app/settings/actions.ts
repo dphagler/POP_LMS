@@ -7,6 +7,7 @@ import { z } from "zod";
 import { updateSession } from "@/lib/auth";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { hashPassword, verifyPassword } from "@/lib/password";
 
 export type UpdateProfileFormState = {
   status: "idle" | "success" | "error";
@@ -139,5 +140,109 @@ export async function updateProfileAction(
       status: "error",
       message: "We couldn’t update your profile. Please try again."
     } satisfies UpdateProfileFormState;
+  }
+}
+
+export type ChangePasswordFormState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+};
+
+const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, { message: "Enter your current password." })
+    .max(128, { message: "Passwords must be 128 characters or fewer." }),
+  newPassword: z
+    .string()
+    .min(8, { message: "New password must be at least 8 characters." })
+    .max(128, { message: "Passwords must be 128 characters or fewer." }),
+  confirmPassword: z
+    .string()
+    .min(1, { message: "Confirm your new password." })
+    .max(128, { message: "Passwords must be 128 characters or fewer." })
+});
+
+export async function changePasswordAction(
+  _prevState: ChangePasswordFormState,
+  formData: FormData
+): Promise<ChangePasswordFormState> {
+  const session = await requireUser();
+
+  const fields = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!fields.success) {
+    const issue = fields.error.issues.at(0);
+    return {
+      status: "error",
+      message: issue?.message ?? "Check the password fields and try again."
+    } satisfies ChangePasswordFormState;
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = fields.data;
+
+  if (newPassword !== confirmPassword) {
+    return {
+      status: "error",
+      message: "New password and confirmation do not match."
+    } satisfies ChangePasswordFormState;
+  }
+
+  if (currentPassword === newPassword) {
+    return {
+      status: "error",
+      message: "Choose a new password that’s different from your current one."
+    } satisfies ChangePasswordFormState;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { passwordHash: true }
+    });
+
+    if (!user?.passwordHash) {
+      return {
+        status: "error",
+        message: "Your organization uses single sign-on—no password needed."
+      } satisfies ChangePasswordFormState;
+    }
+
+    const currentMatches = verifyPassword(currentPassword, user.passwordHash);
+    if (!currentMatches) {
+      return {
+        status: "error",
+        message: "Your current password is incorrect."
+      } satisfies ChangePasswordFormState;
+    }
+
+    const nextHash = hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { passwordHash: nextHash }
+    });
+
+    await updateSession({
+      user: {
+        id: session.user.id
+      }
+    });
+
+    revalidatePath("/app/settings");
+
+    return {
+      status: "success",
+      message: "Your password has been updated."
+    } satisfies ChangePasswordFormState;
+  } catch (error) {
+    return {
+      status: "error",
+      message: "We couldn’t update your password. Please try again."
+    } satisfies ChangePasswordFormState;
   }
 }
