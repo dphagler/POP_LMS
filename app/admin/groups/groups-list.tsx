@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
@@ -50,11 +51,18 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-[radial-gradient(140%_85%_at_100%_0%,theme(colors.primary/0.14),transparent_65%)] opacity-0 transition group-hover:opacity-100"
             />
-            <CardHeader className="relative flex flex-col gap-1 pb-0">
-              <CardTitle className="text-base font-semibold tracking-tight">{group.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {group._count.members} member{group._count.members === 1 ? "" : "s"}
-              </p>
+            <CardHeader className="relative pb-0">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-base font-semibold tracking-tight">{group.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {group._count.members} member{group._count.members === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <Button asChild variant="outline" size="sm" className="h-8 w-full shrink-0 sm:w-auto">
+                  <Link href={`/admin/groups/${group.id}`}>Manage members</Link>
+                </Button>
+              </div>
             </CardHeader>
 
             <CardContent className={cn("relative flex flex-1 flex-col pt-4", isCompact ? "gap-3" : "gap-4")}>

@@ -78,7 +78,10 @@ export async function renameGroupAction(orgId: string, formData: FormData) {
     data: { name: parsedName.data }
   });
 
+  const groupDetailPath = `${GROUPS_PATH}/${groupId}`;
+
   revalidatePath(GROUPS_PATH);
+  revalidatePath(groupDetailPath);
   redirect(GROUPS_PATH);
 }
 
@@ -105,7 +108,10 @@ export async function deleteGroupAction(orgId: string, formData: FormData) {
 
   await prisma.orgGroup.delete({ where: { id: groupId } });
 
+  const groupDetailPath = `${GROUPS_PATH}/${groupId}`;
+
   revalidatePath(GROUPS_PATH);
+  revalidatePath(groupDetailPath);
   redirect(GROUPS_PATH);
 }
 
@@ -350,7 +356,9 @@ export async function importGroupMembersAction(
   }
 
   if (createdUsers > 0 || addedMemberships > 0 || updatedUsers > 0) {
+    const groupDetailPath = `${GROUPS_PATH}/${groupId}`;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(groupDetailPath);
   }
 
   return {
