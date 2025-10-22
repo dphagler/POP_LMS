@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle, CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
 
 import type { Lesson as LessonModel, Progress as ProgressModel } from "@prisma/client";
 
@@ -141,7 +141,6 @@ export default async function LearnerDashboard() {
   });
   const sortedLessons = prioritizedLessons.slice(0, 5);
   const upNext = sortedLessons[0];
-  const lessonSchedule = sortedLessons.slice(1);
   const completion = relevantProgresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
   const totalLessons = lessons.length;
   const percent = totalLessons === 0 ? 0 : Math.round((completion / totalLessons) * 100);
@@ -161,38 +160,53 @@ export default async function LearnerDashboard() {
     <div className="grid gap-6 lg:grid-cols-3">
       <section id="today" aria-labelledby="today-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="gap-3 pb-4">
-            <CardTitle id="today-card">Today</CardTitle>
-            <CardDescription>Start today&apos;s lesson to keep your momentum.</CardDescription>
+          <CardHeader className="pb-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-500/10 text-sky-500">
+                <Target className="h-6 w-6" aria-hidden />
+              </span>
+              <div>
+                <CardTitle id="today-card" className="text-xl font-semibold">
+                  Today
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-400">
+                  Focus on today&apos;s featured lesson to keep your streak strong.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="flex h-full flex-col gap-4">
+          <CardContent className="flex h-full flex-col gap-6 pt-6">
             <div className="flex items-center justify-between">
               <Badge variant="secondary">Streak: {streak} days</Badge>
               {hasAssignments ? (
-                <p className="text-sm text-muted-foreground" aria-live="polite">
+                <p className="text-sm text-slate-400" aria-live="polite">
                   {percent}% complete
                 </p>
               ) : null}
             </div>
-            <div className="rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
+            <div className="rounded-2xl border border-slate-200/10 bg-white/40 p-5 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/30">
               {upNext ? (
-                <div className="flex flex-col gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">Featured lesson</p>
-                    <p className="text-lg font-semibold leading-tight">{upNext.title}</p>
-                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                <div className="flex flex-col gap-5">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Featured lesson</p>
+                    <p className="text-lg font-semibold leading-tight text-slate-900 dark:text-slate-50">{upNext.title}</p>
+                    <p className="flex items-center gap-1 text-sm text-slate-400">
                       <Clock className="h-4 w-4" aria-hidden />
                       {formatLessonDuration(upNext.durationS)}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Progress value={upNextPercent} aria-label={`Progress for ${upNext.title}`} />
-                    <p className="text-xs text-muted-foreground">
+                    <Progress
+                      value={upNextPercent}
+                      indicatorClassName="bg-gradient-to-r from-sky-400 to-indigo-500"
+                      aria-label={`Progress for ${upNext.title}`}
+                    />
+                    <p className="text-sm text-slate-400">
                       {upNextProgress?.isComplete
                         ? "Completed — review to stay sharp."
                         : upNextProgress && upNextProgress.watchedSeconds > 0
-                          ? "Resume where you left off."
-                          : "Start fresh and build momentum."}
+                          ? "Resume where you left off and keep building momentum."
+                          : "Start fresh and make today count."}
                     </p>
                   </div>
                   <Button asChild>
@@ -204,14 +218,14 @@ export default async function LearnerDashboard() {
                     </Link>
                   </Button>
                   {allLessonsComplete && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-slate-400">
                       You&apos;ve completed every assignment—review anytime to keep the streak alive.
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="space-y-4 text-sm text-muted-foreground">
-                  <p>You&apos;re all set for now. We&apos;ll add your next lesson as soon as it&apos;s assigned.</p>
+                <div className="space-y-4 text-sm text-slate-400">
+                  <p>🎯 You&apos;re all set for now. We&apos;ll add your next lesson as soon as it&apos;s assigned.</p>
                   {isAdmin ? (
                     <Button variant="outline" asChild>
                       <Link href="/admin/assign">Assign a lesson</Link>
@@ -221,12 +235,13 @@ export default async function LearnerDashboard() {
               )}
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium">Assignment progress</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Assignment progress</p>
               <Progress
                 value={hasAssignments ? percent : 0}
+                indicatorClassName="bg-gradient-to-r from-sky-400 to-indigo-500"
                 aria-label="Overall assignment progress"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-slate-400">
                 {hasAssignments
                   ? `${completion} of ${totalLessons} lessons complete`
                   : "Progress will appear once a lesson is assigned."}
@@ -238,11 +253,22 @@ export default async function LearnerDashboard() {
 
       <section id="up-next" aria-labelledby="resume-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="gap-3 pb-4">
-            <CardTitle id="resume-card">Up next</CardTitle>
-            <CardDescription>Resume in-progress lessons or preview what&apos;s coming.</CardDescription>
+          <CardHeader className="pb-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
+                <PlayCircle className="h-6 w-6" aria-hidden />
+              </span>
+              <div>
+                <CardTitle id="resume-card" className="text-xl font-semibold">
+                  Up next
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-400">
+                  Dive back into in-progress lessons or preview what&apos;s on deck.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 pt-6">
             {queueLessons.map((lesson) => {
               const lessonProgress = progressByLesson.get(lesson.id);
               const lessonCta = getLessonCta(lessonProgress);
@@ -257,12 +283,12 @@ export default async function LearnerDashboard() {
               return (
                 <div
                   key={lesson.id}
-                  className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20"
+                  className="space-y-4 rounded-2xl border border-slate-200/10 bg-white/40 p-5 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/30"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="font-medium leading-tight">{lesson.title}</p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p className="font-semibold leading-tight text-slate-900 dark:text-slate-50">{lesson.title}</p>
+                      <p className="flex items-center gap-1 text-xs text-slate-400">
                         <Clock className="h-3.5 w-3.5" aria-hidden />
                         {formatLessonDuration(lesson.durationS)}
                       </p>
@@ -276,16 +302,20 @@ export default async function LearnerDashboard() {
                       </Link>
                     </Button>
                   </div>
-                  <div className="space-y-1">
-                    <Progress value={lessonPercent} aria-label={`Progress for ${lesson.title}`} />
-                    <p className="text-xs text-muted-foreground">{helperText}</p>
+                  <div className="space-y-2">
+                    <Progress
+                      value={lessonPercent}
+                      indicatorClassName="bg-gradient-to-r from-sky-400 to-indigo-500"
+                      aria-label={`Progress for ${lesson.title}`}
+                    />
+                    <p className="text-sm text-slate-400">{helperText}</p>
                   </div>
                 </div>
               );
             })}
             {queueLessons.length === 0 && (
-              <div className="space-y-4 rounded-xl border border-dashed border-slate-200/30 bg-white/10 p-6 text-sm text-muted-foreground shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/10">
-                <p>No other lessons waiting in your queue.</p>
+              <div className="space-y-4 rounded-2xl border border-dashed border-slate-200/30 bg-white/20 p-6 text-sm text-slate-400 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
+                <p>🔜 No other lessons waiting in your queue.</p>
                 {allLessonsComplete ? (
                   <p>Enjoy the breather—new lessons will appear here once they&apos;re assigned.</p>
                 ) : hasAssignments ? (
@@ -308,13 +338,24 @@ export default async function LearnerDashboard() {
 
       <section id="completed" aria-labelledby="review-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader className="gap-3 pb-4">
-            <CardTitle id="review-card">Completed</CardTitle>
-            <CardDescription>Review recent wins and celebrate your progress.</CardDescription>
+          <CardHeader className="pb-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                <CheckCircle className="h-6 w-6" aria-hidden />
+              </span>
+              <div>
+                <CardTitle id="review-card" className="text-xl font-semibold">
+                  Completed
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-400">
+                  Review recent wins and celebrate your momentum.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="flex h-full flex-col gap-4">
-            <div className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
-              <p className="text-sm font-medium">Badges</p>
+          <CardContent className="flex h-full flex-col gap-6 pt-6">
+            <div className="space-y-4 rounded-2xl border border-slate-200/10 bg-white/40 p-5 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/30">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Badges</p>
               {badges.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {badges.map((item) => (
@@ -324,22 +365,22 @@ export default async function LearnerDashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-400">
                   Earn badges by completing lessons and reflections.
                 </p>
               )}
             </div>
             <div className="space-y-4">
-              <p className="text-sm font-medium">Latest activity</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Latest activity</p>
               {completedLessons.map((item) => (
                 <div
                   key={item.id}
-                  className="space-y-4 rounded-xl border border-slate-200/10 bg-white/20 p-4 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20"
+                  className="space-y-4 rounded-2xl border border-slate-200/10 bg-white/40 p-5 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/30"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="font-medium leading-tight">{item.lesson.title}</p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p className="font-semibold leading-tight text-slate-900 dark:text-slate-50">{item.lesson.title}</p>
+                      <p className="flex items-center gap-1 text-xs text-slate-400">
                         <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed lesson
                       </p>
                     </div>
@@ -352,15 +393,19 @@ export default async function LearnerDashboard() {
                       </Link>
                     </Button>
                   </div>
-                  <div className="space-y-1">
-                    <Progress value={100} aria-label={`${item.lesson.title} completion`} />
-                    <p className="text-xs text-muted-foreground">Great job! Keep the streak going.</p>
+                  <div className="space-y-2">
+                    <Progress
+                      value={100}
+                      indicatorClassName="bg-gradient-to-r from-sky-400 to-indigo-500"
+                      aria-label={`${item.lesson.title} completion`}
+                    />
+                    <p className="text-sm text-slate-400">Great job! Keep the streak going.</p>
                   </div>
                 </div>
               ))}
               {completedLessons.length === 0 && (
-                <div className="space-y-4 rounded-xl border border-dashed border-slate-200/30 bg-white/10 p-6 text-sm text-muted-foreground shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/10">
-                  <p>Lessons you finish will show up here for quick review.</p>
+                <div className="space-y-4 rounded-2xl border border-dashed border-slate-200/30 bg-white/20 p-6 text-sm text-slate-400 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
+                  <p>✅ Lessons you finish will show up here for quick review.</p>
                   {!hasAssignments && isAdmin ? (
                     <Button variant="outline" asChild>
                       <Link href="/admin/assign">Assign a lesson</Link>
