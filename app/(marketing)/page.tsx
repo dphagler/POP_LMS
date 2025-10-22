@@ -29,14 +29,14 @@ export default function MarketingPage() {
   return (
     <main className="min-h-screen">
       <div className="container mx-auto max-w-6xl space-y-6 py-10 px-6 lg:px-10">
-        <section className="flex flex-col items-center gap-6 rounded-3xl border border-slate-200/10 bg-white/40 px-8 py-16 text-center shadow-[0_30px_80px_-45px_rgba(15,23,42,0.65)] backdrop-blur dark:bg-slate-900/30">
-          <span className="rounded-full border border-slate-200/40 bg-white/80 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200">
+        <section className="flex flex-col items-center gap-6 rounded-3xl border border-primary/30 bg-primary/10 px-8 py-16 text-center shadow-[0_30px_80px_-45px_rgba(56,189,248,0.45)] backdrop-blur dark:border-primary/40 dark:bg-primary/15">
+          <span className="rounded-full border border-primary/40 bg-secondary/10 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-slate-200 dark:bg-secondary/20">
             Workforce readiness reimagined
           </span>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
+          <h1 className="max-w-3xl text-slate-100 sm:text-5xl">
             Essential Skills. Positive People. Powerful Teams.
           </h1>
-          <div className="prose prose-lg text-slate-600 prose-p:leading-relaxed prose-a:text-primary max-w-2xl dark:text-slate-200">
+          <div className="prose prose-lg max-w-2xl text-slate-300 prose-p:leading-relaxed prose-a:text-primary dark:text-slate-200">
             <p>
               AI-guided, video-based micro-learning that builds communication, collaboration, and work
               ethic—fast.
@@ -52,10 +52,10 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="space-y-6 rounded-3xl border border-slate-200/10 bg-white/40 px-6 py-10 shadow-[0_25px_60px_-40px_rgba(15,23,42,0.55)] backdrop-blur dark:bg-slate-900/30">
+        <section className="space-y-6 rounded-3xl border border-secondary/30 bg-secondary/10 px-6 py-10 shadow-[0_25px_60px_-40px_rgba(129,140,248,0.45)] backdrop-blur dark:border-secondary/40 dark:bg-secondary/15">
           <div className="text-center">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">Why schools choose POP Learning</h2>
-            <div className="prose prose-sm mx-auto mt-3 max-w-2xl text-slate-600 dark:text-slate-200">
+            <h2 className="text-slate-100">Why schools choose POP Learning</h2>
+            <div className="prose prose-sm mx-auto mt-3 max-w-2xl text-slate-300 dark:text-slate-200">
               <p>Everything you need to nurture employability skills in every classroom.</p>
             </div>
           </div>
@@ -64,7 +64,7 @@ export default function MarketingPage() {
               <Card key={benefit.title} className="h-full">
                 <CardHeader>
                   <CardTitle>{benefit.title}</CardTitle>
-                  <CardDescription className="prose prose-sm text-slate-200/90 prose-p:m-0">
+                  <CardDescription className="prose prose-sm text-slate-300 prose-p:m-0 dark:text-slate-200">
                     {benefit.description}
                   </CardDescription>
                 </CardHeader>
@@ -73,8 +73,8 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200/10 bg-slate-900/80 px-8 py-12 text-center text-white shadow-[0_25px_60px_-40px_rgba(15,23,42,0.7)] backdrop-blur">
-          <h2 className="text-3xl font-semibold tracking-tight">Who it&apos;s for</h2>
+        <section className="rounded-3xl border border-primary/35 bg-primary/15 px-8 py-12 text-center text-slate-100 shadow-[0_25px_60px_-40px_rgba(56,189,248,0.6)] backdrop-blur dark:border-primary/40 dark:bg-primary/20">
+          <h2>Who it&apos;s for</h2>
           <div className="prose prose-lg mx-auto mt-4 max-w-2xl text-slate-200">
             <p>
               Built in partnership with high schools and CTE programs preparing students for the future of work.
@@ -82,10 +82,10 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-3xl border border-slate-200/10 bg-white/50 px-6 py-8 text-center shadow-[0_20px_50px_-40px_rgba(15,23,42,0.55)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left dark:bg-slate-900/30">
+        <section className="flex flex-col gap-4 rounded-3xl border border-secondary/30 bg-secondary/10 px-6 py-8 text-center shadow-[0_20px_50px_-40px_rgba(129,140,248,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left dark:border-secondary/40 dark:bg-secondary/20">
           <div className="space-y-2">
-            <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Ready to launch POP for your learners?</h3>
-            <div className="prose prose-sm text-slate-600 max-w-xl dark:text-slate-200">
+            <h3 className="text-slate-100">Ready to launch POP for your learners?</h3>
+            <div className="prose prose-sm max-w-xl text-slate-300 dark:text-slate-200">
               <p>Get started in minutes with instant access to the full platform.</p>
             </div>
           </div>
