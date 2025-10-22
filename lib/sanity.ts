@@ -65,6 +65,37 @@ export function urlFor(source: string) {
   return getImageBuilder().image(source);
 }
 
+function resolveSanityStudioBaseUrl() {
+  const explicit =
+    process.env.SANITY_STUDIO_BASE_URL ??
+    process.env.NEXT_PUBLIC_SANITY_STUDIO_URL ??
+    process.env.SANITY_STUDIO_URL;
+  if (explicit) {
+    return explicit.replace(/\/$/, "");
+  }
+
+  const { projectId } = getSanityConfig();
+  if (!projectId) {
+    return undefined;
+  }
+
+  return `https://${projectId}.sanity.studio`;
+}
+
+export function getSanityStudioDocumentUrl(docType: string, docId: string): string | undefined {
+  if (!docType || !docId) {
+    return undefined;
+  }
+
+  const baseUrl = resolveSanityStudioBaseUrl();
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  const sanitizedDocId = docId.replace(/^drafts\./, "");
+  return `${baseUrl}/desk/${docType};${sanitizedDocId}`;
+}
+
 type FetchCoursesOptions = {
   limit?: number;
 };
