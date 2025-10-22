@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { PageFadeIn } from "@/components/layout/page-fade-in";
 import { Button } from "@/components/ui/button";
 import { auth, signIn } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -90,7 +91,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   const initialEmailState: EmailSignInFormState = { status: "idle" };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center p-6">
+    <PageFadeIn className="flex min-h-[80vh] items-center justify-center p-6" role="main">
       <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-lg border bg-card p-8 text-center">
         <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
         <div className="space-y-2">
@@ -121,7 +122,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           </p>
         ) : null}
       </div>
-    </div>
+    </PageFadeIn>
   );
 }
 

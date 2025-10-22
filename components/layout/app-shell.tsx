@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ThemeModeToggle } from "./theme-toggle";
+import { PageFadeIn } from "./page-fade-in";
 
 export type SidebarLink = {
   href: string;
@@ -83,7 +84,9 @@ export function AppShell({
       <div className="flex flex-1">
         <DesktopSidebar navItems={navItems} orgName={orgName} />
         <main className="relative flex-1">
-          <div className="container mx-auto max-w-6xl py-10 px-6 lg:px-10">{children}</div>
+          <PageFadeIn className="container mx-auto max-w-6xl py-10 px-6 lg:px-10">
+            {children}
+          </PageFadeIn>
         </main>
       </div>
       <MobileNav navItems={navItems} />
@@ -214,7 +217,7 @@ type NavLinkProps = {
 
 function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
   const className = cn(
-    "inline-flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "inline-flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     condensed ? "flex-1 justify-center" : "w-full justify-start",
     isActive
       ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
