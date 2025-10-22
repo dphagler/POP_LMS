@@ -4,10 +4,16 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const ThemeContext = createContext<Record<string, string> | null>(null);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Record<string, string> | null>(null);
+type ThemeProviderProps = {
+  children: React.ReactNode;
+  initialTheme?: Record<string, string> | null;
+};
+
+export function ThemeProvider({ children, initialTheme = null }: ThemeProviderProps) {
+  const [theme, setTheme] = useState<Record<string, string> | null>(initialTheme);
 
   useEffect(() => {
+    if (theme) return;
     const raw = window.localStorage.getItem("pop-theme") || getCookie("pop-theme");
     if (!raw) return;
     try {
@@ -16,7 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.warn("Failed to parse stored theme", error);
     }
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     if (!theme) return;
