@@ -4,5 +4,5 @@ import { requireUser } from "@/lib/authz";
 
 export default async function ProfilePage() {
   await requireUser();
-  redirect("/app/settings");
+  redirect("/settings");
 }
