@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import type { ChangePasswordFormState } from "./actions";
 
@@ -15,6 +16,10 @@ type ChangePasswordFormProps = {
 export function ChangePasswordForm({ action, initialState }: ChangePasswordFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(action, initialState);
+  const messageId = useId();
+  const hasMessage = Boolean(state.message);
+  const isError = state.status === "error";
+  const describedBy = hasMessage ? messageId : undefined;
 
   useEffect(() => {
     if (state.status === "success") {
@@ -28,43 +33,46 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
         <label htmlFor="currentPassword" className="text-sm font-medium">
           Current password
         </label>
-        <input
+        <Input
           id="currentPassword"
           name="currentPassword"
           type="password"
           required
           autoComplete="current-password"
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           disabled={pending}
+          aria-invalid={isError || undefined}
+          aria-describedby={describedBy}
         />
       </div>
       <div className="space-y-2">
         <label htmlFor="newPassword" className="text-sm font-medium">
           New password
         </label>
-        <input
+        <Input
           id="newPassword"
           name="newPassword"
           type="password"
           required
           autoComplete="new-password"
           minLength={8}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           disabled={pending}
+          aria-invalid={isError || undefined}
+          aria-describedby={describedBy}
         />
       </div>
       <div className="space-y-2">
         <label htmlFor="confirmPassword" className="text-sm font-medium">
           Confirm new password
         </label>
-        <input
+        <Input
           id="confirmPassword"
           name="confirmPassword"
           type="password"
           required
           autoComplete="new-password"
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           disabled={pending}
+          aria-invalid={isError || undefined}
+          aria-describedby={describedBy}
         />
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
@@ -79,6 +87,7 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
       </Button>
       {state.message ? (
         <p
+          id={messageId}
           className={`text-sm ${state.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
           role={state.status === "error" ? "alert" : undefined}
         >

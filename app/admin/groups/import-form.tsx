@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,9 @@ export default function ImportMembersForm({ groupId, action, compact = false }: 
   const formRef = useRef<HTMLFormElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [state, formAction, isPending] = useActionState(action, initialState);
+  const fileInputId = useId();
+  const instructionsId = useId();
+  const errorMessageId = useId();
 
   const layoutClass = compact
     ? "flex flex-col gap-2 sm:flex-row sm:items-center"
@@ -36,29 +40,53 @@ export default function ImportMembersForm({ groupId, action, compact = false }: 
     }
   }, [state.success]);
 
+  const describedByIds = [instructionsId];
+  if (state.formError) {
+    describedByIds.push(errorMessageId);
+  }
+  const describedBy = describedByIds.join(" ") || undefined;
+
   return (
     <div className="space-y-3">
       <form ref={formRef} action={formAction} encType="multipart/form-data" className="space-y-3">
         <input type="hidden" name="groupId" value={groupId} />
-        <div className={cn(layoutClass, "w-full")}> 
+        <div className={cn(layoutClass, "w-full")}>
+          <label htmlFor={fileInputId} className="sr-only">
+            Upload member list CSV
+          </label>
           <Input
             ref={fileInputRef}
+            id={fileInputId}
             type="file"
             name="file"
             accept=".csv,text/csv"
             required
+            disabled={isPending}
+            aria-describedby={describedBy}
+            aria-invalid={state.formError ? true : undefined}
           />
           <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-            {isPending ? "Importing..." : "Import CSV"}
+            {isPending ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Importing…
+              </span>
+            ) : (
+              "Import CSV"
+            )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p id={instructionsId} className="text-xs text-muted-foreground">
           Upload a CSV with <code>email</code> and <code>name</code> columns. Existing users and memberships
           will be reused automatically.
         </p>
       </form>
       {state.formError ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p
+          id={errorMessageId}
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           {state.formError}
         </p>
       ) : null}
