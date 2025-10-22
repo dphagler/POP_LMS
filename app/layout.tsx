@@ -22,6 +22,8 @@ export default async function RootLayout({
 }) {
   const cookieStore = await cookies();
   const rawTheme = cookieStore.get("pop-theme")?.value ?? null;
+  const rawThemeMode = cookieStore.get("pop-theme-mode")?.value ?? null;
+  const initialThemeMode = parseThemeMode(rawThemeMode) ?? "system";
   let initialTheme: Record<string, string> | null = null;
 
   if (rawTheme) {
@@ -42,8 +44,18 @@ export default async function RootLayout({
       ) as CSSProperties)
     : undefined;
 
+  const htmlClassName = initialThemeMode === "dark" ? "dark" : undefined;
+  const htmlThemeModeAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
+  const htmlThemeResolvedAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={htmlClassName}
+      data-theme-mode={htmlThemeModeAttr}
+      data-theme-resolved={htmlThemeResolvedAttr}
+    >
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
@@ -51,7 +63,7 @@ export default async function RootLayout({
         )}
         style={themeStyle}
       >
-        <ThemeProvider initialTheme={initialTheme}>
+        <ThemeProvider initialTheme={initialTheme} initialMode={initialThemeMode}>
           <Suspense fallback={null}>
             <PostHogClient />
           </Suspense>
@@ -60,4 +72,12 @@ export default async function RootLayout({
       </body>
     </html>
   );
+}
+
+function parseThemeMode(value: string | null) {
+  if (!value) return null;
+  if (value === "light" || value === "dark" || value === "system") {
+    return value;
+  }
+  return null;
 }

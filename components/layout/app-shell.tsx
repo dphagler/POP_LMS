@@ -9,6 +9,7 @@ import { signOutAction } from "@/app/actions/sign-out";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ThemeModeToggle } from "./theme-toggle";
 
 export type SidebarLink = {
   href: string;
@@ -153,6 +154,7 @@ function Header({ displayName, menuAvatar, orgName, pageTitle }: HeaderProps) {
           <p className="text-sm font-medium text-muted-foreground">{pageTitle ?? "Page title"}</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
+          <ThemeModeToggle />
           <span className="hidden text-sm font-medium sm:inline" aria-live="polite">
             {displayName}
           </span>
