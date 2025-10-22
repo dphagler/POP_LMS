@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -40,23 +41,17 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
       </div>
       <div className="space-y-4">
         {groups.map((group) => (
-          <section
-            key={group.id}
-            className={cn(
-              "rounded-lg border border-border/60 bg-background/70 shadow-sm",
-              isCompact ? "space-y-4 p-4" : "space-y-6 p-6"
-            )}
-          >
-            <header className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <Card key={group.id}>
+            <CardHeader className="flex flex-col gap-1 pb-0 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-foreground">{group.name}</h3>
+                <CardTitle className="text-lg font-semibold text-foreground">{group.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {group._count.members} member{group._count.members === 1 ? "" : "s"}
                 </p>
               </div>
-            </header>
+            </CardHeader>
 
-            <div className={cn(isCompact ? "space-y-3" : "space-y-4")}>
+            <CardContent className={cn("pt-4", isCompact ? "space-y-3" : "space-y-4")}>
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-foreground">Rename group</h4>
                 <form action={renameGroup} className={formGap}>
@@ -86,8 +81,8 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
                   Delete group
                 </Button>
               </form>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

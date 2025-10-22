@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type SettingsToastMessage = {
@@ -47,14 +48,16 @@ export function SettingsToast({ toast, onDismiss }: SettingsToastProps) {
             <p className="mt-1 text-sm leading-relaxed">{toast.description}</p>
           ) : null}
         </div>
-        <button
+        <Button
           type="button"
           onClick={onDismiss}
-          className="rounded-md p-1 text-current/70 transition hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 p-0 text-current/70 transition hover:text-current focus-visible:ring-primary/50"
           aria-label="Dismiss notification"
         >
           <X className="h-4 w-4" aria-hidden />
-        </button>
+        </Button>
       </div>
     </div>
   );
