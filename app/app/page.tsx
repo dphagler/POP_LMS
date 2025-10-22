@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { CheckCircle2, Clock } from "lucide-react";
 
 export default async function LearnerDashboard() {
   const session = await requireUser();
@@ -34,89 +35,156 @@ export default async function LearnerDashboard() {
 
   const streak = await computeStreak(userId);
   const upNext = lessons[0];
+  const upcomingQueue = lessons.slice(1);
+  const lessonSchedule = upNext ? [upNext, ...upcomingQueue] : upcomingQueue;
   const completion = progresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
-  const total = Math.max(progresses.length, 1);
-  const percent = Math.round((completion / total) * 100);
+  const totalLessons = progresses.length;
+  const percent = totalLessons === 0 ? 0 : Math.round((completion / totalLessons) * 100);
+  const completedLessons = progresses
+    .filter((item) => item.isComplete)
+    .sort((a, b) => a.lesson.title.localeCompare(b.lesson.title))
+    .slice(0, 6);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold">Welcome back, {session.user?.name ?? "Learner"}</h1>
-        <p className="text-sm text-muted-foreground">
-          Keep your streak alive by watching today&apos;s featured lesson.
-        </p>
-      </header>
-
-      <Tabs defaultValue="today" className="w-full">
-        <TabsList>
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="up-next">Up Next</TabsTrigger>
-          <TabsTrigger value="recent">Recently Earned</TabsTrigger>
-        </TabsList>
-        <TabsContent value="today" className="rounded-lg border bg-card">
-          <Card className="border-0 shadow-none">
-            <CardHeader>
-              <CardTitle>Today&apos;s Focus</CardTitle>
-              <CardDescription>Watch your top lesson to maintain momentum.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upNext ? (
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-lg font-semibold">{upNext.title}</p>
-                    <p className="text-sm text-muted-foreground">{upNext.durationS} seconds</p>
+    <div className="grid gap-6 lg:grid-cols-3">
+      <section id="today" className="lg:col-span-1">
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Today&apos;s focus</CardTitle>
+            <CardDescription>Keep your streak alive by watching today&apos;s featured lesson.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Tabs defaultValue="focus" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="focus">Focus</TabsTrigger>
+                <TabsTrigger value="progress">Progress</TabsTrigger>
+              </TabsList>
+              <TabsContent value="focus" className="mt-4 space-y-4">
+                {upNext ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="space-y-1">
+                      <p className="text-base font-semibold leading-tight">{upNext.title}</p>
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" aria-hidden />
+                        {upNext.durationS} seconds
+                      </p>
+                    </div>
+                    <Button asChild>
+                      <Link href={`/app/lesson/${upNext.id}`}>Resume lesson</Link>
+                    </Button>
                   </div>
-                  <Button asChild>
-                    <Link href={`/app/lesson/${upNext.id}`}>Resume lesson</Link>
-                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No lessons assigned yet.</p>
+                )}
+              </TabsContent>
+              <TabsContent value="progress" className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Weekly completion</p>
+                  <Progress value={percent} />
+                  <p className="text-xs text-muted-foreground">
+                    {completion} of {totalLessons} lessons complete
+                  </p>
                 </div>
-              ) : (
-                <p className="text-muted-foreground">No lessons assigned yet.</p>
-              )}
-              <div>
-                <p className="mb-2 text-sm font-medium">Weekly completion</p>
-                <Progress value={percent} />
+                <Badge variant="secondary">Streak: {streak} days</Badge>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="up-next" className="lg:col-span-1">
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Up next</CardTitle>
+            <CardDescription>Stay ahead by previewing what&apos;s coming this week.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {upNext ? (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm font-medium text-muted-foreground">Now playing</p>
+                <p className="text-base font-semibold leading-tight">{upNext.title}</p>
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" aria-hidden />
+                  {upNext.durationS} seconds
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="up-next" className="rounded-lg border bg-card">
-          <Card className="border-0 shadow-none">
-            <CardHeader>
-              <CardTitle>Upcoming lessons</CardTitle>
-              <CardDescription>Stay ahead by previewing what&apos;s next.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {lessons.map((lesson) => (
-                <div key={lesson.id} className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <p className="font-medium">{lesson.title}</p>
-                    <p className="text-xs text-muted-foreground">{lesson.durationS} seconds</p>
+            ) : null}
+            {lessonSchedule.map((lesson) => (
+                <div
+                  key={lesson.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="space-y-1">
+                    <p className="font-medium leading-tight">{lesson.title}</p>
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" aria-hidden />
+                      {lesson.durationS} seconds
+                    </p>
                   </div>
                   <Button variant="ghost" asChild>
                     <Link href={`/app/lesson/${lesson.id}`}>Open</Link>
                   </Button>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="recent" className="rounded-lg border bg-card">
-          <Card className="border-0 shadow-none">
-            <CardHeader>
-              <CardTitle>Badges & streaks</CardTitle>
-              <CardDescription>Celebrate your progress and keep the streak alive.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              <Badge variant="secondary">Streak: {streak} days</Badge>
-              {badges.map((item) => (
-                <Badge key={item.id}>{item.badge.name}</Badge>
-              ))}
-              {badges.length === 0 && <p className="text-sm text-muted-foreground">Earn badges by completing lessons.</p>}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            ))}
+            {lessons.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Your upcoming lessons will appear here once assigned.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="completed" className="lg:col-span-1">
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Completed</CardTitle>
+            <CardDescription>Celebrate wins and review what you&apos;ve finished.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Tabs defaultValue="badges" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="badges">Badges</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+              <TabsContent value="badges" className="mt-4 flex flex-wrap gap-2">
+                <Badge variant="secondary">Streak: {streak} days</Badge>
+                {badges.map((item) => (
+                  <Badge key={item.id}>{item.badge.name}</Badge>
+                ))}
+                {badges.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Earn badges by completing lessons and reflections.
+                  </p>
+                )}
+              </TabsContent>
+              <TabsContent value="activity" className="mt-4 space-y-3">
+                {completedLessons.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium leading-tight">{item.lesson.title}</p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed lesson
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/app/lesson/${item.lesson.id}`}>Review</Link>
+                    </Button>
+                  </div>
+                ))}
+                {completedLessons.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Lessons you finish will show up here for quick review.
+                  </p>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
