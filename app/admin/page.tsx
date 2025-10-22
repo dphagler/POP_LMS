@@ -82,6 +82,17 @@ export default async function AdminDashboard() {
           </Button>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Groups</CardTitle>
+          <CardDescription>Create cohorts and manage CSV roster uploads.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild>
+            <Link href="/admin/groups">Manage groups</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
