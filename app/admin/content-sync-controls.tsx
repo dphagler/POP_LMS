@@ -1,8 +1,11 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 
 type SyncItem = {
@@ -81,6 +84,7 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [summary, setSummary] = useState<SyncSummary | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
 
   useEffect(() => {
     if (!toast) return;
@@ -100,6 +104,9 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
 
     setIsSubmitting(true);
     setToast(null);
+    setSummary(null);
+
+    appendLog(setLogs, `▶ Starting ${dryRun ? "dry run" : "sync"}${allowDeletes ? " (deletes enabled)" : ""}.`);
 
     try {
       const response = await fetch("/api/admin/sync", {
@@ -124,6 +131,7 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
           description: message,
           requestId
         });
+        appendLog(setLogs, `✖ Sync failed${requestId ? ` (request ${requestId})` : ""}: ${message}`);
         return;
       }
 
@@ -136,6 +144,8 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
         description: summaryDescription,
         requestId
       });
+      appendLog(setLogs, `✔ ${dryRun ? "Dry run" : "Sync"} completed${requestId ? ` (request ${requestId})` : ""}.`);
+      formatSummaryLines(payload?.summary).forEach((line) => appendLog(setLogs, line));
     } catch (error) {
       setToast({
         variant: "error",
@@ -143,6 +153,10 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
         description:
           error instanceof Error ? error.message : "An unexpected error occurred while syncing."
       });
+      appendLog(
+        setLogs,
+        `✖ Sync failed: ${error instanceof Error ? error.message : "An unexpected error occurred while syncing."}`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +165,7 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
   const allowDeletesHint = dryRun ? "Disable dry run to enable deletes." : undefined;
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-5">
       {toast ? (
         <div
           role="status"
@@ -193,32 +207,48 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {disabled && disabledReason ? (
-            <p className="text-xs text-muted-foreground">{disabledReason}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Syncs run in the background—feel free to navigate away once submitted.
-            </p>
-          )}
+            <p className="text-xs text-destructive">{disabledReason}</p>
+          ) : null}
           <Button
             type="submit"
             disabled={disabled || isSubmitting}
             aria-disabled={disabled || isSubmitting}
             title={disabled ? disabledReason : undefined}
           >
-            {isSubmitting
-              ? dryRun
-                ? "Running dry run..."
-                : "Syncing..."
-              : dryRun
-                ? "Preview changes"
-                : "Sync from Sanity"}
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {dryRun ? "Running dry run" : "Syncing"}
+              </span>
+            ) : dryRun ? (
+              "Preview changes"
+            ) : (
+              "Sync from Sanity"
+            )}
           </Button>
         </div>
       </form>
 
-      {summary ? <SyncReport summary={summary} /> : null}
+      <LogPanel logs={logs} isSubmitting={isSubmitting} />
+
+      {isSubmitting ? (
+        <Skeleton className="h-36 w-full rounded-xl bg-muted/60" aria-hidden />
+      ) : summary ? (
+        <SyncReport summary={summary} />
+      ) : null}
     </div>
   );
+}
+
+function appendLog(setter: Dispatch<SetStateAction<string[]>>, message: string) {
+  const timestamp = new Date().toLocaleTimeString();
+  setter((previous) => {
+    const next = [...previous, `[${timestamp}] ${message}`];
+    if (next.length > 50) {
+      return next.slice(next.length - 50);
+    }
+    return next;
+  });
 }
 
 const ACTION_DEFINITIONS = [
@@ -322,6 +352,21 @@ function SummarySection({ label, data }: { label: string; data: SyncSummarySecti
   );
 }
 
+function formatSummaryLines(summary?: SyncSummary | null) {
+  if (!summary) return [] as string[];
+
+  const sections = [
+    ["Courses", summary.courses],
+    ["Modules", summary.modules],
+    ["Lessons", summary.lessons],
+  ] as const;
+
+  return sections.map(([label, section]) => {
+    const counts = getSectionCounts(section);
+    return `${label}: ${counts.created} created • ${counts.updated} updated • ${counts.deleted} deleted • ${counts.skipped} skipped`;
+  });
+}
+
 function SyncItemDetails({ item }: { item: SyncItem }) {
   return (
     <span className="flex flex-wrap items-center gap-1 text-foreground">
@@ -396,5 +441,31 @@ function StatusBadge({ action, count }: StatusBadgeProps) {
     <Badge className={`${ACTION_STYLES[action]} ${count === 0 ? "opacity-60" : ""}`}>
       {ACTION_DEFINITIONS.find((definition) => definition.key === action)?.label}: {count}
     </Badge>
+  );
+}
+
+function LogPanel({ logs, isSubmitting }: { logs: string[]; isSubmitting: boolean }) {
+  return (
+    <div
+      className="rounded-xl border border-slate-900/50 bg-slate-950/50 p-4 font-mono text-xs text-slate-200 shadow-inner"
+      aria-live="polite"
+    >
+      <div className="flex max-h-48 flex-col gap-2 overflow-y-auto">
+        {logs.length === 0 ? (
+          <p className="text-slate-500">No sync activity yet.</p>
+        ) : (
+          logs.map((log, index) => (
+            <p key={`${index}-${log}`} className="whitespace-pre-wrap break-words">
+              {log}
+            </p>
+          ))
+        )}
+        {isSubmitting ? (
+          <p className="flex items-center gap-2 text-slate-300">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Processing…
+          </p>
+        ) : null}
+      </div>
+    </div>
   );
 }
