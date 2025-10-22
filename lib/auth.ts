@@ -133,4 +133,10 @@ export const authConfig = {
   },
 } satisfies Parameters<typeof NextAuth>[0];
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+  unstable_update: updateSession,
+} = NextAuth(authConfig);

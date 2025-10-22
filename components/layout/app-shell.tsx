@@ -303,7 +303,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           </p>
         </div>
         <Link
-          href="/app/profile"
+          href="/app/settings"
           role="menuitem"
           className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={() => setOpen(false)}
