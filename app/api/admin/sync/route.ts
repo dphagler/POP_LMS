@@ -1,78 +1,261 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/authz";
-import { fetchPublishedCourses } from "@/lib/sanity";
+import { fetchPublishedCourses, getMissingSanityEnvVars } from "@/lib/sanity";
 import { prisma } from "@/lib/prisma";
 
-export async function POST() {
-  const session = await requireRole("ADMIN");
-  if (!session.user?.orgId) {
-    return NextResponse.json({ error: "Org missing" }, { status: 400 });
+type SummaryCounts = {
+  created: number;
+  updated: number;
+  skipped: number;
+};
+
+type SyncSummary = {
+  courses: SummaryCounts;
+  modules: SummaryCounts;
+  lessons: SummaryCounts;
+};
+
+type SyncRequestBody = {
+  dryRun?: boolean;
+};
+
+async function readJsonBody(request: Request, requestId: string): Promise<SyncRequestBody> {
+  const contentType = request.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      return (await request.json()) as SyncRequestBody;
+    } catch (error) {
+      console.warn({
+        event: "admin.sanity_sync.invalid_json",
+        requestId,
+        message: "Falling back to default payload due to invalid JSON body",
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return {};
+    }
   }
+  return {};
+}
 
-  const courses = await fetchPublishedCourses();
+export async function POST(request: Request) {
+  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  const startedAt = Date.now();
+  let orgId: string | undefined;
 
-  for (const course of courses as any[]) {
-    const courseId = `sanity-${course._id}`;
-    await prisma.course.upsert({
-      where: { id: courseId },
-      update: {
-        title: course.title ?? "Untitled Course",
-        description: course.description ?? null
-      },
-      create: {
-        id: courseId,
-        orgId: session.user.orgId,
-        title: course.title ?? "Untitled Course",
-        description: course.description ?? null
-      }
+  try {
+    const session = await requireRole("ADMIN");
+    orgId = session.user?.orgId ?? undefined;
+
+    if (!orgId) {
+      console.warn({
+        event: "admin.sanity_sync.missing_org",
+        requestId,
+        message: "Organization missing on admin session"
+      });
+      return NextResponse.json({ error: "Organization not found.", requestId }, { status: 400 });
+    }
+
+    const missingEnvVars = getMissingSanityEnvVars();
+    if (missingEnvVars.length > 0) {
+      console.warn({
+        event: "admin.sanity_sync.missing_env",
+        requestId,
+        orgId,
+        missingEnvVars
+      });
+      return NextResponse.json(
+        {
+          error: `Sanity configuration is incomplete. Missing: ${missingEnvVars.join(", ")}`,
+          missingEnvVars,
+          requestId
+        },
+        { status: 400 }
+      );
+    }
+
+    const body = await readJsonBody(request, requestId);
+    const dryRun = Boolean(body?.dryRun);
+    const limit = dryRun ? 5 : undefined;
+
+    console.info({
+      event: "admin.sanity_sync.start",
+      requestId,
+      orgId,
+      dryRun
     });
 
-    if (Array.isArray(course.modules)) {
-      for (const [index, moduleDoc] of course.modules.entries()) {
-        if (!moduleDoc) continue;
-        const moduleId = `sanity-${moduleDoc._id ?? moduleDoc._ref ?? index}`;
-        await prisma.module.upsert({
-          where: { id: moduleId },
-          update: {
-            courseId,
-            title: moduleDoc.title ?? "Untitled Module",
-            order: moduleDoc.order ?? index
-          },
-          create: {
-            id: moduleId,
-            courseId,
-            title: moduleDoc.title ?? "Untitled Module",
-            order: moduleDoc.order ?? index
-          }
-        });
+    const courses = (await fetchPublishedCourses({ limit })) as any[];
 
-        if (Array.isArray(moduleDoc.lessons)) {
-          for (const [lessonIndex, lessonDoc] of moduleDoc.lessons.entries()) {
-            if (!lessonDoc) continue;
-            const lessonId = `sanity-${lessonDoc._id ?? lessonDoc._ref ?? lessonIndex}`;
-            await prisma.lesson.upsert({
-              where: { id: lessonId },
-              update: {
-                moduleId,
-                title: lessonDoc.title ?? "Untitled Lesson",
-                youtubeId: lessonDoc.youtubeId ?? "",
-                durationS: lessonDoc.durationS ?? 0,
-                requiresFullWatch: lessonDoc.requiresFullWatch ?? true
-              },
-              create: {
-                id: lessonId,
-                moduleId,
-                title: lessonDoc.title ?? "Untitled Lesson",
-                youtubeId: lessonDoc.youtubeId ?? "",
-                durationS: lessonDoc.durationS ?? 0,
-                requiresFullWatch: lessonDoc.requiresFullWatch ?? true
-              }
-            });
+    console.info({
+      event: "admin.sanity_sync.fetched",
+      requestId,
+      orgId,
+      dryRun,
+      fetchedCourses: courses.length
+    });
+
+    const summary: SyncSummary = {
+      courses: { created: 0, updated: 0, skipped: 0 },
+      modules: { created: 0, updated: 0, skipped: 0 },
+      lessons: { created: 0, updated: 0, skipped: 0 }
+    };
+
+    for (const course of courses ?? []) {
+      if (!course?._id) {
+        summary.courses.skipped += 1;
+        continue;
+      }
+
+      const courseId = `sanity-${course._id}`;
+      const courseData = {
+        orgId,
+        title: course.title ?? "Untitled Course",
+        description: course.description ?? null
+      };
+      const existingCourse = await prisma.course.findUnique({ where: { id: courseId } });
+
+      if (dryRun) {
+        if (existingCourse) {
+          summary.courses.updated += 1;
+        } else {
+          summary.courses.created += 1;
+        }
+      } else if (existingCourse) {
+        await prisma.course.update({ where: { id: courseId }, data: courseData });
+        summary.courses.updated += 1;
+      } else {
+        await prisma.course.create({ data: { id: courseId, ...courseData } });
+        summary.courses.created += 1;
+      }
+
+      if (!Array.isArray(course.modules)) {
+        continue;
+      }
+
+      for (const [moduleIndex, moduleDoc] of course.modules.entries()) {
+        if (!moduleDoc) {
+          summary.modules.skipped += 1;
+          continue;
+        }
+
+        const moduleKey = moduleDoc._id ?? moduleDoc._ref;
+        if (!moduleKey) {
+          summary.modules.skipped += 1;
+          continue;
+        }
+
+        const moduleId = `sanity-${moduleKey}`;
+        const moduleData = {
+          courseId,
+          title: moduleDoc.title ?? "Untitled Module",
+          order:
+            typeof moduleDoc.order === "number" && Number.isFinite(moduleDoc.order)
+              ? moduleDoc.order
+              : moduleIndex
+        };
+        const existingModule = await prisma.module.findUnique({ where: { id: moduleId } });
+
+        if (dryRun) {
+          if (existingModule) {
+            summary.modules.updated += 1;
+          } else {
+            summary.modules.created += 1;
+          }
+        } else if (existingModule) {
+          await prisma.module.update({ where: { id: moduleId }, data: moduleData });
+          summary.modules.updated += 1;
+        } else {
+          await prisma.module.create({ data: { id: moduleId, ...moduleData } });
+          summary.modules.created += 1;
+        }
+
+        if (!Array.isArray(moduleDoc.lessons)) {
+          continue;
+        }
+
+        for (const [lessonIndex, lessonDoc] of moduleDoc.lessons.entries()) {
+          if (!lessonDoc) {
+            summary.lessons.skipped += 1;
+            continue;
+          }
+
+          const lessonKey = lessonDoc._id ?? lessonDoc._ref;
+          if (!lessonKey) {
+            summary.lessons.skipped += 1;
+            continue;
+          }
+
+          const lessonId = `sanity-${lessonKey}`;
+          const lessonData = {
+            moduleId,
+            title: lessonDoc.title ?? "Untitled Lesson",
+            youtubeId: lessonDoc.youtubeId ?? "",
+            durationS:
+              typeof lessonDoc.durationS === "number" && Number.isFinite(lessonDoc.durationS)
+                ? lessonDoc.durationS
+                : 0,
+            requiresFullWatch:
+              typeof lessonDoc.requiresFullWatch === "boolean"
+                ? lessonDoc.requiresFullWatch
+                : true
+          };
+          const existingLesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+
+          if (dryRun) {
+            if (existingLesson) {
+              summary.lessons.updated += 1;
+            } else {
+              summary.lessons.created += 1;
+            }
+          } else if (existingLesson) {
+            await prisma.lesson.update({ where: { id: lessonId }, data: lessonData });
+            summary.lessons.updated += 1;
+          } else {
+            await prisma.lesson.create({ data: { id: lessonId, ...lessonData } });
+            summary.lessons.created += 1;
           }
         }
       }
     }
-  }
 
-  return NextResponse.json({ ok: true });
+    const durationMs = Date.now() - startedAt;
+
+    console.info({
+      event: "admin.sanity_sync.complete",
+      requestId,
+      orgId,
+      dryRun,
+      summary,
+      durationMs
+    });
+
+    return NextResponse.json({ ok: true, dryRun, summary, requestId });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Forbidden") {
+      console.warn({
+        event: "admin.sanity_sync.forbidden",
+        requestId,
+        orgId,
+        message: "User attempted to access sync without sufficient permissions"
+      });
+      return NextResponse.json({ error: "Forbidden", requestId }, { status: 403 });
+    }
+
+    console.error({
+      event: "admin.sanity_sync.error",
+      requestId,
+      orgId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
+    return NextResponse.json(
+      {
+        error: "Unable to sync content from Sanity at this time. Please try again later.",
+        requestId
+      },
+      { status: 500 }
+    );
+  }
 }
