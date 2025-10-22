@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Clock } from "lucide-react";
 
-import type { Progress as ProgressModel } from "@prisma/client";
+import type { Lesson as LessonModel, Progress as ProgressModel } from "@prisma/client";
 
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
@@ -31,11 +31,31 @@ export default async function LearnerDashboard() {
     throw new Error("Organization not found for learner");
   }
 
-  const [lessons, badges, progresses] = await Promise.all([
-    prisma.lesson.findMany({
-      where: { module: { course: { orgId } } },
-      take: 5,
-      orderBy: { title: "asc" }
+  const [assignments, badges, progresses] = await Promise.all([
+    prisma.assignment.findMany({
+      where: {
+        orgId,
+        enrollments: {
+          some: { userId }
+        }
+      },
+      include: {
+        module: {
+          include: {
+            lessons: true,
+            course: true
+          }
+        },
+        course: {
+          include: {
+            modules: {
+              include: {
+                lessons: true
+              }
+            }
+          }
+        }
+      }
     }),
     prisma.userBadge.findMany({
       where: { userId },
@@ -47,9 +67,29 @@ export default async function LearnerDashboard() {
     })
   ]);
 
+  const lessonMap = new Map<string, LessonModel>();
+
+  assignments.forEach((assignment) => {
+    if (assignment.module) {
+      assignment.module.lessons.forEach((lesson) => {
+        lessonMap.set(lesson.id, lesson);
+      });
+    } else if (assignment.course) {
+      assignment.course.modules.forEach((module) => {
+        module.lessons.forEach((lesson) => {
+          lessonMap.set(lesson.id, lesson);
+        });
+      });
+    }
+  });
+
+  const lessons = Array.from(lessonMap.values());
+  const lessonIds = new Set(lessons.map((lesson) => lesson.id));
+  const relevantProgresses = progresses.filter((item) => lessonIds.has(item.lessonId));
+
   const streak = await computeStreak(userId);
-  const progressByLesson = new Map(progresses.map((item) => [item.lessonId, item]));
-  const sortedLessons = [...lessons].sort((a, b) => {
+  const progressByLesson = new Map(relevantProgresses.map((item) => [item.lessonId, item]));
+  const prioritizedLessons = [...lessons].sort((a, b) => {
     const progressA = progressByLesson.get(a.id);
     const progressB = progressByLesson.get(b.id);
 
@@ -70,12 +110,13 @@ export default async function LearnerDashboard() {
 
     return a.title.localeCompare(b.title);
   });
+  const sortedLessons = prioritizedLessons.slice(0, 5);
   const upNext = sortedLessons[0];
   const lessonSchedule = sortedLessons.slice(1);
-  const completion = progresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
+  const completion = relevantProgresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
   const totalLessons = lessons.length;
   const percent = totalLessons === 0 ? 0 : Math.round((completion / totalLessons) * 100);
-  const completedLessons = progresses
+  const completedLessons = relevantProgresses
     .filter((item) => item.isComplete)
     .sort((a, b) => a.lesson.title.localeCompare(b.lesson.title))
     .slice(0, 6);

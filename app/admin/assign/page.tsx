@@ -1,103 +1,93 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { sendInviteEmail } from "@/lib/email";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import AssignmentPlanner from "./assignment-planner";
 
 export default async function AssignmentPage() {
   const session = await requireRole("ADMIN");
-  const { id: userId, orgId } = session.user;
+  const { orgId } = session.user;
 
   if (!orgId) {
     throw new Error("Organization not found for admin user");
   }
 
-  const adminOrgId: string = orgId;
-
-  const courses = await prisma.course.findMany({
-    where: { orgId: adminOrgId },
-    include: { modules: true }
-  });
-
-  async function createAssignment(formData: FormData) {
-    "use server";
-    const courseId = formData.get("courseId")?.toString();
-    const moduleId = formData.get("moduleId")?.toString() || null;
-    const emails = formData.get("emails")?.toString() ?? "";
-
-    if (!courseId) {
-      throw new Error("Course is required");
-    }
-
-    const assignment = await prisma.assignment.create({
-      data: {
-        orgId: adminOrgId,
-        courseId,
-        moduleId,
-        createdBy: userId
+  const [courses, groups, assignments] = await Promise.all([
+    prisma.course.findMany({
+      where: { orgId },
+      orderBy: { title: "asc" },
+      include: {
+        modules: {
+          orderBy: { order: "asc" },
+          select: { id: true, title: true }
+        }
       }
-    });
+    }),
+    prisma.orgGroup.findMany({
+      where: { orgId },
+      orderBy: { name: "asc" },
+      include: {
+        members: {
+          orderBy: { user: { name: "asc" } },
+          include: {
+            user: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      }
+    }),
+    prisma.assignment.findMany({
+      where: { orgId },
+      include: {
+        enrollments: {
+          select: { userId: true }
+        }
+      }
+    })
+  ]);
 
-    const inviteEmails = emails
-      .split(/\n|,/) // split by newline or comma
-      .map((email) => email.trim())
-      .filter(Boolean);
+  const courseOptions = courses.map((course) => ({
+    id: course.id,
+    title: course.title,
+    modules: course.modules.map((module) => ({
+      id: module.id,
+      title: module.title,
+      courseId: course.id,
+      courseTitle: course.title
+    }))
+  }));
 
-    for (const email of inviteEmails) {
-      await sendInviteEmail(email, `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/signin`);
-    }
+  const groupOptions = groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    members: group.members.map((member) => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email
+    }))
+  }));
 
-    redirect(`/admin/assign?assignment=${assignment.id}`);
-  }
+  const assignmentOptions = assignments.map((assignment) => ({
+    id: assignment.id,
+    courseId: assignment.courseId,
+    moduleId: assignment.moduleId,
+    enrollments: assignment.enrollments
+  }));
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create assignment</CardTitle>
-          <CardDescription>Choose a course or module and invite learners via CSV or paste emails.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={createAssignment} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="courseId">
-                Course
-              </label>
-              <select id="courseId" name="courseId" className="w-full rounded-md border p-2">
-                <option value="">Select a course</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="moduleId">
-                Module (optional)
-              </label>
-              <select id="moduleId" name="moduleId" className="w-full rounded-md border p-2">
-                <option value="">All modules</option>
-                {courses.flatMap((course) =>
-                  course.modules.map((module) => (
-                    <option key={module.id} value={module.id}>
-                      {course.title} — {module.title}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="emails">
-                Invite emails (comma or newline separated)
-              </label>
-              <textarea id="emails" name="emails" rows={4} className="w-full rounded-md border p-2" placeholder="learner1@example.com, learner2@example.com" />
-            </div>
-            <Button type="submit">Create assignment</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
+      <div className="flex flex-col gap-2">
+        <Button variant="ghost" asChild className="w-fit px-0 text-muted-foreground hover:text-foreground">
+          <Link href="/admin">← Back to admin</Link>
+        </Button>
+        <h1 className="text-3xl font-semibold">Assign learning</h1>
+        <p className="text-sm text-muted-foreground">
+          Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
+        </p>
+      </div>
+
+      <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignmentOptions} />
     </div>
   );
 }
