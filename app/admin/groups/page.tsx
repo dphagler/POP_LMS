@@ -47,7 +47,7 @@ export default async function AdminGroupsPage() {
       <Card>
         <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-3xl font-semibold">Groups</CardTitle>
+            <CardTitle className="text-slate-100">Groups</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Organize learners into cohorts and manage their memberships. Import members from CSV to keep rosters in sync.
             </CardDescription>
@@ -64,7 +64,7 @@ export default async function AdminGroupsPage() {
 
       <Card>
         <CardHeader className="space-y-2 pb-4">
-          <CardTitle>Create a new group</CardTitle>
+          <CardTitle className="text-slate-100">Create a new group</CardTitle>
           <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
             Groups help you enroll cohorts into assignments and manage learners at scale.
           </CardDescription>
@@ -84,7 +84,7 @@ export default async function AdminGroupsPage() {
 
       <Card>
         <CardHeader className="space-y-2 pb-4">
-          <CardTitle>Current groups</CardTitle>
+          <CardTitle className="text-slate-100">Current groups</CardTitle>
           <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
             {groups.length === 0
               ? "No groups yet. Create one to get started."
