@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { getMissingSanityEnvVars } from "@/lib/sanity";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ContentSyncControls from "./content-sync-controls";
 
 export default async function AdminDashboard() {
   const session = await requireRole("ADMIN");
@@ -11,6 +13,12 @@ export default async function AdminDashboard() {
   if (!orgId) {
     throw new Error("Organization not found for admin user");
   }
+
+  const missingSanityEnvVars = getMissingSanityEnvVars();
+  const syncDisabledReason =
+    missingSanityEnvVars.length > 0
+      ? `Sanity sync is unavailable. Missing environment variables: ${missingSanityEnvVars.join(", ")}.`
+      : undefined;
 
   const [userCount, courseCount, groupCount] = await Promise.all([
     prisma.user.count({ where: { orgId } }),
@@ -60,9 +68,7 @@ export default async function AdminDashboard() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">Ensure your database stays aligned with your headless CMS.</p>
-          <form action="/api/admin/sync" method="post">
-            <Button type="submit">Sync from Sanity</Button>
-          </form>
+          <ContentSyncControls disabled={Boolean(syncDisabledReason)} disabledReason={syncDisabledReason} />
         </CardContent>
       </Card>
       <Card>
