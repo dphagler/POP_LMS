@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
 import type { ImportResultState } from "./actions";
 
 const initialState: ImportResultState = {
@@ -11,12 +15,17 @@ const initialState: ImportResultState = {
 type ImportMembersFormProps = {
   groupId: string;
   action: (state: ImportResultState, formData: FormData) => Promise<ImportResultState>;
+  compact?: boolean;
 };
 
-export default function ImportMembersForm({ groupId, action }: ImportMembersFormProps) {
+export default function ImportMembersForm({ groupId, action, compact = false }: ImportMembersFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [state, formAction, isPending] = useActionState(action, initialState);
+
+  const layoutClass = compact
+    ? "flex flex-col gap-2 sm:flex-row sm:items-center"
+    : "flex flex-col gap-3 sm:flex-row sm:items-center";
 
   useEffect(() => {
     if (state.success) {
@@ -29,23 +38,17 @@ export default function ImportMembersForm({ groupId, action }: ImportMembersForm
 
   return (
     <div className="space-y-3">
-      <form
-        ref={formRef}
-        action={formAction}
-        encType="multipart/form-data"
-        className="space-y-3"
-      >
+      <form ref={formRef} action={formAction} encType="multipart/form-data" className="space-y-3">
         <input type="hidden" name="groupId" value={groupId} />
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
+        <div className={cn(layoutClass, "w-full")}> 
+          <Input
             ref={fileInputRef}
             type="file"
             name="file"
             accept=".csv,text/csv"
             required
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
           />
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             {isPending ? "Importing..." : "Import CSV"}
           </Button>
         </div>

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { assignToGroupsAction, type AssignToGroupsResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 type ModuleOption = {
   id: string;
@@ -64,6 +67,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
   const [result, setResult] = useState<AssignToGroupsResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [density, setDensity] = useState<DataDensity>("comfortable");
 
   const moduleOptions = useMemo(() =>
     courses.flatMap((course) =>
@@ -188,45 +192,40 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
     });
   };
 
+  const isCompact = density === "compact";
+  const groupListClasses = cn("grid", isCompact ? "gap-2" : "gap-3", groups.length > 1 ? "sm:grid-cols-2" : "");
+  const memberListSpacing = isCompact ? "space-y-1.5" : "space-y-2";
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Choose what to assign</CardTitle>
-          <CardDescription>Select a course or module, then pick the groups that should receive it.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Assignment scope</p>
-            <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="assignment-mode"
-                  value="course"
-                  checked={mode === "course"}
-                  onChange={() => setMode("course")}
-                />
-                Course
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="assignment-mode"
-                  value="module"
-                  checked={mode === "module"}
-                  onChange={() => setMode("module")}
-                />
-                Module
-              </label>
-            </div>
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="space-y-4">
+          <div className="space-y-1">
+            <CardTitle>Choose what to assign</CardTitle>
+            <CardDescription>Select a course or module, then pick the groups that should receive it.</CardDescription>
           </div>
-
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-foreground">Assignment scope</legend>
+            <div className="flex flex-wrap gap-2">
+              <ScopeToggleButton
+                active={mode === "course"}
+                label="Course"
+                description="Enroll the full course and its modules."
+                onClick={() => setMode("course")}
+              />
+              <ScopeToggleButton
+                active={mode === "module"}
+                label="Module"
+                description="Target a single module within a course."
+                onClick={() => setMode("module")}
+              />
+            </div>
+          </fieldset>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {mode === "course" ? (
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="course-select">
-                Course
-              </label>
+              <Label htmlFor="course-select">Course</Label>
               <select
                 id="course-select"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -242,9 +241,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="module-select">
-                Module
-              </label>
+              <Label htmlFor="module-select">Module</Label>
               <select
                 id="module-select"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -262,27 +259,44 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Select groups</CardTitle>
-          <CardDescription>Members from the selected groups will be enrolled if they are not already assigned.</CardDescription>
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle>Select groups</CardTitle>
+            <CardDescription>Members from the selected groups will be enrolled if they are not already assigned.</CardDescription>
+          </div>
+          {groups.length > 0 ? (
+            <DataDensityToggle
+              density={density}
+              onDensityChange={setDensity}
+              className="sm:mt-1"
+            />
+          ) : null}
         </CardHeader>
         <CardContent className="space-y-4">
           {groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">No groups available. Create a group first to assign content.</p>
           ) : (
-            <div className="grid gap-3">
+            <div className={groupListClasses}>
               {groups.map((group) => (
-                <label key={group.id} className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm shadow-sm">
+                <label
+                  key={group.id}
+                  className={cn(
+                    "flex items-start rounded-md border border-border/60 bg-background/60 shadow-sm transition hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+                    isCompact ? "gap-2 p-2 text-sm" : "gap-3 p-3 text-sm"
+                  )}
+                >
                   <input
                     type="checkbox"
-                    className="mt-1"
+                    className="mt-1 h-4 w-4 rounded border border-input"
                     checked={selectedGroupIds.includes(group.id)}
                     onChange={() => handleGroupToggle(group.id)}
                   />
-                  <span>
-                    <span className="block font-medium">{group.name}</span>
-                    <span className="text-xs text-muted-foreground">{group.members.length} member{group.members.length === 1 ? "" : "s"}</span>
+                  <span className="space-y-1">
+                    <span className="block font-medium text-foreground">{group.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {group.members.length} member{group.members.length === 1 ? "" : "s"}
+                    </span>
                   </span>
                 </label>
               ))}
@@ -291,7 +305,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle>Preview enrollment</CardTitle>
           <CardDescription>Double-check who will gain access before assigning.</CardDescription>
@@ -315,23 +329,42 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           </div>
 
           {preview.newMembers.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium">Learners gaining access</p>
-              <ul className="space-y-1 text-sm">
-                {preview.newMembers.map((member) => (
-                  <li key={member.id} className="rounded border border-border/40 bg-muted/40 px-3 py-2">
-                    {formatMemberLabel(member)}
-                  </li>
-                ))}
-              </ul>
+              <div className="max-h-64 overflow-y-auto rounded-md border border-border/40 bg-muted/30 p-2">
+                <ul className={cn("flex flex-col", memberListSpacing)}>
+                  {preview.newMembers.map((member) => (
+                    <li
+                      key={member.id}
+                      className={cn(
+                        "rounded border border-border/40 bg-background/80 px-3 text-sm",
+                        isCompact ? "py-1.5" : "py-2"
+                      )}
+                    >
+                      {formatMemberLabel(member)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No new learners to enroll based on the current selection.</p>
           )}
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
           {result ? (
-            <div className="rounded-md border border-border/40 bg-muted/40 p-3 text-sm">
+            <div
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm",
+                result.enrollmentsCreated > 0
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-900"
+                  : "border-sky-500/40 bg-sky-500/10 text-sky-900"
+              )}
+            >
               {result.enrollmentsCreated > 0 ? (
                 <p>
                   Enrolled {result.enrollmentsCreated} learner{result.enrollmentsCreated === 1 ? "" : "s"}. {result.alreadyEnrolled} were already enrolled.
@@ -350,5 +383,31 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+type ScopeToggleButtonProps = {
+  active: boolean;
+  label: string;
+  description: string;
+  onClick: () => void;
+};
+
+function ScopeToggleButton({ active, label, description, onClick }: ScopeToggleButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-w-[140px] max-w-xs flex-1 flex-col gap-1 rounded-md border px-3 py-2 text-left text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto",
+        active
+          ? "border-primary bg-primary/10"
+          : "border-border/60 bg-background hover:border-primary/60 hover:bg-muted/40"
+      )}
+      aria-pressed={active}
+    >
+      <span className={cn("font-medium", active ? "text-primary" : "text-foreground")}>{label}</span>
+      <span className="text-xs text-muted-foreground">{description}</span>
+    </button>
   );
 }
