@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide-react";
@@ -7,6 +8,7 @@ import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
+import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 
 const benefits = [
   {
@@ -35,9 +37,31 @@ const benefits = [
   },
 ];
 
+const TOAST_AUTO_DISMISS_MS = 4000;
+
 export default function MarketingPage() {
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedMessage = sessionStorage.getItem(SIGN_OUT_TOAST_STORAGE_KEY);
+    if (storedMessage) {
+      setToastMessage(storedMessage);
+      sessionStorage.removeItem(SIGN_OUT_TOAST_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(() => setToastMessage(null), TOAST_AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  const dismissToast = () => setToastMessage(null);
+
   return (
     <PageFadeIn className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50" role="main">
+      <SignedOutToast message={toastMessage} onDismiss={dismissToast} />
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
           className="absolute left-1/2 top-32 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-to-r from-sky-400/60 via-fuchsia-400/50 to-amber-300/40 blur-3xl"
@@ -185,5 +209,33 @@ export default function MarketingPage() {
         </div>
       </footer>
     </PageFadeIn>
+  );
+}
+
+type SignedOutToastProps = {
+  message: string | null;
+  onDismiss: () => void;
+};
+
+function SignedOutToast({ message, onDismiss }: SignedOutToastProps) {
+  if (!message) return null;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="pointer-events-auto fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/20 bg-slate-900/90 px-4 py-2 text-sm font-medium text-white shadow-xl backdrop-blur"
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="rounded-full border border-white/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-white hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        aria-label="Dismiss notification"
+      >
+        Dismiss
+      </button>
+    </div>
   );
 }

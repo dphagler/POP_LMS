@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import type { FocusEvent as ReactFocusEvent, ReactNode } from "react";
 
 import { signOutAction } from "@/app/actions/sign-out";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
-import { ThemeModeToggle } from "./theme-toggle";
 import { PageFadeIn } from "./page-fade-in";
+import { ThemeModeToggle } from "./theme-toggle";
 
 export type SidebarLink = {
   href: string;
@@ -240,21 +242,37 @@ type UserMenuAvatarProps = {
 function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const menuPanelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const firstItemRef = useRef<HTMLAnchorElement | null>(null);
+  const router = useRouter();
+
+  const closeMenu = useCallback(
+    (options?: { focusTrigger?: boolean }) => {
+      setOpen(false);
+      if (options?.focusTrigger) {
+        setTimeout(() => {
+          triggerRef.current?.focus();
+        }, 0);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!open) return;
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
-        setOpen(false);
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(event.target as Node)) {
+        closeMenu();
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        closeMenu({ focusTrigger: true });
       }
     };
 
@@ -265,19 +283,43 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
+  }, [closeMenu, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const focusTarget = firstItemRef.current ?? menuPanelRef.current?.querySelector<HTMLElement>("[role='menuitem']");
+    focusTarget?.focus();
   }, [open]);
 
   const toggleMenu = () => setOpen((previous) => !previous);
 
   const handleSignOut = () => {
-    setOpen(false);
+    closeMenu();
     startTransition(async () => {
-      await signOutAction();
+      try {
+        await signOutAction();
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(SIGN_OUT_TOAST_STORAGE_KEY, "Signed out");
+        }
+        router.push("/");
+        router.refresh();
+      } catch (error) {
+        console.error("Failed to sign out", error);
+      }
     });
   };
 
+  const handleMenuBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
+    const nextFocus = event.relatedTarget as Node | null;
+    if (!menuPanelRef.current) return;
+    if (!nextFocus || !menuPanelRef.current.contains(nextFocus)) {
+      closeMenu();
+    }
+  };
+
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative" ref={containerRef}>
       <button
         type="button"
         onClick={toggleMenu}
@@ -285,6 +327,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         aria-expanded={open}
         aria-controls="user-menu"
         className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        ref={triggerRef}
       >
         <Avatar className="h-10 w-10">
           <AvatarImage src={image ?? undefined} alt={name} />
@@ -299,6 +342,8 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           "absolute right-0 mt-3 w-52 origin-top-right rounded-md border bg-popover p-1 text-sm shadow-lg outline-none",
           open ? "block" : "hidden"
         )}
+        ref={menuPanelRef}
+        onBlur={handleMenuBlur}
       >
         <div className="px-3 py-2">
           <p className="text-xs text-muted-foreground">Signed in as</p>
@@ -307,10 +352,11 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           </p>
         </div>
         <Link
-          href="/app/settings"
+          href="/settings"
           role="menuitem"
           className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          onClick={() => setOpen(false)}
+          onClick={() => closeMenu()}
+          ref={firstItemRef}
         >
           Profile &amp; settings
         </Link>
