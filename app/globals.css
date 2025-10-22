@@ -157,42 +157,20 @@
   }
 
   body {
-    font-family: theme("fontFamily.sans");
-    font-size: theme("fontSize.sm");
-    line-height: theme("lineHeight.6");
-    color: var(--body-foreground);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    @apply font-sans text-sm leading-6 text-slate-300 antialiased dark:text-slate-200;
     background-color: hsl(var(--background));
   }
 
-  h1,
-  h2,
-  h3 {
-    color: var(--heading-foreground);
-  }
-
   h1 {
-    font-family: theme("fontFamily.sans");
-    font-size: theme("fontSize.4xl");
-    font-weight: theme("fontWeight.bold");
-    letter-spacing: theme("letterSpacing.tight");
-    line-height: theme("lineHeight.tight");
+    @apply font-sans text-4xl font-bold tracking-tight;
   }
 
   h2 {
-    font-family: theme("fontFamily.sans");
-    font-size: theme("fontSize.2xl");
-    font-weight: theme("fontWeight.semibold");
-    line-height: theme("lineHeight.snug");
+    @apply font-sans text-2xl font-semibold;
   }
 
   h3 {
-    font-family: theme("fontFamily.sans");
-    font-size: theme("fontSize.lg");
-    font-weight: theme("fontWeight.medium");
-    line-height: theme("lineHeight.relaxed");
+    @apply font-sans text-lg font-medium;
   }
 }
 
