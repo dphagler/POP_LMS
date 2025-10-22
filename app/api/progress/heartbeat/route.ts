@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const session = await requireUser();
     const { id: userId, orgId } = session.user;
     const body = await request.json();
-    const { lessonId, currentTime, duration, isVisible } = body ?? {};
+    const { lessonId, currentTime, duration, isVisible, recordedAt, final } = body ?? {};
 
     if (!lessonId || typeof currentTime !== "number" || typeof duration !== "number") {
       logger.warn({
@@ -37,6 +37,13 @@ export async function POST(request: Request) {
     assertSameOrg(lesson.module.course.orgId, orgId);
 
     const now = new Date();
+    const recordedDate =
+      typeof recordedAt === "number" && Number.isFinite(recordedAt)
+        ? new Date(recordedAt)
+        : null;
+    const heartbeatTimestamp =
+      recordedDate && !Number.isNaN(recordedDate.getTime()) ? recordedDate : now;
+    const effectiveTimestamp = heartbeatTimestamp > now ? now : heartbeatTimestamp;
     const clampedDuration = Math.max(lesson.durationS, duration, 1);
     const safeCurrent = Math.max(0, Math.min(Math.floor(currentTime), clampedDuration));
 
@@ -44,28 +51,52 @@ export async function POST(request: Request) {
       where: { userId, lessonId: lesson.id }
     });
 
-    const watchedSeconds = Math.max(existing?.watchedSeconds ?? 0, safeCurrent);
+    const previousWatched = existing?.watchedSeconds ?? 0;
+    const lastHeartbeatAt = existing?.lastHeartbeatAt ?? null;
+    const targetAdvance = safeCurrent - previousWatched;
+    const shouldCountProgress = isVisible !== false || final === true;
+
+    let nextWatched = previousWatched;
+
+    if (targetAdvance > 0 && shouldCountProgress) {
+      if (!lastHeartbeatAt) {
+        nextWatched = safeCurrent;
+      } else {
+        const secondsSinceLast = Math.max(
+          0,
+          Math.round((effectiveTimestamp.getTime() - lastHeartbeatAt.getTime()) / 1000)
+        );
+        const maxAdvance = Math.max(1, secondsSinceLast + 2);
+        const allowedAdvance = Math.min(targetAdvance, maxAdvance);
+        nextWatched = previousWatched + allowedAdvance;
+      }
+    }
+
+    nextWatched = Math.max(0, Math.min(nextWatched, clampedDuration, safeCurrent));
+
+    const nextHeartbeatAt =
+      lastHeartbeatAt && lastHeartbeatAt > effectiveTimestamp ? lastHeartbeatAt : effectiveTimestamp;
 
     const progress = existing
       ? await prisma.progress.update({
           where: { id: existing.id },
           data: {
-            watchedSeconds,
-            lastHeartbeatAt: now
+            watchedSeconds: nextWatched,
+            lastHeartbeatAt: nextHeartbeatAt
           }
         })
       : await prisma.progress.create({
           data: {
             userId,
             lessonId: lesson.id,
-            watchedSeconds,
-            lastHeartbeatAt: now
+            watchedSeconds: nextWatched,
+            lastHeartbeatAt: nextHeartbeatAt
           }
         });
 
     let isComplete = progress.isComplete;
     const threshold = Math.round(clampedDuration * 0.95);
-    if (lesson.requiresFullWatch && watchedSeconds >= threshold && isVisible !== false) {
+    if (lesson.requiresFullWatch && progress.watchedSeconds >= threshold && isVisible !== false) {
       isComplete = true;
     }
 
@@ -77,7 +108,12 @@ export async function POST(request: Request) {
       await computeStreak(userId);
     }
 
-    return NextResponse.json({ ok: true, watchedSeconds, isComplete, requestId });
+    return NextResponse.json({
+      ok: true,
+      watchedSeconds: progress.watchedSeconds,
+      isComplete,
+      requestId
+    });
   } catch (error) {
     if (error instanceof SyntaxError) {
       logger.warn({
