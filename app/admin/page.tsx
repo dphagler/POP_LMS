@@ -27,13 +27,27 @@ export default async function AdminDashboard() {
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold">Organization overview</h1>
-        <p className="text-sm text-muted-foreground">Manage learners, assignments, and sync content from Sanity.</p>
-      </header>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-3xl font-semibold">Organization overview</CardTitle>
+            <CardDescription>
+              Manage learners, assignments, and sync content from Sanity.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="h-9">
+              <Link href="/admin/assign">Assign learning</Link>
+            </Button>
+            <Button asChild variant="outline" className="h-9">
+              <Link href="/admin/groups">Manage groups</Link>
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle>Learners</CardTitle>
             <CardDescription>Active members across your organization.</CardDescription>
@@ -42,7 +56,7 @@ export default async function AdminDashboard() {
             <p className="text-3xl font-semibold">{userCount}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle>Courses</CardTitle>
             <CardDescription>Courses published to your learners.</CardDescription>
@@ -51,7 +65,7 @@ export default async function AdminDashboard() {
             <p className="text-3xl font-semibold">{courseCount}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle>Groups</CardTitle>
             <CardDescription>Peer or cohort groups you&apos;ve created.</CardDescription>
@@ -61,7 +75,7 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-      <Card>
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle>Content sync</CardTitle>
           <CardDescription>Pull the latest courses, modules, and lessons from Sanity.</CardDescription>
@@ -71,39 +85,41 @@ export default async function AdminDashboard() {
           <ContentSyncControls disabled={Boolean(syncDisabledReason)} disabledReason={syncDisabledReason} />
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Assignments</CardTitle>
-          <CardDescription>Enroll learners into modules with one click.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/admin/assign">Create assignment</Link>
-          </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics</CardTitle>
-          <CardDescription>Track assignments, active learners, and completion rates.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild variant="outline">
-            <Link href="/admin/analytics">View analytics snapshot</Link>
-          </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Groups</CardTitle>
-          <CardDescription>Create cohorts and manage CSV roster uploads.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/admin/groups">Manage groups</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader>
+            <CardTitle>Assignments</CardTitle>
+            <CardDescription>Enroll learners into modules with one click.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/admin/assign">Create assignment</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader>
+            <CardTitle>Analytics</CardTitle>
+            <CardDescription>Track assignments, active learners, and completion rates.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href="/admin/analytics">View analytics snapshot</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader>
+            <CardTitle>Groups</CardTitle>
+            <CardDescription>Create cohorts and manage CSV roster uploads.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/admin/groups">Manage groups</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

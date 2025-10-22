@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AssignmentPlanner from "./assignment-planner";
 
 export default async function AssignmentPage() {
@@ -76,16 +77,24 @@ export default async function AssignmentPage() {
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-      <div className="flex flex-col gap-2">
-        <Button variant="ghost" asChild className="w-fit px-0 text-muted-foreground hover:text-foreground">
-          <Link href="/admin">← Back to admin</Link>
-        </Button>
-        <h1 className="text-3xl font-semibold">Assign learning</h1>
-        <p className="text-sm text-muted-foreground">
-          Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-3xl font-semibold">Assign learning</CardTitle>
+            <CardDescription>
+              Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            asChild
+            className="h-9 w-full justify-start px-0 text-muted-foreground hover:text-foreground sm:w-auto"
+          >
+            <Link href="/admin">← Back to admin</Link>
+          </Button>
+        </CardHeader>
+      </Card>
 
       <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignmentOptions} />
     </div>

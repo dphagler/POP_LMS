@@ -2,6 +2,8 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 type SyncItem = {
   id: string;
@@ -146,8 +148,10 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
     }
   }
 
+  const allowDeletesHint = dryRun ? "Disable dry run to enable deletes." : undefined;
+
   return (
-    <div className="flex flex-col items-start gap-3 sm:items-end sm:text-right">
+    <div className="flex w-full flex-col gap-4">
       {toast ? (
         <div
           role="status"
@@ -167,52 +171,50 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
         </div>
       ) : null}
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
-      >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border border-gray-300"
-              checked={dryRun}
-              onChange={(event) => setDryRun(event.target.checked)}
-              disabled={isSubmitting}
-            />
-            Dry run first 5 documents
-          </label>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border border-gray-300"
-              checked={allowDeletes}
-              onChange={(event) => setAllowDeletes(event.target.checked)}
-              disabled={isSubmitting || dryRun}
-              title={dryRun ? "Disable dry run to enable deletes" : undefined}
-            />
-            Allow deletes (remove missing items)
-          </label>
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+        <div className="grid gap-3 sm:max-w-md">
+          <ToggleRow
+            id="dry-run"
+            label="Dry run"
+            description="Preview the first five documents without writing changes."
+            checked={dryRun}
+            onCheckedChange={setDryRun}
+            disabled={isSubmitting}
+          />
+          <ToggleRow
+            id="allow-deletes"
+            label="Allow deletes"
+            description="Remove content that was deleted in Sanity from the database."
+            checked={allowDeletes}
+            onCheckedChange={setAllowDeletes}
+            disabled={isSubmitting || dryRun}
+            hint={allowDeletesHint}
+          />
         </div>
-        <Button
-          type="submit"
-          disabled={disabled || isSubmitting}
-          aria-disabled={disabled || isSubmitting}
-          title={disabled ? disabledReason : undefined}
-        >
-          {isSubmitting
-            ? dryRun
-              ? "Running dry run..."
-              : "Syncing..."
-            : dryRun
-              ? "Preview changes"
-              : "Sync from Sanity"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {disabled && disabledReason ? (
+            <p className="text-xs text-muted-foreground">{disabledReason}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Syncs run in the background—feel free to navigate away once submitted.
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={disabled || isSubmitting}
+            aria-disabled={disabled || isSubmitting}
+            title={disabled ? disabledReason : undefined}
+          >
+            {isSubmitting
+              ? dryRun
+                ? "Running dry run..."
+                : "Syncing..."
+              : dryRun
+                ? "Preview changes"
+                : "Sync from Sanity"}
+          </Button>
+        </div>
       </form>
-
-      {disabled && disabledReason ? (
-        <p className="text-xs text-muted-foreground">{disabledReason}</p>
-      ) : null}
 
       {summary ? <SyncReport summary={summary} /> : null}
     </div>
@@ -226,7 +228,25 @@ const ACTION_DEFINITIONS = [
   { key: "skipped", label: "Skipped" }
 ] as const satisfies ReadonlyArray<{ key: keyof SyncSummarySection; label: string }>;
 
+const ACTION_STYLES: Record<keyof SyncSummarySection, string> = {
+  created: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  updated: "border-sky-200 bg-sky-50 text-sky-900",
+  deleted: "border-rose-200 bg-rose-50 text-rose-900",
+  skipped: "border-amber-200 bg-amber-50 text-amber-900"
+};
+
 function SyncReport({ summary }: { summary: SyncSummary }) {
+  const totals = ACTION_DEFINITIONS.reduce(
+    (acc, action) => {
+      acc[action.key] =
+        summary.courses[action.key].length +
+        summary.modules[action.key].length +
+        summary.lessons[action.key].length;
+      return acc;
+    },
+    { created: 0, updated: 0, deleted: 0, skipped: 0 } as Record<keyof SyncSummarySection, number>
+  );
+
   const sections = [
     { label: "Courses", data: summary.courses },
     { label: "Modules", data: summary.modules },
@@ -234,11 +254,19 @@ function SyncReport({ summary }: { summary: SyncSummary }) {
   ] as const;
 
   return (
-    <div className="w-full self-stretch rounded-md border border-border/60 bg-background/60 p-4 text-left shadow-sm">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Sync report
-      </h3>
-      <div className="mt-3 grid gap-4">
+    <div className="w-full self-stretch rounded-lg border border-border/60 bg-card/60 p-4 text-left shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Sync report
+        </h3>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <StatusBadge action="created" count={totals.created} />
+          <StatusBadge action="updated" count={totals.updated} />
+          <StatusBadge action="deleted" count={totals.deleted} />
+          <StatusBadge action="skipped" count={totals.skipped} />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-4">
         {sections.map((section) => (
           <SummarySection key={section.label} label={section.label} data={section.data} />
         ))}
@@ -252,12 +280,15 @@ function SummarySection({ label, data }: { label: string; data: SyncSummarySecti
   const totalEntries = ACTION_DEFINITIONS.reduce((acc, action) => acc + data[action.key].length, 0);
 
   return (
-    <section className="rounded-md border border-border/50 bg-card/60 p-3">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <section className="rounded-md border border-border/50 bg-background/70 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h4 className="font-semibold text-foreground">{label}</h4>
-        <p className="text-xs text-muted-foreground">
-          Created {counts.created} · Updated {counts.updated} · Deleted {counts.deleted} · Skipped {counts.skipped}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <StatusBadge action="created" count={counts.created} />
+          <StatusBadge action="updated" count={counts.updated} />
+          <StatusBadge action="deleted" count={counts.deleted} />
+          <StatusBadge action="skipped" count={counts.skipped} />
+        </div>
       </div>
 
       {totalEntries === 0 ? (
@@ -311,5 +342,59 @@ function SyncItemDetails({ item }: { item: SyncItem }) {
       ) : null}
       {item.reason ? <span className="text-xs text-muted-foreground">— {item.reason}</span> : null}
     </span>
+  );
+}
+
+type ToggleRowProps = {
+  id: string;
+  label: string;
+  description?: string;
+  hint?: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+};
+
+function ToggleRow({ id, label, description, hint, checked, onCheckedChange, disabled }: ToggleRowProps) {
+  const descriptionId = description ? `${id}-description` : undefined;
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = [descriptionId, hintId].filter(Boolean).join(" ") || undefined;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/40 p-3 shadow-sm">
+      <div className="flex min-w-0 flex-col gap-1 text-left">
+        <p id={`${id}-label`} className="text-sm font-medium text-foreground">
+          {label}
+        </p>
+        {description ? (
+          <p id={descriptionId} className="text-xs text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+        {hint ? (
+          <p id={hintId} className="text-xs text-muted-foreground">{hint}</p>
+        ) : null}
+      </div>
+      <Switch
+        aria-labelledby={`${id}-label`}
+        aria-describedby={describedBy}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+type StatusBadgeProps = {
+  action: keyof SyncSummarySection;
+  count: number;
+};
+
+function StatusBadge({ action, count }: StatusBadgeProps) {
+  return (
+    <Badge className={`${ACTION_STYLES[action]} ${count === 0 ? "opacity-60" : ""}`}>
+      {ACTION_DEFINITIONS.find((definition) => definition.key === action)?.label}: {count}
+    </Badge>
   );
 }
