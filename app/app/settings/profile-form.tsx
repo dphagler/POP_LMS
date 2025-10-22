@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 import { type UpdateProfileFormState } from "./actions";
 import { SettingsToast, type SettingsToastMessage } from "./settings-toast";
@@ -172,7 +172,7 @@ export function ProfileSettingsForm({
               <label htmlFor={avatarInputId} className="sr-only">
                 Upload profile photo
               </label>
-              <input
+              <Input
                 ref={fileInputRef}
                 id={avatarInputId}
                 name="avatar"
@@ -180,10 +180,7 @@ export function ProfileSettingsForm({
                 accept="image/*"
                 onChange={handleFileChange}
                 disabled={pending}
-                className={cn(
-                  "block min-w-[220px] text-sm file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground file:hover:bg-primary/90",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                )}
+                className="min-w-[220px]"
                 aria-describedby={avatarDescribedBy}
                 aria-invalid={hasError || undefined}
               />
@@ -204,7 +201,7 @@ export function ProfileSettingsForm({
           <label htmlFor="displayName" className="text-sm font-medium">
             Display name
           </label>
-          <input
+          <Input
             id="displayName"
             name="displayName"
             value={displayName}
@@ -212,7 +209,6 @@ export function ProfileSettingsForm({
             maxLength={80}
             autoComplete="name"
             required
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             disabled={pending}
             aria-describedby={displayNameDescribedBy}
             aria-invalid={hasError || undefined}

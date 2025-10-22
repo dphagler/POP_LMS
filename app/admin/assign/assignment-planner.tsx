@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { assignToGroupsAction, type AssignToGroupsResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -228,9 +229,8 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           {mode === "course" ? (
             <div className="space-y-2">
               <Label htmlFor="course-select">Course</Label>
-              <select
+              <Select
                 id="course-select"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={selectedCourseId}
                 onChange={(event) => setSelectedCourseId(event.target.value)}
               >
@@ -239,14 +239,13 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                     {course.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="module-select">Module</Label>
-              <select
+              <Select
                 id="module-select"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={selectedModuleId}
                 onChange={(event) => setSelectedModuleId(event.target.value)}
               >
@@ -255,7 +254,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                     {module.courseTitle} — {module.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
         </CardContent>
@@ -401,19 +400,18 @@ type ScopeToggleButtonProps = {
 
 function ScopeToggleButton({ active, label, description, onClick }: ScopeToggleButtonProps) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
+      variant={active ? "primary" : "outline"}
       className={cn(
-        "flex min-w-[140px] max-w-xs flex-1 flex-col gap-1 rounded-xl border border-slate-200/10 bg-white/10 px-3 py-2 text-left text-sm shadow-sm backdrop-blur transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto dark:border-slate-800/40 dark:bg-slate-900/20",
-        active
-          ? "border-primary/40 bg-primary/10"
-          : "hover:border-slate-200/40 hover:bg-white/20 dark:hover:bg-slate-900/30"
+        "min-w-[140px] max-w-xs flex flex-1 flex-col items-start gap-1 whitespace-normal text-left text-sm sm:w-auto",
+        "h-auto px-4 py-3"
       )}
       aria-pressed={active}
     >
-      <span className={cn("font-medium", active ? "text-primary" : "text-foreground")}>{label}</span>
-      <span className="text-xs text-muted-foreground">{description}</span>
-    </button>
+      <span className={cn("font-semibold", active ? "text-primary-foreground" : "text-foreground")}>{label}</span>
+      <span className={cn("text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{description}</span>
+    </Button>
   );
 }

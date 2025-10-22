@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
 import { captureError } from "@/lib/client-error-reporting";
 
 export default function GlobalError({
@@ -33,19 +35,21 @@ export default function GlobalError({
             out.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
+            <Button
               type="button"
               onClick={reset}
-              className="rounded-md bg-white px-5 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              variant="secondary"
+              className="bg-white text-neutral-900 hover:bg-neutral-200 focus-visible:ring-white/70 focus-visible:ring-offset-neutral-950"
             >
               Try again
-            </button>
-            <Link
-              href="/"
-              className="rounded-md border border-white/30 px-5 py-2 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            </Button>
+            <Button
+              variant="outline"
+              asChild
+              className="border-white/40 text-white hover:border-white hover:bg-white/10 focus-visible:ring-white/70 focus-visible:ring-offset-neutral-950"
             >
-              Go home
-            </Link>
+              <Link href="/">Go home</Link>
+            </Button>
           </div>
           {error?.digest ? (
             <p className="text-xs text-neutral-500">Error reference: {error.digest}</p>
