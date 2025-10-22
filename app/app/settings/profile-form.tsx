@@ -163,7 +163,7 @@ export function ProfileSettingsForm({
           </Avatar>
           <div className="flex-1 space-y-3">
             <div>
-              <h3 className="text-slate-100">Profile photo</h3>
+              <h3 className="text-balance">Profile photo</h3>
               <p id={avatarDescriptionId} className="text-sm text-muted-foreground">
                 Use a square image (recommended 240px or larger). PNG or JPG files up to 4 MB are supported.
               </p>

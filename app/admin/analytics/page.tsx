@@ -39,7 +39,7 @@ export default async function AdminAnalyticsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-slate-100">Analytics snapshot</h1>
+        <h1 className="text-balance">Analytics snapshot</h1>
         <p className="text-sm text-muted-foreground">
           Review cohort health at a glance. Metrics update when assignments or learner progress changes.
         </p>

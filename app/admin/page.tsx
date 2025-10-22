@@ -31,7 +31,7 @@ export default async function AdminDashboard() {
       <Card>
         <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-slate-100">Organization overview</CardTitle>
+            <CardTitle>Organization overview</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Manage learners, assignments, and sync content from Sanity.
             </CardDescription>
@@ -49,7 +49,7 @@ export default async function AdminDashboard() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Learners</CardTitle>
+            <CardTitle>Learners</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Active members across your organization.
             </CardDescription>
@@ -60,7 +60,7 @@ export default async function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Courses</CardTitle>
+            <CardTitle>Courses</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Courses published to your learners.
             </CardDescription>
@@ -71,7 +71,7 @@ export default async function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Groups</CardTitle>
+            <CardTitle>Groups</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Peer or cohort groups you&apos;ve created.
             </CardDescription>
@@ -83,7 +83,7 @@ export default async function AdminDashboard() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-slate-100">Content sync</CardTitle>
+          <CardTitle>Content sync</CardTitle>
           <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
             Pull the latest courses, modules, and lessons from Sanity.
           </CardDescription>
@@ -98,7 +98,7 @@ export default async function AdminDashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Assignments</CardTitle>
+            <CardTitle>Assignments</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Enroll learners into modules with one click.
             </CardDescription>
@@ -111,7 +111,7 @@ export default async function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Analytics</CardTitle>
+            <CardTitle>Analytics</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Track assignments, active learners, and completion rates.
             </CardDescription>
@@ -124,7 +124,7 @@ export default async function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-100">Groups</CardTitle>
+            <CardTitle>Groups</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Create cohorts and manage CSV roster uploads.
             </CardDescription>
