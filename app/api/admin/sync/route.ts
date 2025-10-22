@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireRole } from "@/lib/authz";
+import { buildRateLimitKey, enforceApiRateLimit } from "@/lib/api-rate-limit";
 import {
   fetchPublishedCourses,
   getMissingSanityEnvVars,
@@ -40,6 +41,11 @@ function createEmptySummarySection(): SyncSummarySection {
   return { created: [], updated: [], skipped: [], deleted: [] };
 }
 
+const SYNC_RATE_LIMIT = {
+  limit: 3,
+  windowInSeconds: 60
+};
+
 async function readJsonBody(request: Request, logger: Logger): Promise<SyncRequestBody> {
   const contentType = request.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
@@ -72,6 +78,25 @@ export async function POST(request: Request) {
         message: "Organization missing on admin session"
       });
       return NextResponse.json({ error: "Organization not found.", requestId }, { status: 400 });
+    }
+
+    const rateLimitKey = buildRateLimitKey("admin.sanity_sync", request, orgId ?? session.user?.id ?? undefined);
+    const rateLimitResponse = await enforceApiRateLimit({
+      key: rateLimitKey,
+      limit: SYNC_RATE_LIMIT.limit,
+      windowInSeconds: SYNC_RATE_LIMIT.windowInSeconds,
+      requestId,
+      message: "Sync requests are temporarily rate limited. Please try again shortly."
+    });
+
+    if (rateLimitResponse) {
+      logger.warn({
+        event: "admin.sanity_sync.rate_limited",
+        orgId,
+        limit: SYNC_RATE_LIMIT.limit,
+        windowInSeconds: SYNC_RATE_LIMIT.windowInSeconds
+      });
+      return rateLimitResponse;
     }
 
     const missingEnvVars = getMissingSanityEnvVars();

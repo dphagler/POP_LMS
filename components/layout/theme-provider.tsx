@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { reportClientError } from "@/lib/client-error-reporting";
+import { captureError } from "@/lib/client-error-reporting";
 
 const ThemeContext = createContext<Record<string, string> | null>(null);
 
@@ -21,7 +21,7 @@ export function ThemeProvider({ children, initialTheme = null }: ThemeProviderPr
       const parsed = JSON.parse(raw) as Record<string, string>;
       setTheme(parsed);
     } catch (error) {
-      reportClientError("theme.parse_failed", error);
+      captureError(error, { event: "theme.parse_failed" });
       window.localStorage.removeItem("pop-theme");
     }
   }, [theme]);
