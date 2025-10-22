@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,36 @@ function getLessonCta(progress: ProgressModel | undefined) {
   }
 
   return { label: "Start", description: "Start lesson" };
+}
+
+function getLessonProgressPercent(lesson: LessonModel, progress: ProgressModel | undefined) {
+  if (!progress) {
+    return 0;
+  }
+
+  if (progress.isComplete) {
+    return 100;
+  }
+
+  if (!lesson.durationS) {
+    return progress.watchedSeconds > 0 ? 50 : 0;
+  }
+
+  const ratio = (progress.watchedSeconds / lesson.durationS) * 100;
+  return Math.max(0, Math.min(100, Math.round(ratio)));
+}
+
+function formatLessonDuration(durationS: number) {
+  if (!durationS) {
+    return "Under a minute";
+  }
+
+  if (durationS < 60) {
+    return `${durationS} sec`;
+  }
+
+  const minutes = Math.round(durationS / 60);
+  return `${minutes} min${minutes === 1 ? "" : "s"}`;
 }
 
 export default async function LearnerDashboard() {
@@ -124,182 +153,187 @@ export default async function LearnerDashboard() {
   const allLessonsComplete = totalLessons > 0 && completion === totalLessons;
   const upNextProgress = upNext ? progressByLesson.get(upNext.id) : undefined;
   const upNextCta = upNext ? getLessonCta(upNextProgress) : null;
-  const upNextStatusLabel = upNextProgress?.isComplete
-    ? "Ready to review"
-    : upNextProgress && upNextProgress.watchedSeconds > 0
-      ? "In progress"
-      : "Now playing";
+  const hasAssignments = totalLessons > 0;
+  const upNextPercent = upNext ? getLessonProgressPercent(upNext, upNextProgress) : 0;
+  const queueLessons = sortedLessons.filter((lesson) => lesson.id !== upNext?.id);
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      <section id="today" className="lg:col-span-1">
+      <section id="today" aria-labelledby="today-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Today&apos;s focus</CardTitle>
-            <CardDescription>Keep your streak alive by watching today&apos;s featured lesson.</CardDescription>
+          <CardHeader className="space-y-2">
+            <CardTitle id="today-card">Today</CardTitle>
+            <CardDescription>Start today&apos;s lesson to keep your momentum.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Tabs defaultValue="focus" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="focus">Focus</TabsTrigger>
-                <TabsTrigger value="progress">Progress</TabsTrigger>
-              </TabsList>
-              <TabsContent value="focus" className="mt-4 space-y-4">
-                {upNext ? (
-                  <div className="flex flex-col gap-3">
+          <CardContent className="flex h-full flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <Badge variant="secondary">Streak: {streak} days</Badge>
+              {hasAssignments ? (
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {percent}% complete
+                </p>
+              ) : null}
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-4">
+              {upNext ? (
+                <div className="flex flex-col gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Featured lesson</p>
+                    <p className="text-lg font-semibold leading-tight">{upNext.title}</p>
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" aria-hidden />
+                      {formatLessonDuration(upNext.durationS)}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Progress value={upNextPercent} aria-label={`Progress for ${upNext.title}`} />
+                    <p className="text-xs text-muted-foreground">
+                      {upNextProgress?.isComplete
+                        ? "Completed — review to stay sharp."
+                        : upNextProgress && upNextProgress.watchedSeconds > 0
+                          ? "Resume where you left off."
+                          : "Start fresh and build momentum."}
+                    </p>
+                  </div>
+                  <Button asChild>
+                    <Link
+                      href={`/app/lesson/${upNext.id}`}
+                      aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
+                    >
+                      {upNextCta?.label ?? "Start"}
+                    </Link>
+                  </Button>
+                  {allLessonsComplete && (
+                    <p className="text-xs text-muted-foreground">
+                      You&apos;ve completed every assignment—review anytime to keep the streak alive.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>You&apos;re all set for now. We&apos;ll add your next lesson as soon as it&apos;s assigned.</p>
+                  {isAdmin ? (
+                    <Button variant="outline" asChild>
+                      <Link href="/admin/assign">Assign a lesson</Link>
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Assignment progress</p>
+              <Progress
+                value={hasAssignments ? percent : 0}
+                aria-label="Overall assignment progress"
+              />
+              <p className="text-xs text-muted-foreground">
+                {hasAssignments
+                  ? `${completion} of ${totalLessons} lessons complete`
+                  : "Progress will appear once a lesson is assigned."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="up-next" aria-labelledby="resume-card" className="lg:col-span-1">
+        <Card className="h-full">
+          <CardHeader className="space-y-2">
+            <CardTitle id="resume-card">Up next</CardTitle>
+            <CardDescription>Resume in-progress lessons or preview what&apos;s coming.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {queueLessons.map((lesson) => {
+              const lessonProgress = progressByLesson.get(lesson.id);
+              const lessonCta = getLessonCta(lessonProgress);
+              const lessonPercent = getLessonProgressPercent(lesson, lessonProgress);
+              const helperText =
+                lessonCta.label === "Resume"
+                  ? "Pick up where you paused."
+                  : lessonCta.label === "Review"
+                    ? "Revisit this lesson anytime."
+                    : "Preview what&apos;s coming up.";
+
+              return (
+                <div key={lesson.id} className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="text-base font-semibold leading-tight">{upNext.title}</p>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" aria-hidden />
-                        {upNext.durationS} seconds
+                      <p className="font-medium leading-tight">{lesson.title}</p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" aria-hidden />
+                        {formatLessonDuration(lesson.durationS)}
                       </p>
                     </div>
-                    <Button asChild>
+                    <Button variant="ghost" size="sm" asChild>
                       <Link
-                        href={`/app/lesson/${upNext.id}`}
-                        aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
+                        href={`/app/lesson/${lesson.id}`}
+                        aria-label={`${lessonCta.description}: ${lesson.title}`}
                       >
-                        {upNextCta?.label ?? "Start"}
+                        {lessonCta.label}
                       </Link>
                     </Button>
-                    {allLessonsComplete && (
-                      <p className="text-xs text-muted-foreground">
-                        You&apos;ve completed every assignment—review anytime to keep the streak alive.
-                      </p>
-                    )}
                   </div>
+                  <div className="space-y-1">
+                    <Progress value={lessonPercent} aria-label={`Progress for ${lesson.title}`} />
+                    <p className="text-xs text-muted-foreground">{helperText}</p>
+                  </div>
+                </div>
+              );
+            })}
+            {queueLessons.length === 0 && (
+              <div className="space-y-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <p>No other lessons waiting in your queue.</p>
+                {allLessonsComplete ? (
+                  <p>Enjoy the breather—new lessons will appear here once they&apos;re assigned.</p>
+                ) : hasAssignments ? (
+                  <p>Once another lesson is assigned, it will land here for a quick resume.</p>
                 ) : (
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>No assignments yet. Check back soon!</p>
+                  <>
+                    <p>As soon as lessons are assigned, you&apos;ll see them here.</p>
                     {isAdmin ? (
                       <Button variant="outline" asChild>
                         <Link href="/admin/assign">Assign a lesson</Link>
                       </Button>
                     ) : null}
-                  </div>
+                  </>
                 )}
-              </TabsContent>
-              <TabsContent value="progress" className="mt-4 space-y-4">
-                {totalLessons > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Weekly completion</p>
-                    <Progress value={percent} />
-                    <p className="text-xs text-muted-foreground">
-                      {completion} of {totalLessons} lessons complete
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Weekly completion</p>
-                    <Progress value={0} />
-                    <p className="text-xs text-muted-foreground">
-                      Progress will appear after your first assignment.
-                    </p>
-                  </div>
-                )}
-                <Badge variant="secondary">Streak: {streak} days</Badge>
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
 
-      <section id="up-next" className="lg:col-span-1">
+      <section id="completed" aria-labelledby="review-card" className="lg:col-span-1">
         <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Up next</CardTitle>
-            <CardDescription>Stay ahead by previewing what&apos;s coming this week.</CardDescription>
+          <CardHeader className="space-y-2">
+            <CardTitle id="review-card">Completed</CardTitle>
+            <CardDescription>Review recent wins and celebrate your progress.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {upNext ? (
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <p className="text-sm font-medium text-muted-foreground">{upNextStatusLabel}</p>
-                <p className="text-base font-semibold leading-tight">{upNext.title}</p>
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" aria-hidden />
-                  {upNext.durationS} seconds
-                </p>
-                <Button className="mt-3" asChild>
-                  <Link
-                    href={`/app/lesson/${upNext.id}`}
-                    aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
-                  >
-                    {upNextCta?.label ?? "Start"}
-                  </Link>
-                </Button>
-              </div>
-            ) : null}
-            {lessonSchedule.map((lesson) => {
-              const lessonProgress = progressByLesson.get(lesson.id);
-              const lessonCta = getLessonCta(lessonProgress);
-              return (
-                <div key={lesson.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-1">
-                    <p className="font-medium leading-tight">{lesson.title}</p>
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" aria-hidden />
-                      {lesson.durationS} seconds
-                    </p>
-                  </div>
-                  <Button variant="ghost" asChild>
-                    <Link
-                      href={`/app/lesson/${lesson.id}`}
-                      aria-label={`${lessonCta.description}: ${lesson.title}`}
-                    >
-                      {lessonCta.label}
-                    </Link>
-                  </Button>
+          <CardContent className="flex h-full flex-col gap-6">
+            <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
+              <p className="text-sm font-medium">Badges</p>
+              {badges.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {badges.map((item) => (
+                    <Badge key={item.id} variant="outline">
+                      {item.badge.name}
+                    </Badge>
+                  ))}
                 </div>
-              );
-            })}
-            {sortedLessons.length === 0 && (
-              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                <p>No assignments yet. Once lessons are assigned, they&apos;ll appear here.</p>
-                {isAdmin ? (
-                  <Button className="mt-3" variant="outline" asChild>
-                    <Link href="/admin/assign">Assign a lesson</Link>
-                  </Button>
-                ) : null}
-              </div>
-            )}
-            {allLessonsComplete && (
-              <p className="text-sm text-muted-foreground">
-                You&apos;re all caught up! Revisit completed lessons anytime for a quick refresher.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section id="completed" className="lg:col-span-1">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Completed</CardTitle>
-            <CardDescription>Celebrate wins and review what you&apos;ve finished.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Tabs defaultValue="badges" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="badges">Badges</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
-              </TabsList>
-              <TabsContent value="badges" className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="secondary">Streak: {streak} days</Badge>
-                {badges.map((item) => (
-                  <Badge key={item.id}>{item.badge.name}</Badge>
-                ))}
-                {badges.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Earn badges by completing lessons and reflections.
-                  </p>
-                )}
-              </TabsContent>
-              <TabsContent value="activity" className="mt-4 space-y-3">
-                {completedLessons.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start justify-between gap-3 rounded-lg border p-3"
-                  >
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Earn badges by completing lessons and reflections.
+                </p>
+              )}
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm font-medium">Latest activity</p>
+              {completedLessons.map((item) => (
+                <div
+                  key={item.id}
+                  className="space-y-3 rounded-lg border p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <p className="font-medium leading-tight">{item.lesson.title}</p>
                       <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -315,14 +349,23 @@ export default async function LearnerDashboard() {
                       </Link>
                     </Button>
                   </div>
-                ))}
-                {completedLessons.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Lessons you finish will show up here for quick review.
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
+                  <div className="space-y-1">
+                    <Progress value={100} aria-label={`${item.lesson.title} completion`} />
+                    <p className="text-xs text-muted-foreground">Great job! Keep the streak going.</p>
+                  </div>
+                </div>
+              ))}
+              {completedLessons.length === 0 && (
+                <div className="space-y-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  <p>Lessons you finish will show up here for quick review.</p>
+                  {!hasAssignments && isAdmin ? (
+                    <Button variant="outline" asChild>
+                      <Link href="/admin/assign">Assign a lesson</Link>
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </section>
