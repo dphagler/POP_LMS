@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/client-error-reporting";
 
 export default function GlobalError({
   error,
@@ -11,7 +12,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Unhandled application error", error);
+    reportClientError("app.unhandled_error", error, {
+      digest: error?.digest
+    });
   }, [error]);
 
   return (

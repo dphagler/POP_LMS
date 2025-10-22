@@ -1,11 +1,11 @@
 # POP LMS Starter
 
-Production-ready learning management starter built with Next.js 15, Auth.js, Prisma, Tailwind, and Sanity.
+Production-ready learning management starter built with Next.js 15, NextAuth.js v5, Prisma, Tailwind CSS, Sanity, and Vercel Postgres.
 
 ## Features
 
 - ✅ Next.js App Router with TypeScript, Tailwind CSS, and shadcn/ui primitives
-- ✅ Auth.js (Google) with Prisma adapter and Vercel Postgres
+- ✅ NextAuth.js (Google + optional magic links) with the Prisma adapter and Vercel Postgres
 - ✅ YouTube heartbeat tracking API that conservatively marks lesson completion
 - ✅ Sanity CMS schemas plus on-demand sync endpoint
 - ✅ Optional integrations for Upstash Redis (leaderboards), Resend (email), and PostHog analytics
@@ -45,7 +45,7 @@ Production-ready learning management starter built with Next.js 15, Auth.js, Pri
    pnpm dev
    ```
 
-Visit `http://localhost:3000` to view the marketing page, `http://localhost:3000/signin` to authenticate with Google, and `/app` or `/admin` for learner/admin views.
+Visit `http://localhost:3000` to view the marketing page, `http://localhost:3000/signin` to authenticate with Google, and `/app` or `/admin` for learner/admin views. Run `pnpm build` locally (or in Vercel preview) to confirm production builds succeed without warnings.
 
 ## Admin access
 
@@ -104,4 +104,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
   `AUTH_EMAIL_SUBJECT`, `AUTH_EMAIL_RATE_LIMIT_MAX`, `AUTH_EMAIL_RATE_LIMIT_WINDOW`, and `AUTH_EMAIL_TOKEN_MAX_AGE` to send Resend-backed
   magic links for sign-in.
 - **PostHog** – set `NEXT_PUBLIC_POSTHOG_KEY` (and optionally `NEXT_PUBLIC_POSTHOG_HOST`) to enable client analytics.
+
+## Recommended lint guardrails
+
+Enable ESLint rules such as `no-console` and `no-unused-vars` (along with [`unused-imports/no-unused-imports`](https://github.com/sweepline/eslint-plugin-unused-imports)) to keep dead code and debug logging from slipping back into the codebase. Add them to `.eslintrc.js` once the project is ready to enforce the stricter posture.
 

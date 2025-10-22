@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/lib/client-error-reporting";
 
 type QuizOption = {
   key: string;
@@ -152,7 +153,8 @@ export function LessonQuizCard({
           try {
             payload = JSON.parse(payloadText);
           } catch (parseError) {
-            console.error("Failed to parse quiz submission response", parseError);
+            reportClientError("quiz_submission_parse_error", parseError, { quizId });
+            throw new Error("We couldn't understand the server response.");
           }
         }
 
@@ -217,7 +219,8 @@ export function LessonQuizCard({
             try {
               payload = JSON.parse(payloadText);
             } catch (parseError) {
-              console.error("Failed to parse quiz reset response", parseError);
+              reportClientError("quiz_reset_parse_error", parseError, { quizId });
+              throw new Error("We couldn't understand the server response.");
             }
           }
 

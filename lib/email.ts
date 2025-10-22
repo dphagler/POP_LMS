@@ -1,5 +1,8 @@
 import { renderSignInEmailHtml, renderSignInEmailText } from "./email-templates/sign-in-magic-link";
 import { env } from "./env";
+import { createLogger } from "./logger";
+
+const logger = createLogger({ component: "email" });
 
 type ResendEmailPayload = {
   from: string;
@@ -11,7 +14,10 @@ type ResendEmailPayload = {
 
 async function sendResendEmail(payload: ResendEmailPayload) {
   if (!env.RESEND_API_KEY) {
-    console.info("Resend API key missing; skipping email send.");
+    logger.info({
+      event: "email.resend_missing_key",
+      message: "Resend API key missing; skipping email send."
+    });
     return;
   }
 

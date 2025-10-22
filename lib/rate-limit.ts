@@ -1,4 +1,7 @@
 import { env } from "./env";
+import { createLogger } from "./logger";
+
+const logger = createLogger({ component: "rate-limit" });
 
 type RateLimitResult = {
   success: boolean;
@@ -25,7 +28,11 @@ async function executePipeline(commands: RedisCommand[]) {
 
   if (!response.ok) {
     const message = await response.text().catch(() => "");
-    console.error("Failed to execute Redis pipeline", response.status, message);
+    logger.error({
+      event: "rate_limit.pipeline_failed",
+      status: response.status,
+      error: message || response.statusText
+    });
     return null;
   }
 
