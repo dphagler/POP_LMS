@@ -45,7 +45,7 @@ export default async function AdminDashboard() {
       id: "groups",
       title: "Groups",
       value: groupCount,
-      description: "Peer or cohort groups you've created.",
+      description: "Peer or cohort groups you&apos;ve created.",
     },
   ] as const;
 
@@ -112,7 +112,7 @@ export default async function AdminDashboard() {
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
               Ensure your database stays aligned with your headless CMS. Dry runs preview changes before committing them, and you
-              can optionally allow deletes when you're ready to mirror removals from Sanity.
+              can optionally allow deletes when you&apos;re ready to mirror removals from Sanity.
             </p>
             {syncDisabledReason ? (
               <p className="font-medium text-destructive">{syncDisabledReason}</p>
