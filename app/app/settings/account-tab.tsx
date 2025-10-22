@@ -13,7 +13,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
   return (
     <div className="space-y-4">
       <header className="space-y-1">
-        <h2 className="text-lg font-semibold">Account security</h2>
+        <h2 className="text-slate-100">Account security</h2>
         <p className="text-sm text-muted-foreground">
           Manage how you sign in to POP Initiative.
         </p>
@@ -21,7 +21,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
       {passwordAuthEnabled ? (
         <Card>
           <CardHeader className="space-y-1 pb-0">
-            <CardTitle className="text-base font-semibold">Change password</CardTitle>
+            <CardTitle className="text-slate-100">Change password</CardTitle>
             <CardDescription>
               Update your password to keep your account secure.
             </CardDescription>
