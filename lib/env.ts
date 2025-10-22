@@ -16,6 +16,31 @@ function readRequiredEnv(key: string) {
   throw new Error(`Missing required environment variable ${key}`);
 }
 
+function readBooleanEnv(key: string, fallback = false) {
+  const value = process.env[key];
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+}
+
+function readNumberEnv(key: string, fallback: number) {
+  const value = process.env[key];
+  if (typeof value === "string" && value.length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
 export const env = {
   get NEXTAUTH_SECRET() {
     return isProduction
@@ -53,5 +78,23 @@ export const env = {
   },
   get RESEND_API_KEY() {
     return readOptionalEnv("RESEND_API_KEY");
+  },
+  get AUTH_EMAIL_ENABLED() {
+    return readBooleanEnv("AUTH_EMAIL_ENABLED", false);
+  },
+  get AUTH_EMAIL_FROM() {
+    return readOptionalEnv("AUTH_EMAIL_FROM");
+  },
+  get AUTH_EMAIL_SUBJECT() {
+    return readOptionalEnv("AUTH_EMAIL_SUBJECT", "Your POP LMS magic link");
+  },
+  get AUTH_EMAIL_RATE_LIMIT_WINDOW() {
+    return readNumberEnv("AUTH_EMAIL_RATE_LIMIT_WINDOW", 10 * 60);
+  },
+  get AUTH_EMAIL_RATE_LIMIT_MAX() {
+    return readNumberEnv("AUTH_EMAIL_RATE_LIMIT_MAX", 5);
+  },
+  get AUTH_EMAIL_TOKEN_MAX_AGE() {
+    return readNumberEnv("AUTH_EMAIL_TOKEN_MAX_AGE", 10 * 60);
   }
 };
