@@ -10,7 +10,11 @@ const logger = createLogger({ component: "admin.group_members" });
 const RATE_LIMIT_WINDOW_SECONDS = 10;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 
-export async function DELETE(request: Request, { params }: { params: { groupId: string; memberId: string } }) {
+type RouteContext = {
+  params: Promise<{ groupId: string; memberId: string }>;
+};
+
+export async function DELETE(request: Request, { params }: RouteContext) {
   const session = await requireRole("ADMIN");
   const orgId = session.user.orgId;
 
@@ -18,8 +22,10 @@ export async function DELETE(request: Request, { params }: { params: { groupId: 
     return NextResponse.json({ error: "Organization not found." }, { status: 403 });
   }
 
+  const { groupId, memberId } = await params;
+
   const rateLimitKey = buildRateLimitKey(
-    `admin.group.${params.groupId}.member_remove`,
+    `admin.group.${groupId}.member_remove`,
     request,
     session.user.id ?? undefined
   );
@@ -36,7 +42,7 @@ export async function DELETE(request: Request, { params }: { params: { groupId: 
 
   try {
     const membership = await prisma.groupMember.findUnique({
-      where: { id: params.memberId },
+      where: { id: memberId },
       select: {
         id: true,
         groupId: true,
@@ -44,21 +50,21 @@ export async function DELETE(request: Request, { params }: { params: { groupId: 
       },
     });
 
-    if (!membership || membership.groupId !== params.groupId || membership.group.orgId !== orgId) {
+    if (!membership || membership.groupId !== groupId || membership.group.orgId !== orgId) {
       return NextResponse.json({ error: "Membership not found." }, { status: 404 });
     }
 
     await prisma.groupMember.delete({ where: { id: membership.id } });
 
-    revalidatePath(`/admin/groups/${params.groupId}`);
+    revalidatePath(`/admin/groups/${groupId}`);
     revalidatePath("/admin/groups");
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({
       event: "admin.group_members.remove_failed",
-      groupId: params.groupId,
-      memberId: params.memberId,
+      groupId,
+      memberId,
       error,
     });
     return NextResponse.json({ error: "Unable to remove member." }, { status: 500 });

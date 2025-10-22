@@ -11,7 +11,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RATE_LIMIT_WINDOW_SECONDS = 10;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 
-export async function POST(request: Request, { params }: { params: { groupId: string } }) {
+type RouteContext = {
+  params: Promise<{ groupId: string }>;
+};
+
+export async function POST(request: Request, { params }: RouteContext) {
   const session = await requireRole("ADMIN");
   const orgId = session.user.orgId;
 
@@ -19,8 +23,10 @@ export async function POST(request: Request, { params }: { params: { groupId: st
     return NextResponse.json({ error: "Organization not found." }, { status: 403 });
   }
 
+  const { groupId } = await params;
+
   const group = await prisma.orgGroup.findUnique({
-    where: { id: params.groupId },
+    where: { id: groupId },
     select: { id: true, orgId: true },
   });
 

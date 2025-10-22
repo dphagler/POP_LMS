@@ -5,7 +5,11 @@ import { prisma } from "@/lib/prisma";
 
 const EMAIL_SEARCH_LIMIT = 8;
 
-export async function GET(request: Request, { params }: { params: { groupId: string } }) {
+type RouteContext = {
+  params: Promise<{ groupId: string }>;
+};
+
+export async function GET(request: Request, { params }: RouteContext) {
   const session = await requireRole("ADMIN");
   const orgId = session.user.orgId;
 
@@ -13,8 +17,10 @@ export async function GET(request: Request, { params }: { params: { groupId: str
     return NextResponse.json({ users: [] });
   }
 
+  const { groupId } = await params;
+
   const group = await prisma.orgGroup.findUnique({
-    where: { id: params.groupId },
+    where: { id: groupId },
     select: { id: true, orgId: true },
   });
 
