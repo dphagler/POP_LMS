@@ -100,5 +100,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
 
 - **Upstash Redis** – set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to enable leaderboard helpers in `lib/redis.ts`.
 - **Resend** – set `RESEND_API_KEY` to send assignment invite emails via `lib/email.ts`.
+- **Email magic links** – set `AUTH_EMAIL_ENABLED=true`, provide a branded from address via `AUTH_EMAIL_FROM`, and optionally tune
+  `AUTH_EMAIL_SUBJECT`, `AUTH_EMAIL_RATE_LIMIT_MAX`, `AUTH_EMAIL_RATE_LIMIT_WINDOW`, and `AUTH_EMAIL_TOKEN_MAX_AGE` to send Resend-backed
+  magic links for sign-in.
 - **PostHog** – set `NEXT_PUBLIC_POSTHOG_KEY` (and optionally `NEXT_PUBLIC_POSTHOG_HOST`) to enable client analytics.
 
