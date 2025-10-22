@@ -242,6 +242,8 @@ model GroupMember {
 
   group OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
 }
 
 model Account {
