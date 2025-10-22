@@ -47,7 +47,6 @@ export const authConfig = {
           EmailProvider({
             name: "Email",
             from: env.AUTH_EMAIL_FROM!,
-            subject: env.AUTH_EMAIL_SUBJECT,
             maxAge: env.AUTH_EMAIL_TOKEN_MAX_AGE,
             async sendVerificationRequest({ identifier, url, provider, request }) {
               const email = identifier.toLowerCase();
@@ -82,11 +81,7 @@ export const authConfig = {
                 }
               }
 
-              const subjectValue = provider.subject;
-              const subject =
-                typeof subjectValue === "function"
-                  ? await subjectValue({ url, host })
-                  : subjectValue ?? env.AUTH_EMAIL_SUBJECT;
+              const subject = env.AUTH_EMAIL_SUBJECT ?? `Sign in to ${host}`;
 
               await sendSignInEmail({
                 email,
