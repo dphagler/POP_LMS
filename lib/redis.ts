@@ -1,4 +1,7 @@
 import { env } from "./env";
+import { createLogger, serializeError } from "./logger";
+
+const logger = createLogger({ component: "redis" });
 
 type LeaderboardEntry = {
   userId: string;
@@ -21,7 +24,10 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
     return JSON.parse(data.result) as LeaderboardEntry[];
   } catch (error) {
-    console.error("Failed to parse leaderboard", error);
+    logger.error({
+      event: "redis.leaderboard_parse_failed",
+      error: serializeError(error)
+    });
     return [];
   }
 }
@@ -42,5 +48,10 @@ export async function bumpUserScore(userId: string, delta = 1) {
         ["SET", "leaderboard", JSON.stringify([{ userId, score: delta }])]
       ]
     })
-  }).catch((error) => console.error("Failed to update leaderboard", error));
+  }).catch((error) => {
+    logger.error({
+      event: "redis.leaderboard_update_failed",
+      error: serializeError(error)
+    });
+  });
 }

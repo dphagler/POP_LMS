@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { reportClientError } from "@/lib/client-error-reporting";
 
 type YouTubePlayerEvent = {
   data: number;
@@ -105,7 +106,10 @@ export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLe
             if (typeof navigator !== "undefined" && !navigator.onLine) {
               break;
             }
-            console.error("Failed to send heartbeat", error);
+            reportClientError("lesson.heartbeat_failed", error, {
+              lessonId,
+              youtubeId
+            });
             break;
           }
         }

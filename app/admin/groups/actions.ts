@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { createLogger, serializeError } from "@/lib/logger";
 
 const GROUPS_PATH = "/admin/groups";
+const logger = createLogger({ component: "admin.groups" });
 
 const groupNameSchema = (value: unknown) => {
   if (typeof value !== "string") {
@@ -332,7 +334,12 @@ export async function importGroupMembersAction(
         continue;
       }
 
-      console.error("Failed to import group member", error);
+      logger.error({
+        event: "admin.groups.import_failed",
+        rowNumber: row.rowNumber,
+        email: normalizedEmail,
+        error: serializeError(error)
+      });
       rowErrors.push({
         rowNumber: row.rowNumber,
         email: normalizedEmail,

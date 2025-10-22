@@ -6,6 +6,9 @@ import { Suspense } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { cookies } from "next/headers";
+import { createLogger, serializeError } from "@/lib/logger";
+
+const logger = createLogger({ component: "app.layout" });
 
 export const metadata: Metadata = {
   title: "POP Initiative LMS",
@@ -26,7 +29,10 @@ export default async function RootLayout({
       const parsed = JSON.parse(rawTheme) as Record<string, string>;
       initialTheme = parsed;
     } catch (error) {
-      console.warn("Failed to parse theme cookie", error);
+      logger.warn({
+        event: "app.layout.invalid_theme_cookie",
+        error: serializeError(error)
+      });
     }
   }
 
