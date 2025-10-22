@@ -1,5 +1,4 @@
 // middleware.ts (cookie check version shown; works with v4/v5)
-import { randomUUID } from "crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -20,7 +19,11 @@ function hasSessionCookie(req: NextRequest) {
 }
 
 export function middleware(req: NextRequest) {
-  const requestId = req.headers.get("x-request-id") ?? randomUUID();
+  const requestId =
+    req.headers.get("x-request-id") ??
+    (typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2));
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-request-id", requestId);
   const { pathname } = req.nextUrl;
