@@ -9,6 +9,20 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Clock } from "lucide-react";
 
+import type { Progress as ProgressModel } from "@prisma/client";
+
+function getLessonCta(progress: ProgressModel | undefined) {
+  if (progress?.isComplete) {
+    return { label: "Review", description: "Review lesson" };
+  }
+
+  if (progress && progress.watchedSeconds > 0) {
+    return { label: "Resume", description: "Resume lesson" };
+  }
+
+  return { label: "Start", description: "Start lesson" };
+}
+
 export default async function LearnerDashboard() {
   const session = await requireUser();
   const { id: userId, orgId } = session.user;
@@ -34,16 +48,46 @@ export default async function LearnerDashboard() {
   ]);
 
   const streak = await computeStreak(userId);
-  const upNext = lessons[0];
-  const upcomingQueue = lessons.slice(1);
-  const lessonSchedule = upNext ? [upNext, ...upcomingQueue] : upcomingQueue;
+  const progressByLesson = new Map(progresses.map((item) => [item.lessonId, item]));
+  const sortedLessons = [...lessons].sort((a, b) => {
+    const progressA = progressByLesson.get(a.id);
+    const progressB = progressByLesson.get(b.id);
+
+    const orderA = progressA?.isComplete
+      ? 2
+      : progressA && progressA.watchedSeconds > 0
+        ? 0
+        : 1;
+    const orderB = progressB?.isComplete
+      ? 2
+      : progressB && progressB.watchedSeconds > 0
+        ? 0
+        : 1;
+
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    return a.title.localeCompare(b.title);
+  });
+  const upNext = sortedLessons[0];
+  const lessonSchedule = sortedLessons.slice(1);
   const completion = progresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
-  const totalLessons = progresses.length;
+  const totalLessons = lessons.length;
   const percent = totalLessons === 0 ? 0 : Math.round((completion / totalLessons) * 100);
   const completedLessons = progresses
     .filter((item) => item.isComplete)
     .sort((a, b) => a.lesson.title.localeCompare(b.lesson.title))
     .slice(0, 6);
+  const isAdmin = session.user.role === "ADMIN";
+  const allLessonsComplete = totalLessons > 0 && completion === totalLessons;
+  const upNextProgress = upNext ? progressByLesson.get(upNext.id) : undefined;
+  const upNextCta = upNext ? getLessonCta(upNextProgress) : null;
+  const upNextStatusLabel = upNextProgress?.isComplete
+    ? "Ready to review"
+    : upNextProgress && upNextProgress.watchedSeconds > 0
+      ? "In progress"
+      : "Now playing";
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -70,21 +114,48 @@ export default async function LearnerDashboard() {
                       </p>
                     </div>
                     <Button asChild>
-                      <Link href={`/app/lesson/${upNext.id}`}>Resume lesson</Link>
+                      <Link
+                        href={`/app/lesson/${upNext.id}`}
+                        aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
+                      >
+                        {upNextCta?.label ?? "Start"}
+                      </Link>
                     </Button>
+                    {allLessonsComplete && (
+                      <p className="text-xs text-muted-foreground">
+                        You&apos;ve completed every assignment—review anytime to keep the streak alive.
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No lessons assigned yet.</p>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>No assignments yet. Check back soon!</p>
+                    {isAdmin ? (
+                      <Button variant="outline" asChild>
+                        <Link href="/admin/assign">Assign a lesson</Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 )}
               </TabsContent>
               <TabsContent value="progress" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Weekly completion</p>
-                  <Progress value={percent} />
-                  <p className="text-xs text-muted-foreground">
-                    {completion} of {totalLessons} lessons complete
-                  </p>
-                </div>
+                {totalLessons > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Weekly completion</p>
+                    <Progress value={percent} />
+                    <p className="text-xs text-muted-foreground">
+                      {completion} of {totalLessons} lessons complete
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Weekly completion</p>
+                    <Progress value={0} />
+                    <p className="text-xs text-muted-foreground">
+                      Progress will appear after your first assignment.
+                    </p>
+                  </div>
+                )}
                 <Badge variant="secondary">Streak: {streak} days</Badge>
               </TabsContent>
             </Tabs>
@@ -101,19 +172,27 @@ export default async function LearnerDashboard() {
           <CardContent className="space-y-4">
             {upNext ? (
               <div className="rounded-lg border bg-muted/30 p-4">
-                <p className="text-sm font-medium text-muted-foreground">Now playing</p>
+                <p className="text-sm font-medium text-muted-foreground">{upNextStatusLabel}</p>
                 <p className="text-base font-semibold leading-tight">{upNext.title}</p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" aria-hidden />
                   {upNext.durationS} seconds
                 </p>
+                <Button className="mt-3" asChild>
+                  <Link
+                    href={`/app/lesson/${upNext.id}`}
+                    aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
+                  >
+                    {upNextCta?.label ?? "Start"}
+                  </Link>
+                </Button>
               </div>
             ) : null}
-            {lessonSchedule.map((lesson) => (
-                <div
-                  key={lesson.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
+            {lessonSchedule.map((lesson) => {
+              const lessonProgress = progressByLesson.get(lesson.id);
+              const lessonCta = getLessonCta(lessonProgress);
+              return (
+                <div key={lesson.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div className="space-y-1">
                     <p className="font-medium leading-tight">{lesson.title}</p>
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -122,13 +201,29 @@ export default async function LearnerDashboard() {
                     </p>
                   </div>
                   <Button variant="ghost" asChild>
-                    <Link href={`/app/lesson/${lesson.id}`}>Open</Link>
+                    <Link
+                      href={`/app/lesson/${lesson.id}`}
+                      aria-label={`${lessonCta.description}: ${lesson.title}`}
+                    >
+                      {lessonCta.label}
+                    </Link>
                   </Button>
                 </div>
-            ))}
-            {lessons.length === 0 && (
+              );
+            })}
+            {sortedLessons.length === 0 && (
+              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                <p>No assignments yet. Once lessons are assigned, they&apos;ll appear here.</p>
+                {isAdmin ? (
+                  <Button className="mt-3" variant="outline" asChild>
+                    <Link href="/admin/assign">Assign a lesson</Link>
+                  </Button>
+                ) : null}
+              </div>
+            )}
+            {allLessonsComplete && (
               <p className="text-sm text-muted-foreground">
-                Your upcoming lessons will appear here once assigned.
+                You&apos;re all caught up! Revisit completed lessons anytime for a quick refresher.
               </p>
             )}
           </CardContent>
@@ -171,7 +266,12 @@ export default async function LearnerDashboard() {
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/app/lesson/${item.lesson.id}`}>Review</Link>
+                      <Link
+                        href={`/app/lesson/${item.lesson.id}`}
+                        aria-label={`Review lesson: ${item.lesson.title}`}
+                      >
+                        Review
+                      </Link>
                     </Button>
                   </div>
                 ))}
