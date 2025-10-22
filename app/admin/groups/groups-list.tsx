@@ -29,6 +29,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
   const [density, setDensity] = useState<DataDensity>("comfortable");
   const isCompact = density === "compact";
   const formGap = isCompact ? "flex flex-col gap-2 sm:flex-row sm:items-end" : "flex flex-col gap-3 sm:flex-row sm:items-end";
+  const gridLayout = cn("grid", isCompact ? "gap-3 sm:grid-cols-2 xl:grid-cols-3" : "gap-4 sm:grid-cols-2 xl:grid-cols-3");
 
   if (groups.length === 0) {
     return <p className="text-sm text-muted-foreground">Groups you create will appear here.</p>;
@@ -36,22 +37,27 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <DataDensityToggle density={density} onDensityChange={setDensity} />
       </div>
-      <div className="space-y-4">
+      <div className={gridLayout}>
         {groups.map((group) => (
-          <Card key={group.id}>
-            <CardHeader className="flex flex-col gap-1 pb-0 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <CardTitle>{group.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {group._count.members} member{group._count.members === 1 ? "" : "s"}
-                </p>
-              </div>
+          <Card
+            key={group.id}
+            className="group relative flex h-full flex-col overflow-hidden border border-border/60 bg-card/70 shadow-lg transition hover:border-primary/50 hover:shadow-xl"
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(140%_85%_at_100%_0%,theme(colors.primary/0.14),transparent_65%)] opacity-0 transition group-hover:opacity-100"
+            />
+            <CardHeader className="relative flex flex-col gap-1 pb-0">
+              <CardTitle className="text-base font-semibold tracking-tight">{group.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {group._count.members} member{group._count.members === 1 ? "" : "s"}
+              </p>
             </CardHeader>
 
-            <CardContent className={cn("pt-4", isCompact ? "space-y-3" : "space-y-4")}>
+            <CardContent className={cn("relative flex flex-1 flex-col pt-4", isCompact ? "gap-3" : "gap-4")}>
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-foreground">Rename group</h4>
                 <form action={renameGroup} className={formGap}>
@@ -60,7 +66,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
                     <Label htmlFor={`name-${group.id}`}>Group name</Label>
                     <Input id={`name-${group.id}`} name="name" defaultValue={group.name} required />
                   </div>
-                  <Button type="submit" className="w-full sm:w-auto">
+                  <Button type="submit" size="sm" className="w-full sm:w-auto">
                     Save name
                   </Button>
                 </form>
@@ -71,13 +77,9 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
                 <ImportMembersForm groupId={group.id} action={importMembers} compact={isCompact} />
               </div>
 
-              <form action={deleteGroup} className="flex justify-end">
+              <form action={deleteGroup} className="mt-auto flex justify-end">
                 <input type="hidden" name="groupId" value={group.id} />
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
-                >
+                <Button type="submit" variant="destructive" size="sm" className="w-full sm:w-auto">
                   Delete group
                 </Button>
               </form>
