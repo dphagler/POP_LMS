@@ -29,7 +29,7 @@ export default function GlobalError({
           <div className="rounded-full bg-neutral-800/70 px-4 py-1 text-sm font-medium uppercase tracking-wide text-neutral-300">
             Something went wrong
           </div>
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">We hit a snag loading this page.</h1>
+          <h1 className="text-white sm:text-5xl">We hit a snag loading this page.</h1>
           <p className="text-neutral-300">
             Our team has been notified. You can try again, or head back to the dashboard while we sort things
             out.

@@ -28,7 +28,7 @@ export default async function SettingsPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Profile &amp; settings</h1>
+        <h1 className="text-slate-100">Profile &amp; settings</h1>
         <div className="prose prose-sm text-muted-foreground max-w-none">
           <p>
             Update your account details and tailor the POP Initiative experience to your preferences.

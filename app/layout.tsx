@@ -58,8 +58,8 @@ export default async function RootLayout({
     >
       <body
         className={cn(
-          "min-h-screen bg-gradient-to-b from-slate-50 via-white to-white font-sans antialiased",
-          "dark:from-slate-900 dark:via-slate-950 dark:to-slate-950",
+          "min-h-screen bg-gradient-to-b from-slate-950 via-slate-950/95 to-slate-950 font-sans antialiased",
+          "dark:from-slate-950 dark:via-slate-950/90 dark:to-slate-950",
           "[color-scheme:light_dark]"
         )}
         style={themeStyle}

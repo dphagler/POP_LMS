@@ -110,7 +110,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
             {progress?.isComplete ? "Completed" : "In progress"}
           </Badge>
         </div>
-        <h1 className="text-3xl font-semibold">{lesson.title}</h1>
+        <h1 className="text-slate-100">{lesson.title}</h1>
         <p className="text-sm text-muted-foreground">Watch the lesson video to unlock the quiz and reflection.</p>
       </div>
 
