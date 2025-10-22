@@ -27,11 +27,13 @@ export default async function SettingsPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Profile &amp; settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Update your account details and tailor the POP Initiative experience to your preferences.
-        </p>
+        <div className="prose prose-sm text-muted-foreground max-w-none">
+          <p>
+            Update your account details and tailor the POP Initiative experience to your preferences.
+          </p>
+        </div>
       </header>
       <Tabs defaultValue="profile" className="w-full">
         <TabsList>

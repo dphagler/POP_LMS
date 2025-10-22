@@ -73,7 +73,7 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col text-foreground">
       <Header
         displayName={displayName}
         menuAvatar={<UserMenuAvatar image={userImage} initials={userInitials} name={displayName} />}
@@ -83,7 +83,7 @@ export function AppShell({
       <div className="flex flex-1">
         <DesktopSidebar navItems={navItems} orgName={orgName} />
         <main className="relative flex-1">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-10">{children}</div>
+          <div className="container mx-auto max-w-6xl py-10 px-6 lg:px-10">{children}</div>
         </main>
       </div>
       <MobileNav navItems={navItems} />
@@ -137,8 +137,8 @@ type HeaderProps = {
 
 function Header({ displayName, menuAvatar, orgName, pageTitle }: HeaderProps) {
   return (
-    <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/70">
-      <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+    <header className="border-b border-slate-200/10 bg-white/70 backdrop-blur dark:bg-slate-900/40">
+      <div className="container flex w-full items-center gap-3 px-6 py-4 lg:px-10">
         <div className="flex items-center gap-3">
           <Link
             href="/app"
@@ -173,12 +173,12 @@ type DesktopSidebarProps = {
 
 function DesktopSidebar({ navItems, orgName }: DesktopSidebarProps) {
   return (
-    <aside className="hidden w-64 flex-col border-r bg-muted/25 lg:flex">
-      <div className="border-b px-6 py-6">
-        <p className="text-sm font-semibold leading-tight">{orgName}</p>
+    <aside className="hidden w-64 flex-col border-r border-slate-200/10 bg-white/10 backdrop-blur dark:bg-slate-950/30 lg:flex">
+      <div className="border-b border-slate-200/10 px-6 py-6">
+        <p className="text-sm font-semibold leading-tight text-foreground">{orgName}</p>
         <p className="text-xs text-muted-foreground">Learning journeys</p>
       </div>
-      <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3 py-4">
+      <nav aria-label="Primary" className="flex flex-1 flex-col gap-2 px-4 py-6">
         {navItems.map((item) => (
           <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} />
         ))}
@@ -195,8 +195,8 @@ function MobileNav({ navItems }: MobileNavProps) {
   if (navItems.length === 0) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
-      <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-around px-1">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/10 bg-white/80 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-slate-900/80 lg:hidden">
+      <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-around px-2">
         {navItems.map((item) => (
           <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} condensed />
         ))}
@@ -214,11 +214,11 @@ type NavLinkProps = {
 
 function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
   const className = cn(
-    "inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    condensed ? "mx-1" : "",
+    "inline-flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    condensed ? "flex-1 justify-center" : "w-full justify-start",
     isActive
-      ? "bg-primary/10 text-primary shadow-sm"
-      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+      ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
+      : "text-muted-foreground hover:border-slate-200/40 hover:bg-white/40 hover:text-foreground dark:hover:bg-slate-900/40"
   );
 
   return (

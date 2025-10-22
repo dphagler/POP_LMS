@@ -198,11 +198,13 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
 
   return (
     <div className="space-y-6">
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="space-y-4">
+      <Card>
+        <CardHeader className="space-y-4 pb-4">
           <div className="space-y-1">
             <CardTitle>Choose what to assign</CardTitle>
-            <CardDescription>Select a course or module, then pick the groups that should receive it.</CardDescription>
+            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
+              Select a course or module, then pick the groups that should receive it.
+            </CardDescription>
           </div>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-foreground">Assignment scope</legend>
@@ -259,11 +261,13 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card>
+        <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle>Select groups</CardTitle>
-            <CardDescription>Members from the selected groups will be enrolled if they are not already assigned.</CardDescription>
+            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
+              Members from the selected groups will be enrolled if they are not already assigned.
+            </CardDescription>
           </div>
           {groups.length > 0 ? (
             <DataDensityToggle
@@ -282,8 +286,8 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                 <label
                   key={group.id}
                   className={cn(
-                    "flex items-start rounded-md border border-border/60 bg-background/60 shadow-sm transition hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
-                    isCompact ? "gap-2 p-2 text-sm" : "gap-3 p-3 text-sm"
+                    "flex items-start rounded-xl border border-slate-200/10 bg-white/10 text-sm shadow-sm backdrop-blur transition hover:border-slate-200/30 hover:bg-white/20 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background dark:border-slate-800/40 dark:bg-slate-900/20 dark:hover:border-slate-700/60 dark:hover:bg-slate-900/30",
+                    isCompact ? "gap-2 p-2" : "gap-3 p-3"
                   )}
                 >
                   <input
@@ -305,10 +309,12 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader>
+      <Card>
+        <CardHeader className="pb-4">
           <CardTitle>Preview enrollment</CardTitle>
-          <CardDescription>Double-check who will gain access before assigning.</CardDescription>
+          <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
+            Double-check who will gain access before assigning.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1 text-sm">
@@ -329,15 +335,15 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           </div>
 
           {preview.newMembers.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-sm font-medium">Learners gaining access</p>
-              <div className="max-h-64 overflow-y-auto rounded-md border border-border/40 bg-muted/30 p-2">
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200/10 bg-white/10 p-3 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
                 <ul className={cn("flex flex-col", memberListSpacing)}>
                   {preview.newMembers.map((member) => (
                     <li
                       key={member.id}
                       className={cn(
-                        "rounded border border-border/40 bg-background/80 px-3 text-sm",
+                        "rounded-lg border border-slate-200/20 bg-white/20 px-3 text-sm shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/40",
                         isCompact ? "py-1.5" : "py-2"
                       )}
                     >
@@ -359,7 +365,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           {result ? (
             <div
               className={cn(
-                "rounded-md border px-3 py-2 text-sm",
+                "rounded-md border px-3 py-2 text-sm shadow-sm backdrop-blur",
                 result.enrollmentsCreated > 0
                   ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-900"
                   : "border-sky-500/40 bg-sky-500/10 text-sky-900"
@@ -399,10 +405,10 @@ function ScopeToggleButton({ active, label, description, onClick }: ScopeToggleB
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-w-[140px] max-w-xs flex-1 flex-col gap-1 rounded-md border px-3 py-2 text-left text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto",
+        "flex min-w-[140px] max-w-xs flex-1 flex-col gap-1 rounded-xl border border-slate-200/10 bg-white/10 px-3 py-2 text-left text-sm shadow-sm backdrop-blur transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto dark:border-slate-800/40 dark:bg-slate-900/20",
         active
-          ? "border-primary bg-primary/10"
-          : "border-border/60 bg-background hover:border-primary/60 hover:bg-muted/40"
+          ? "border-primary/40 bg-primary/10"
+          : "hover:border-slate-200/40 hover:bg-white/20 dark:hover:bg-slate-900/30"
       )}
       aria-pressed={active}
     >
