@@ -44,7 +44,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
           <Card key={group.id}>
             <CardHeader className="flex flex-col gap-1 pb-0 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle className="text-slate-100">{group.name}</CardTitle>
+                <CardTitle>{group.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {group._count.members} member{group._count.members === 1 ? "" : "s"}
                 </p>

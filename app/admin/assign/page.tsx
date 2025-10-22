@@ -81,7 +81,7 @@ export default async function AssignmentPage() {
       <Card>
         <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-slate-100">Assign learning</CardTitle>
+            <CardTitle>Assign learning</CardTitle>
             <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
               Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
             </CardDescription>

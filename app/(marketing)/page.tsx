@@ -30,10 +30,10 @@ export default function MarketingPage() {
     <main className="min-h-screen">
       <div className="container mx-auto max-w-6xl space-y-6 py-10 px-6 lg:px-10">
         <section className="flex flex-col items-center gap-6 rounded-3xl border border-primary/30 bg-primary/10 px-8 py-16 text-center shadow-[0_30px_80px_-45px_rgba(56,189,248,0.45)] backdrop-blur dark:border-primary/40 dark:bg-primary/15">
-          <span className="rounded-full border border-primary/40 bg-secondary/10 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-slate-200 dark:bg-secondary/20">
+          <span className="rounded-full border border-primary/40 bg-secondary/10 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-slate-200 dark:bg-secondary/15">
             Workforce readiness reimagined
           </span>
-          <h1 className="max-w-3xl text-slate-100 sm:text-5xl">
+          <h1 className="max-w-3xl text-balance">
             Essential Skills. Positive People. Powerful Teams.
           </h1>
           <div className="prose prose-lg max-w-2xl text-slate-300 prose-p:leading-relaxed prose-a:text-primary dark:text-slate-200">
@@ -54,7 +54,7 @@ export default function MarketingPage() {
 
         <section className="space-y-6 rounded-3xl border border-secondary/30 bg-secondary/10 px-6 py-10 shadow-[0_25px_60px_-40px_rgba(129,140,248,0.45)] backdrop-blur dark:border-secondary/40 dark:bg-secondary/15">
           <div className="text-center">
-            <h2 className="text-slate-100">Why schools choose POP Learning</h2>
+            <h2 className="text-balance">Why schools choose POP Learning</h2>
             <div className="prose prose-sm mx-auto mt-3 max-w-2xl text-slate-300 dark:text-slate-200">
               <p>Everything you need to nurture employability skills in every classroom.</p>
             </div>
@@ -73,7 +73,7 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-primary/35 bg-primary/15 px-8 py-12 text-center text-slate-100 shadow-[0_25px_60px_-40px_rgba(56,189,248,0.6)] backdrop-blur dark:border-primary/40 dark:bg-primary/20">
+        <section className="rounded-3xl border border-primary/30 bg-primary/10 px-8 py-12 text-center shadow-[0_25px_60px_-40px_rgba(56,189,248,0.6)] backdrop-blur dark:border-primary/40 dark:bg-primary/15">
           <h2>Who it&apos;s for</h2>
           <div className="prose prose-lg mx-auto mt-4 max-w-2xl text-slate-200">
             <p>
@@ -82,9 +82,9 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-3xl border border-secondary/30 bg-secondary/10 px-6 py-8 text-center shadow-[0_20px_50px_-40px_rgba(129,140,248,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left dark:border-secondary/40 dark:bg-secondary/20">
+        <section className="flex flex-col gap-4 rounded-3xl border border-secondary/30 bg-secondary/10 px-6 py-8 text-center shadow-[0_20px_50px_-40px_rgba(129,140,248,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left dark:border-secondary/40 dark:bg-secondary/15">
           <div className="space-y-2">
-            <h3 className="text-slate-100">Ready to launch POP for your learners?</h3>
+            <h3 className="text-balance">Ready to launch POP for your learners?</h3>
             <div className="prose prose-sm max-w-xl text-slate-300 dark:text-slate-200">
               <p>Get started in minutes with instant access to the full platform.</p>
             </div>
@@ -104,13 +104,13 @@ export default function MarketingPage() {
         <div className="container mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-6 lg:px-10 sm:flex-row">
           <p className="text-sm">© {new Date().getFullYear()} POP Learning. All rights reserved.</p>
           <nav className="flex items-center gap-6 text-sm">
-            <Link href="/about" className="transition hover:text-white">
+            <Link href="/about" className="transition hover:text-slate-100">
               About
             </Link>
-            <Link href="#" className="transition hover:text-white">
+            <Link href="#" className="transition hover:text-slate-100">
               Pricing
             </Link>
-            <Link href="mailto:hello@poplearning.com" className="transition hover:text-white">
+            <Link href="mailto:hello@poplearning.com" className="transition hover:text-slate-100">
               Contact
             </Link>
           </nav>

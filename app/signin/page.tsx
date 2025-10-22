@@ -94,7 +94,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-lg border bg-card p-8 text-center">
         <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
         <div className="space-y-2">
-          <h1 className="text-slate-100">Welcome back</h1>
+          <h1 className="text-balance">Welcome back</h1>
           <p className="text-sm text-muted-foreground">
             Choose how you’d like to sign in to your POP Initiative account.
           </p>

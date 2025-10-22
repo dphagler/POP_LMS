@@ -24,13 +24,13 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 py-16 text-neutral-100">
+      <body className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-16 font-sans text-sm leading-6 text-slate-200">
         <div className="mx-auto flex max-w-md flex-col items-center gap-6 text-center">
-          <div className="rounded-full bg-neutral-800/70 px-4 py-1 text-sm font-medium uppercase tracking-wide text-neutral-300">
+          <div className="rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1 text-sm font-medium uppercase tracking-wide text-slate-200">
             Something went wrong
           </div>
-          <h1 className="text-white sm:text-5xl">We hit a snag loading this page.</h1>
-          <p className="text-neutral-300">
+          <h1 className="text-balance">We hit a snag loading this page.</h1>
+          <p className="text-balance text-slate-300">
             Our team has been notified. You can try again, or head back to the dashboard while we sort things
             out.
           </p>
@@ -39,20 +39,20 @@ export default function GlobalError({
               type="button"
               onClick={reset}
               variant="secondary"
-              className="bg-white text-neutral-900 hover:bg-neutral-200 focus-visible:ring-white/70 focus-visible:ring-offset-neutral-950"
+              className="border-secondary/40 bg-secondary/10 text-slate-200 hover:border-secondary/60 hover:bg-secondary/15"
             >
               Try again
             </Button>
             <Button
               variant="outline"
               asChild
-              className="border-white/40 text-white hover:border-white hover:bg-white/10 focus-visible:ring-white/70 focus-visible:ring-offset-neutral-950"
+              className="border-slate-200/30 text-slate-200 hover:border-slate-200/50 hover:bg-slate-200/10"
             >
               <Link href="/">Go home</Link>
             </Button>
           </div>
           {error?.digest ? (
-            <p className="text-xs text-neutral-500">Error reference: {error.digest}</p>
+            <p className="text-xs text-slate-500">Error reference: {error.digest}</p>
           ) : null}
         </div>
       </body>

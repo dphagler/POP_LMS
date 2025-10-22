@@ -6,8 +6,8 @@ export default function NotFound() {
       <div className="rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1 text-sm font-medium uppercase tracking-wide text-slate-200">
         404
       </div>
-      <h1 className="text-slate-100 sm:text-5xl">We can’t seem to find that page.</h1>
-      <p className="max-w-md text-slate-300">
+      <h1 className="text-balance">We can’t seem to find that page.</h1>
+      <p className="max-w-md text-balance">
         The page may have moved or no longer exists. Check the URL or return to the dashboard to continue learning.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">

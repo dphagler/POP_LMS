@@ -144,15 +144,15 @@
   }
 
   h1 {
-    @apply font-sans text-4xl font-bold tracking-tight;
+    @apply font-sans text-4xl font-bold tracking-tight text-slate-100 dark:text-slate-100;
   }
 
   h2 {
-    @apply font-sans text-2xl font-semibold;
+    @apply font-sans text-2xl font-semibold text-slate-100 dark:text-slate-100;
   }
 
   h3 {
-    @apply font-sans text-lg font-medium;
+    @apply font-sans text-lg font-medium text-slate-100 dark:text-slate-100;
   }
 }
 
@@ -161,7 +161,7 @@
 }
 
 a {
-  @apply text-primary;
+  color: hsl(var(--primary));
   text-underline-offset: 4px;
 }
 
