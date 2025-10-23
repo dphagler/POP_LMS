@@ -45,6 +45,13 @@ const heroHighlights = [
   "Dashboards that translate growth into career pathways.",
 ];
 
+const heroStats = [
+  { value: "28", label: "Active cohorts nationwide" },
+  { value: "94%", label: "Average completion rate" },
+  { value: "8.7/10", label: "Learner satisfaction" },
+  { value: "120+", label: "Micro-lessons ready to launch" },
+];
+
 const stats = [
   { value: "92%", label: "Completion rate across districts" },
   { value: "4.3 days", label: "Average student streak" },
@@ -321,93 +328,89 @@ type HeroSectionProps = {
 
 function HeroSection({ highlights }: HeroSectionProps) {
   return (
-    <Section id="hero" className="pt-24">
-      <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <motion.div
-          className="space-y-6 text-center lg:text-left"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-        >
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
-            Workforce readiness reimagined
-          </span>
-          <h1 className="text-balance bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl">
-            A modern LMS that feels like the apps students love.
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
-            POP Initiative delivers assessment-driven, video-first learning that equips every student with the essential
-            skills employers expect—while giving educators the analytics they need to prove growth.
-          </p>
-          <ul className="mx-auto grid max-w-2xl gap-3 text-left text-sm text-muted-foreground lg:mx-0">
-            {highlights.map((highlight) => (
-              <li key={highlight} className="flex items-start gap-2">
-                <Sparkles className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
-                <span>{highlight}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-            <Button size="lg" asChild className="shadow-lg shadow-primary/20">
-              <Link href="/signin" className="gap-2">
+    <>
+      <section id="hero" className="hero scroll-mt-32 min-h-[70vh] bg-base-200 py-16 text-foreground sm:py-24">
+        <div className="hero-content mx-auto max-w-7xl flex-col-reverse items-center gap-12 lg:flex-row">
+          <motion.div
+            className="w-full space-y-6 text-center lg:max-w-2xl lg:text-left"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
+              Workforce readiness reimagined
+            </span>
+            <h1 className="text-balance text-5xl font-bold tracking-tight sm:text-6xl">
+              Essential Skills. Positive People. Powerful Teams.
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
+              POP Initiative delivers assessment-driven, video-first learning that equips every student with the essential
+              skills employers expect—while giving educators the analytics they need to prove growth.
+            </p>
+            <ul className="mx-auto grid max-w-2xl gap-3 text-left text-sm text-muted-foreground lg:mx-0">
+              {highlights.map((highlight) => (
+                <li key={highlight} className="flex items-start gap-2">
+                  <Sparkles className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
+                  <span>{highlight}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+              <Link href="/signin" className="btn btn-primary btn-wide normal-case text-base font-semibold">
                 Log in
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild className="border-primary/40 bg-base-100/60 backdrop-blur">
-              <Link href="/signup" className="gap-2">
-                Start free trial
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              <Link href="/signup" className="btn btn-outline btn-wide normal-case text-base font-semibold">
+                Sign up
               </Link>
-            </Button>
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            Essential skills. Positive people. Powerful teams.
-          </p>
-        </motion.div>
-        <motion.div
-          className="relative hidden h-full w-full justify-center lg:flex"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.7 }}
-        >
-          <div className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-8 shadow-[0_45px_140px_-80px_rgba(79,70,229,0.7)] backdrop-blur dark:border-base-800/60 dark:bg-base-900/80">
-            <div className="absolute -top-16 right-6 h-48 w-48 rounded-full bg-secondary/20 blur-3xl" />
-            <div className="space-y-6 text-left">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Daily streak</span>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">6 days</span>
-              </div>
-              <div className="space-y-3 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                <p className="text-sm font-semibold text-foreground">Featured lesson</p>
-                <p className="text-sm text-muted-foreground">&ldquo;Build strong communication habits&rdquo;</p>
-                <div className="h-2 w-full rounded-full bg-base-300">
-                  <div className="h-full w-3/4 rounded-full bg-primary" />
+            </div>
+          </motion.div>
+          <motion.div
+            className="flex w-full max-w-lg justify-center"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+          >
+            <div className="mockup-window border border-base-300 bg-base-100 shadow-xl">
+              <div className="flex h-full flex-col justify-between gap-6 bg-base-100 p-8">
+                <div className="space-y-3 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Today’s focus</p>
+                  <h3 className="text-xl font-semibold">Collaborative problem solving</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Learners watch a five-minute story-driven lesson, then complete a quick reflection to earn their daily streak points.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">75% complete · Resume now</p>
-              </div>
-              <div className="grid gap-4 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">Active cohorts</span>
-                  <span className="text-sm text-primary">12 classrooms</span>
+                <div className="grid gap-4 rounded-2xl bg-base-200/80 p-4 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Active learners</span>
+                    <span className="font-semibold text-foreground">36</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Team leaderboard</span>
+                    <span className="font-semibold text-foreground">#1 Momentum</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Next milestone</span>
+                    <span className="font-semibold text-foreground">Reflection badges</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Completion rate</span>
-                  <span className="font-semibold text-secondary">92%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Average streak</span>
-                  <span className="font-semibold text-secondary">4.3 days</span>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100/80 p-4 text-xs text-muted-foreground dark:border-base-800/70 dark:bg-base-900/60">
-                &ldquo;The first platform our students actually ask to log into.&rdquo; — CTE Director, Austin ISD
               </div>
             </div>
+          </motion.div>
+        </div>
+      </section>
+      <div className="bg-base-100 py-6">
+        <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="stats stats-vertical shadow bg-base-100 text-foreground sm:stats-horizontal">
+            {heroStats.map((item) => (
+              <div key={item.label} className="stat">
+                <div className="stat-title text-sm uppercase tracking-[0.2em] text-muted-foreground">{item.label}</div>
+                <div className="stat-value text-3xl font-bold text-primary">{item.value}</div>
+              </div>
+            ))}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </Section>
+    </>
   );
 }
 
