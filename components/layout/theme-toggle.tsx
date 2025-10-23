@@ -6,7 +6,7 @@ import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { type ThemeMode, useThemeMode } from "./theme-provider";
+import { syncDocumentTheme, type ThemeMode, useThemeMode } from "./theme-provider";
 
 const OPTIONS: Array<{ icon: typeof Sun; label: string; value: ThemeMode }> = [
   { value: "light", label: "Light", icon: Sun },
@@ -55,6 +55,8 @@ export function ThemeModeToggle({ className }: { className?: string }) {
     mode === "system" && isMounted ? ` (currently ${resolvedMode} mode)` : "";
 
   const handleSelect = (value: ThemeMode) => {
+    const resolved = getResolvedMode(value);
+    syncDocumentTheme(value, resolved);
     setMode(value);
     setOpen(false);
   };
@@ -115,4 +117,15 @@ export function ThemeModeToggle({ className }: { className?: string }) {
       </div>
     </div>
   );
+}
+
+function getResolvedMode(mode: ThemeMode): "light" | "dark" {
+  if (mode === "system") {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "light";
+  }
+
+  return mode;
 }

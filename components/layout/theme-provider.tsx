@@ -13,6 +13,15 @@ import { captureError } from "@/lib/client-error-reporting";
 const ThemeContext = createContext<Record<string, string> | null>(null);
 export type ThemeMode = "light" | "dark" | "system";
 
+const MODE_STORAGE_KEY = "pop-theme-mode";
+const THEME_STORAGE_KEY = "pop-theme-name";
+const MODE_COOKIE = "pop-theme-mode";
+const THEME_COOKIE = "pop-theme-name";
+const THEME_BY_RESOLVED: Record<"light" | "dark", "pop" | "pop-dark"> = {
+  light: "pop",
+  dark: "pop-dark"
+};
+
 type ThemeModeContextValue = {
   mode: ThemeMode;
   resolvedMode: "light" | "dark";
@@ -41,6 +50,17 @@ export function ThemeProvider({
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storedMode =
+      window.localStorage.getItem(MODE_STORAGE_KEY) ?? getCookie(MODE_COOKIE);
+    const parsed = parseThemeMode(storedMode);
+    if (parsed) {
+      setModeState(parsed);
+    }
+  }, []);
+
+  useEffect(() => {
     if (theme) return;
     const raw = window.localStorage.getItem("pop-theme") || getCookie("pop-theme");
     if (!raw) return;
@@ -55,9 +75,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     if (!theme) return;
-    Object.entries(theme).forEach(([token, value]) => {
-      document.documentElement.style.setProperty(`--${token}`, value);
-    });
+    applyThemeTokens(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -88,21 +106,7 @@ export function ThemeProvider({
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    const root = document.documentElement;
-    root.classList.toggle("dark", resolvedMode === "dark");
-    root.setAttribute("data-theme", resolvedMode === "dark" ? "pop-dark" : "pop");
-
-    if (mode === "system") {
-      root.removeAttribute("data-theme-mode");
-    } else {
-      root.setAttribute("data-theme-mode", mode);
-    }
-
-    root.setAttribute("data-theme-resolved", resolvedMode);
-    root.style.colorScheme = resolvedMode;
-
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toUTCString();
-    document.cookie = `pop-theme-mode=${mode}; path=/; expires=${expires}; SameSite=Lax`;
+    syncDocumentTheme(mode, resolvedMode);
   }, [mode, resolvedMode]);
 
   const setMode = useCallback((nextMode: ThemeMode) => {
@@ -138,9 +142,7 @@ export function useThemeMode() {
 export function setActiveTheme(theme: Record<string, string>) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem("pop-theme", JSON.stringify(theme));
-  Object.entries(theme).forEach(([token, value]) => {
-    document.documentElement.style.setProperty(`--${token}`, value);
-  });
+  applyThemeTokens(theme);
 }
 
 function getCookie(name: string) {
@@ -148,5 +150,70 @@ function getCookie(name: string) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(";").shift() ?? null;
+  return null;
+}
+
+export function syncDocumentTheme(mode: ThemeMode, resolved: "light" | "dark") {
+  const themeName = THEME_BY_RESOLVED[resolved];
+
+  if (typeof document !== "undefined") {
+    const root = document.documentElement;
+    root.classList.toggle("dark", resolved === "dark");
+    root.setAttribute("data-theme", themeName);
+
+    if (mode === "system") {
+      root.removeAttribute("data-theme-mode");
+    } else {
+      root.setAttribute("data-theme-mode", mode);
+    }
+
+    root.setAttribute("data-theme-resolved", resolved);
+    root.style.colorScheme = resolved;
+  }
+
+  if (typeof document !== "undefined") {
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toUTCString();
+    document.cookie = `${MODE_COOKIE}=${mode}; path=/; expires=${expires}; SameSite=Lax`;
+
+    if (mode === "system") {
+      document.cookie = `${THEME_COOKIE}=; path=/; expires=${new Date(0).toUTCString()}; SameSite=Lax`;
+    } else {
+      document.cookie = `${THEME_COOKIE}=${themeName}; path=/; expires=${expires}; SameSite=Lax`;
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(MODE_STORAGE_KEY, mode);
+    if (mode === "system") {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(THEME_STORAGE_KEY, themeName);
+    }
+  }
+}
+
+function applyThemeTokens(theme: Record<string, string>) {
+  if (typeof document === "undefined") return;
+  const rootStyle = document.documentElement.style;
+
+  Object.entries(theme).forEach(([token, value]) => {
+    rootStyle.setProperty(`--${token}`, value);
+  });
+
+  const primary = theme["color-primary"];
+  if (primary) {
+    rootStyle.setProperty("--p", primary);
+  }
+
+  const primaryContent = theme["color-primary-content"];
+  if (primaryContent) {
+    rootStyle.setProperty("--pc", primaryContent);
+  }
+}
+
+function parseThemeMode(value: string | null): ThemeMode | null {
+  if (value === "light" || value === "dark" || value === "system") {
+    return value;
+  }
   return null;
 }
