@@ -16,7 +16,7 @@ export default function SignupPage() {
             POP Learning for your classrooms
           </h1>
           <p className="max-w-2xl text-pretty text-base text-slate-300 sm:text-lg">
-            We're onboarding districts and partners in waves. Sign in to explore the product or reach out to our team to schedule a live walkthrough and discuss pricing.
+            We are onboarding districts and partners in waves. Sign in to explore the product or reach out to our team to schedule a live walkthrough and discuss pricing.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg">
