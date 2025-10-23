@@ -248,7 +248,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const menuPanelRef = useRef<HTMLDivElement | null>(null);
+  const menuPanelRef = useRef<HTMLUListElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const pointerDownOutsideRef = useRef(false);
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
@@ -324,7 +324,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
     });
   };
 
-  const handleMenuBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
+  const handleMenuBlur = (event: ReactFocusEvent<HTMLUListElement>) => {
     const nextFocus = event.relatedTarget as Node | null;
     if (!menuPanelRef.current) return;
     if (!nextFocus) return;
