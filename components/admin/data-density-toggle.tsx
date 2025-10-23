@@ -18,7 +18,7 @@ const OPTIONS: Array<{ label: string; value: DataDensity }> = [
 
 export function DataDensityToggle({ density, onDensityChange, className }: DataDensityToggleProps) {
   return (
-    <div className={cn("inline-flex items-center gap-1 rounded-md border border-input bg-muted/40 p-1", className)}>
+    <div className={cn("join rounded-btn bg-base-200 p-1", className)}>
       {OPTIONS.map((option) => {
         const isActive = density === option.value;
         return (
@@ -26,7 +26,7 @@ export function DataDensityToggle({ density, onDensityChange, className }: DataD
             key={option.value}
             type="button"
             size="sm"
-            variant={isActive ? "secondary" : "ghost"}
+            variant={isActive ? "primary" : "ghost"}
             aria-pressed={isActive}
             onClick={() => {
               if (!isActive) {
@@ -34,8 +34,8 @@ export function DataDensityToggle({ density, onDensityChange, className }: DataD
               }
             }}
             className={cn(
-              "h-7 px-2 text-xs",
-              isActive ? "shadow-sm" : "text-muted-foreground hover:text-foreground"
+              "join-item h-8 min-h-[2rem] rounded-btn px-3 text-xs font-semibold",
+              isActive ? "text-primary-content" : "text-muted-foreground"
             )}
           >
             {option.label}

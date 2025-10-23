@@ -7,7 +7,6 @@ import { DataDensityToggle, type DataDensity } from "@/components/admin/data-den
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import ImportMembersForm from "./import-form";
@@ -45,7 +44,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
         {groups.map((group) => (
           <Card
             key={group.id}
-            className="group relative flex h-full flex-col overflow-hidden border border-border/60 bg-card/70 shadow-lg transition hover:border-primary/50 hover:shadow-xl"
+            className="group relative flex h-full flex-col overflow-hidden border border-base-200 bg-base-100 shadow-xl transition hover:border-primary/40 hover:shadow-2xl"
           >
             <div
               aria-hidden
@@ -70,8 +69,10 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
                 <h4 className="text-sm font-medium text-foreground">Rename group</h4>
                 <form action={renameGroup} className={formGap}>
                   <input type="hidden" name="groupId" value={group.id} />
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor={`name-${group.id}`}>Group name</Label>
+                  <div className="form-control flex-1">
+                    <label htmlFor={`name-${group.id}`} className="label">
+                      <span className="label-text font-semibold">Group name</span>
+                    </label>
                     <Input id={`name-${group.id}`} name="name" defaultValue={group.name} required />
                   </div>
                   <Button type="submit" size="sm" className="w-full sm:w-auto">

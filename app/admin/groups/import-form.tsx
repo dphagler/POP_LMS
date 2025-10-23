@@ -82,18 +82,14 @@ export default function ImportMembersForm({ groupId, action, compact = false }: 
         </p>
       </form>
       {state.formError ? (
-        <p
-          id={errorMessageId}
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {state.formError}
-        </p>
+        <div id={errorMessageId} role="alert" className="alert alert-error">
+          <span>{state.formError}</span>
+        </div>
       ) : null}
       {state.success ? (
-        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm">
+        <div className="alert alert-success flex-col items-start gap-2 text-sm">
           <p className="font-medium">Import complete</p>
-          <ul className="mt-1 list-disc space-y-1 pl-4 text-sm">
+          <ul className="list-disc space-y-1 pl-4 text-sm">
             <li>
               Processed {state.success.totalRows} row{state.success.totalRows === 1 ? "" : "s"}.
             </li>
@@ -105,9 +101,9 @@ export default function ImportMembersForm({ groupId, action, compact = false }: 
         </div>
       ) : null}
       {state.errors.length > 0 ? (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+        <div className="alert alert-warning flex-col items-start gap-2 text-sm">
           <p className="font-medium">Rows with issues</p>
-          <ul className="mt-1 space-y-1">
+          <ul className="space-y-1">
             {state.errors.map((error) => (
               <li key={`${error.rowNumber}-${error.email}`}>
                 Row {error.rowNumber}: {error.email ? <span className="font-medium">{error.email}</span> : "(missing email)"}

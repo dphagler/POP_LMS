@@ -13,7 +13,7 @@ const TabsTrigger = TabsPrimitive.Trigger;
 const TabsContent = TabsPrimitive.Content;
 
 const StyledTabsList = ({ className, ...props }: TabsPrimitive.TabsListProps) => (
-  <TabsList className={cn("tabs tabs-boxed", className)} {...props} />
+  <TabsList className={cn("tabs tabs-lifted w-full", className)} {...props} />
 );
 
 const StyledTabsTrigger = (
@@ -21,9 +21,10 @@ const StyledTabsTrigger = (
 ) => (
   <TabsTrigger
     className={cn(
-      "tab min-w-[100px] text-sm font-semibold transition-colors",
+      "tab min-w-[9rem] whitespace-nowrap text-sm font-semibold transition-colors",
       "focus-visible:outline-none",
-      "data-[state=active]:bg-base-100 data-[state=active]:text-foreground data-[state=active]:shadow-lg",
+      "data-[state=active]:!border-base-300 data-[state=active]:bg-base-100 data-[state=active]:text-base-content",
+      "data-[state=inactive]:text-muted-foreground",
       className
     )}
     {...props}
@@ -35,7 +36,7 @@ const StyledTabsContent = (
 ) => (
   <TabsContent
     className={cn(
-      "mt-4 rounded-2xl border border-base-300 bg-base-100/90 p-6 text-foreground shadow-lg backdrop-blur",
+      "mt-0 rounded-b-box border border-base-300 bg-base-100 p-6 text-base-content shadow-lg",
       "focus-visible:outline-none",
       className
     )}

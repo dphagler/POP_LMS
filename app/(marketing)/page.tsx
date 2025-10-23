@@ -84,7 +84,7 @@ export default function MarketingPage() {
         <div className="container mx-auto flex w-full max-w-6xl flex-col gap-24 px-6 py-16 lg:px-10">
           <section className="relative flex min-h-[70vh] flex-col items-center justify-center gap-10 text-center">
             <motion.span
-              className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/10 px-5 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-primary shadow-sm"
+              className="badge badge-outline badge-primary badge-lg gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.32em]"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -132,64 +132,70 @@ export default function MarketingPage() {
             </motion.div>
           </section>
 
-          <section className="rounded-3xl border border-base-300 bg-base-100/80 p-10 shadow-[0_35px_90px_-55px_rgba(14,165,233,0.45)] backdrop-blur">
-            <div className="space-y-4 text-center">
-              <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Why schools choose POP Learning</h2>
+          <section className="card bg-base-100 shadow-xl">
+            <div className="card-body gap-8 text-center">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Why schools choose POP Learning</h2>
+                <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+                  Everything you need to nurture employability skills in every classroom—no extra prep required.
+                </p>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                {benefits.map((benefit) => {
+                  const Icon = benefit.icon;
+                  return (
+                    <Card
+                      key={benefit.title}
+                      className="group h-full border border-base-200 bg-base-100 shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                    >
+                      <CardHeader className="space-y-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Icon className="h-6 w-6" aria-hidden="true" />
+                        </div>
+                        <CardTitle>{benefit.title}</CardTitle>
+                        <CardDescription className="text-muted-foreground">
+                          {benefit.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section className="card bg-base-100 shadow-xl">
+            <div className="card-body items-center gap-4 text-center">
+              <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Who it&apos;s for</h2>
               <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-                Everything you need to nurture employability skills in every classroom—no extra prep required.
+                Built in partnership with high schools and CTE programs preparing students for the future of work.
+                POP Learning supports district leaders, teachers, and students with curated resources at every stage.
               </p>
-            </div>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2">
-              {benefits.map((benefit) => {
-                const Icon = benefit.icon;
-                return (
-                  <Card
-                    key={benefit.title}
-                    className="group h-full border-none bg-base-100/95 shadow-none transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_32px_90px_-60px_rgba(14,165,233,0.55)]"
-                  >
-                    <CardHeader className="space-y-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-primary)]/12 text-primary">
-                        <Icon className="h-6 w-6" aria-hidden="true" />
-                      </div>
-                      <CardTitle>{benefit.title}</CardTitle>
-                      <CardDescription className="text-muted-foreground">
-                        {benefit.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-base-300 bg-base-100/80 px-8 py-14 text-center shadow-[0_30px_80px_-50px_rgba(99,102,241,0.45)] backdrop-blur">
-            <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Who it&apos;s for</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              Built in partnership with high schools and CTE programs preparing students for the future of work.
-              POP Learning supports district leaders, teachers, and students with curated resources at every stage.
-            </p>
-          </section>
-
-          <section className="flex flex-col gap-6 rounded-3xl border border-base-300 bg-gradient-to-br from-primary/10 via-base-100 to-accent/10 px-8 py-10 text-center shadow-[0_30px_80px_-55px_rgba(129,140,248,0.5)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left">
-            <div className="space-y-3">
-              <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Ready to launch POP for your learners?</h3>
-              <p className="max-w-xl text-base text-muted-foreground">
-                Get started in minutes with instant access to the full platform and plug-and-play lesson plans.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button asChild>
-                <Link href="/signin" className="gap-2">
-                  Log in
-                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/signup" className="gap-2">
-                  Book a demo
-                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </Button>
+          <section className="card bg-gradient-to-br from-primary/10 via-base-100 to-accent/10 shadow-2xl">
+            <div className="card-body gap-6 sm:flex sm:flex-row sm:items-center sm:justify-between sm:text-left">
+              <div className="space-y-3 text-center sm:text-left">
+                <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Ready to launch POP for your learners?</h3>
+                <p className="max-w-xl text-base text-muted-foreground">
+                  Get started in minutes with instant access to the full platform and plug-and-play lesson plans.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Button asChild>
+                  <Link href="/signin" className="gap-2">
+                    Log in
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/signup" className="gap-2">
+                    Book a demo
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </section>
         </div>
