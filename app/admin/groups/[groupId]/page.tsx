@@ -17,8 +17,9 @@ type GroupPageParams = {
 export default async function AdminGroupDetailPage({
   params,
 }: {
-  params: GroupPageParams;
+  params: Promise<GroupPageParams>;
 }) {
+  const { groupId } = await params;
   const session = await requireRole("ADMIN");
   const orgId = session.user.orgId;
 
@@ -27,7 +28,7 @@ export default async function AdminGroupDetailPage({
   }
 
   const group = await prisma.orgGroup.findUnique({
-    where: { id: params.groupId },
+    where: { id: groupId },
     select: {
       id: true,
       name: true,
