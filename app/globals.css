@@ -151,6 +151,13 @@
     transition: background 200ms ease, color 200ms ease;
   }
 
+  [data-theme="pop-dark"] body {
+    background-color: var(--app-background);
+    background-image: radial-gradient(circle at top left, rgba(129, 140, 248, 0.18), transparent 55%),
+      radial-gradient(circle at 80% 10%, rgba(56, 189, 248, 0.2), transparent 50%),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.94));
+  }
+
   h1,
   h2,
   h3,
