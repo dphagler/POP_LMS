@@ -37,8 +37,7 @@ export function ThemeProvider({
   const [resolvedMode, setResolvedMode] = useState<"light" | "dark">(() => {
     if (initialMode === "dark") return "dark";
     if (initialMode === "light") return "light";
-    if (typeof window === "undefined") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return "light";
   });
 
   useEffect(() => {
