@@ -20,6 +20,7 @@ import {
   type ThemeMode,
   useThemeMode
 } from "@/components/layout/theme-provider";
+import { PageContainer } from "@/components/layout/page-container";
 
 const buttonVariants: NonNullable<ButtonProps["variant"]>[] = [
   "primary",
@@ -64,10 +65,11 @@ export default function StyleguidePage() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12">
-      <header className="space-y-4 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {themeOptions.map((option) => (
+    <main className="py-12">
+      <PageContainer className="flex flex-col gap-10">
+        <header className="space-y-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {themeOptions.map((option) => (
             <button
               key={option.value}
               type="button"
@@ -190,14 +192,14 @@ export default function StyleguidePage() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <Card className="border border-base-300 bg-base-100/85">
-          <CardHeader>
-            <CardTitle>Tabs</CardTitle>
-            <CardDescription>Triggers align with the pop theme tokens.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="overview">
+        <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <Card className="border border-base-300 bg-base-100/85">
+            <CardHeader>
+              <CardTitle>Tabs</CardTitle>
+              <CardDescription>Triggers align with the pop theme tokens.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="overview">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="details">Details</TabsTrigger>
@@ -348,7 +350,9 @@ export default function StyleguidePage() {
         </Card>
       </section>
 
-      <dialog className={cn("modal", isModalOpen ? "modal-open" : "")}> 
+      </PageContainer>
+
+      <dialog className={cn("modal", isModalOpen ? "modal-open" : "")}>
         <div className="modal-box space-y-4">
           <h3 className="text-lg font-semibold">Modal title</h3>
           <p className="text-sm text-muted-foreground">

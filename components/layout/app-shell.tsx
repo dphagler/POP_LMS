@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
 import { PageFadeIn } from "./page-fade-in";
+import { PageContainer } from "./page-container";
 import { ThemeModeToggle } from "./theme-toggle";
 
 export type SidebarLink = {
@@ -91,8 +92,8 @@ export function AppShell({
       <div className="flex flex-1">
         <DesktopSidebar navItems={navItems} orgName={orgName} />
         <main className="relative flex-1">
-          <PageFadeIn className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-10">
-            {children}
+          <PageFadeIn>
+            <PageContainer className="py-10 lg:py-12">{children}</PageContainer>
           </PageFadeIn>
         </main>
       </div>
