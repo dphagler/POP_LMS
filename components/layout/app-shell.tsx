@@ -76,7 +76,12 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-base-200 text-base-content">
+    <div className="relative flex min-h-screen flex-col text-base-content">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-white/40 to-transparent dark:from-slate-950/80 dark:via-slate-950/60" />
+        <div className="absolute left-12 top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl dark:bg-primary/20" />
+        <div className="absolute right-[-10%] top-1/2 h-80 w-80 rounded-full bg-secondary/10 blur-3xl dark:bg-secondary/20" />
+      </div>
       <Header
         displayName={displayName}
         menuAvatar={<UserMenuAvatar image={userImage} initials={userInitials} name={displayName} />}
@@ -142,22 +147,32 @@ type HeaderProps = {
 
 function Header({ displayName, menuAvatar, orgName, pageTitle }: HeaderProps) {
   return (
-    <header className="navbar sticky top-0 z-30 bg-base-100 shadow-sm">
-      <div className="navbar-start flex-col items-start gap-1">
-        <Link href="/app" className="btn btn-ghost px-3 text-left">
-          <span className="text-xs font-semibold uppercase tracking-[0.32em] text-primary">POP Initiative</span>
-        </Link>
-        <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">{orgName}</span>
-      </div>
-      <div className="navbar-center hidden md:flex">
-        <span className="text-sm font-semibold text-muted-foreground">{pageTitle ?? "Page title"}</span>
-      </div>
-      <div className="navbar-end gap-3">
-        <ThemeModeToggle />
-        <span className="hidden text-sm font-semibold sm:inline" aria-live="polite">
-          {displayName}
-        </span>
-        {menuAvatar}
+    <header className="sticky top-0 z-30 border-b border-base-300/60 bg-base-100/80 backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-6 py-4 lg:px-10">
+        <div className="flex flex-1 items-center gap-4">
+          <Link
+            href="/app"
+            className="group flex items-center gap-2 rounded-full border border-base-300/60 bg-base-100/90 px-3 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary shadow-sm shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/25"
+          >
+            POP Initiative
+          </Link>
+          <div className="hidden sm:flex flex-col leading-tight">
+            <span className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Organization</span>
+            <span className="text-sm font-medium text-base-content">{orgName}</span>
+          </div>
+        </div>
+        <div className="hidden flex-1 items-center justify-center md:flex">
+          <span className="rounded-full border border-transparent bg-base-100/70 px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm shadow-primary/5">
+            {pageTitle ?? "Page title"}
+          </span>
+        </div>
+        <div className="flex flex-1 items-center justify-end gap-3">
+          <ThemeModeToggle />
+          <span className="hidden text-sm font-semibold lg:inline" aria-live="polite">
+            {displayName}
+          </span>
+          {menuAvatar}
+        </div>
       </div>
     </header>
   );
@@ -170,18 +185,19 @@ type DesktopSidebarProps = {
 
 function DesktopSidebar({ navItems, orgName }: DesktopSidebarProps) {
   return (
-    <aside className="hidden w-72 flex-col gap-4 border-r border-base-300 bg-base-200/70 p-4 lg:flex">
-      <div className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
-        <p className="text-sm font-semibold leading-tight text-base-content">{orgName}</p>
-        <p className="text-xs text-muted-foreground">Learning journeys</p>
-      </div>
-      <nav aria-label="Primary" className="flex-1">
-        <ul className="menu menu-lg gap-2 rounded-box bg-base-100 p-3 shadow-sm">
+    <aside className="hidden w-72 flex-col border-r border-base-300/60 bg-base-100/40 px-6 py-10 backdrop-blur-xl lg:flex">
+      <div className="flex flex-1 flex-col gap-6">
+        <div className="rounded-3xl border border-base-300/70 bg-base-100/90 p-6 shadow-xl shadow-primary/5">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Your org</p>
+          <p className="mt-2 text-lg font-semibold text-base-content">{orgName}</p>
+          <p className="text-sm text-muted-foreground">Learning journeys</p>
+        </div>
+        <nav aria-label="Primary" className="flex-1 space-y-2">
           {navItems.map((item) => (
             <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} />
           ))}
-        </ul>
-      </nav>
+        </nav>
+      </div>
     </aside>
   );
 }
@@ -194,7 +210,7 @@ function MobileNav({ navItems }: MobileNavProps) {
   if (navItems.length === 0) return null;
 
   return (
-    <nav className="btm-nav z-30 border-t border-base-300 bg-base-100/95 shadow-lg backdrop-blur lg:hidden">
+    <nav className="btm-nav z-30 border-t border-base-300/60 bg-base-100/90 shadow-lg backdrop-blur lg:hidden">
       {navItems.map((item) => (
         <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} condensed />
       ))}
@@ -215,8 +231,8 @@ function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
       <Link
         href={href}
         className={cn(
-          "flex flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold",
-          isActive ? "active text-primary" : "text-muted-foreground hover:text-primary"
+          "flex flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold transition",
+          isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
         )}
         aria-current={isActive ? "page" : undefined}
       >
@@ -226,15 +242,18 @@ function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
   }
 
   return (
-    <li className={isActive ? "active" : undefined}>
-      <Link
-        href={href}
-        className="text-sm font-semibold"
-        aria-current={isActive ? "page" : undefined}
-      >
-        {label}
-      </Link>
-    </li>
+    <Link
+      href={href}
+      className={cn(
+        "group block rounded-2xl border border-transparent px-4 py-3 text-sm font-semibold transition",
+        isActive
+          ? "bg-primary/10 text-primary shadow-sm shadow-primary/20 ring-1 ring-inset ring-primary/20"
+          : "text-muted-foreground hover:-translate-y-0.5 hover:border-base-300/80 hover:bg-base-100/80 hover:text-primary hover:shadow-lg hover:shadow-primary/10"
+      )}
+      aria-current={isActive ? "page" : undefined}
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -341,7 +360,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="user-menu"
-        className="btn btn-ghost btn-circle"
+        className="btn btn-circle border border-base-300/60 bg-base-100/80 shadow-sm transition hover:-translate-y-0.5 hover:shadow-primary/20"
         ref={triggerRef}
       >
         <Avatar className="h-10 w-10">
@@ -354,15 +373,15 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         role="menu"
         aria-label="Account"
         className={cn(
-          "menu menu-sm absolute right-0 mt-3 w-56 rounded-box border border-base-300 bg-base-100 p-3 text-sm shadow-xl",
+          "menu menu-sm absolute right-0 mt-3 w-60 rounded-3xl border border-base-300/70 bg-base-100/95 p-4 text-sm shadow-2xl shadow-primary/15 backdrop-blur",
           open ? "block" : "hidden"
         )}
         ref={menuPanelRef}
         onBlur={handleMenuBlur}
       >
-        <li className="rounded-box bg-base-200/80 p-3">
-          <p className="text-xs text-muted-foreground">Signed in as</p>
-          <p className="truncate text-sm font-medium text-base-content" aria-live="polite">
+        <li className="rounded-2xl border border-base-300/60 bg-base-100/80 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Signed in as</p>
+          <p className="mt-1 truncate text-sm font-medium text-base-content" aria-live="polite">
             {name}
           </p>
         </li>
@@ -370,7 +389,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           <Link
             href="/settings"
             role="menuitem"
-            className="rounded-lg"
+            className="rounded-xl px-3 py-2 font-medium text-muted-foreground transition hover:bg-base-100 hover:text-primary"
             onClick={() => closeMenu()}
             ref={firstItemRef}
           >
@@ -381,7 +400,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           <button
             type="button"
             role="menuitem"
-            className="btn btn-error btn-sm text-base-100"
+            className="btn btn-error btn-sm rounded-xl px-4 py-2 font-semibold text-base-100 shadow-lg shadow-error/20"
             onClick={handleSignOut}
             aria-busy={isPending}
             disabled={isPending}

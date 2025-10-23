@@ -7,8 +7,23 @@ import type { CSSProperties, ReactNode } from "react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { cookies } from "next/headers";
 import { createLogger, serializeError } from "@/lib/logger";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 
 const logger = createLogger({ component: "app.layout" });
+
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const heading = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-heading",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "POP Initiative LMS",
@@ -70,6 +85,8 @@ export default async function RootLayout({
     >
       <body
         className={cn(
+          sans.variable,
+          heading.variable,
           "min-h-screen bg-[color:var(--app-background)] text-[color:var(--text-primary)] font-sans antialiased",
           "transition-colors duration-300",
           "[color-scheme:light_dark]"
