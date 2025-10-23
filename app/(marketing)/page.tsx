@@ -8,6 +8,7 @@ import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
+import { PageContainer } from "@/components/layout/page-container";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 
 const benefits = [
@@ -67,19 +68,19 @@ export default function MarketingPage() {
 
   return (
     <PageFadeIn
-      className="relative min-h-screen overflow-hidden bg-gradient-to-b from-white via-white/80 to-base-200 text-foreground"
+      className="relative min-h-screen overflow-hidden bg-gradient-to-b from-base-100 via-base-100/90 to-base-200 text-foreground dark:from-base-950 dark:via-base-950/90 dark:to-base-900"
       role="main"
     >
       <SignedOutToast message={toastMessage} onDismiss={dismissToast} />
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
-          className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
+          className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl dark:bg-primary/15"
           initial={{ opacity: 0.5, scale: 0.8 }}
           animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.8, 1.05, 0.8] }}
           transition={{ duration: 14, repeat: Infinity }}
         />
         <motion.div
-          className="absolute right-0 top-0 h-96 w-96 translate-x-1/3 rounded-full bg-secondary/20 blur-[120px]"
+          className="absolute right-0 top-0 h-96 w-96 translate-x-1/3 rounded-full bg-secondary/20 blur-[120px] dark:bg-secondary/10"
           initial={{ opacity: 0.3, y: -20 }}
           animate={{ opacity: [0.3, 0.6, 0.3], y: [-20, 10, -20] }}
           transition={{ duration: 18, repeat: Infinity }}
@@ -87,7 +88,7 @@ export default function MarketingPage() {
       </div>
 
       <div className="relative z-10">
-        <div className="container mx-auto flex w-full max-w-6xl flex-col gap-24 px-6 py-20 lg:px-10">
+        <PageContainer className="flex flex-col gap-24 py-20">
           <section className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <motion.div
               className="space-y-8 text-center lg:text-left"
@@ -137,14 +138,14 @@ export default function MarketingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.7 }}
             >
-              <div className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-8 shadow-[0_45px_140px_-80px_rgba(79,70,229,0.7)] backdrop-blur">
+              <div className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-8 shadow-[0_45px_140px_-80px_rgba(79,70,229,0.7)] backdrop-blur dark:border-base-800/60 dark:bg-base-900/80">
                 <div className="absolute -top-16 right-6 h-48 w-48 rounded-full bg-secondary/20 blur-3xl" />
                 <div className="space-y-6 text-left">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Daily streak</span>
                     <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">6 days</span>
                   </div>
-                  <div className="space-y-3 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm">
+                  <div className="space-y-3 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
                     <p className="text-sm font-semibold text-foreground">Featured lesson</p>
                     <p className="text-sm text-muted-foreground">&ldquo;Build strong communication habits&rdquo;</p>
                     <div className="h-2 w-full rounded-full bg-base-300">
@@ -152,7 +153,7 @@ export default function MarketingPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">75% complete · Resume now</p>
                   </div>
-                  <div className="grid gap-4 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm">
+                  <div className="grid gap-4 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-foreground">Active cohorts</span>
                       <span className="text-sm text-primary">12 classrooms</span>
@@ -166,7 +167,7 @@ export default function MarketingPage() {
                       <span className="font-semibold text-secondary">4.3 days</span>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100/80 p-4 text-xs text-muted-foreground">
+                  <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100/80 p-4 text-xs text-muted-foreground dark:border-base-800/70 dark:bg-base-900/60">
                     &ldquo;The first platform our students actually ask to log into.&rdquo; — CTE Director, Austin ISD
                   </div>
                 </div>
@@ -181,13 +182,13 @@ export default function MarketingPage() {
                 Everything you need to nurture employability skills in every classroom—no extra prep required.
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="mx-auto grid w-full max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-6xl xl:grid-cols-4">
               {benefits.map((benefit) => {
                 const Icon = benefit.icon;
                 return (
                   <Card
                     key={benefit.title}
-                    className="group h-full border border-base-300/60 bg-base-100/90 shadow-xl shadow-primary/10 transition hover:-translate-y-1 hover:shadow-primary/30"
+                    className="group h-full border border-base-300/60 bg-base-100/90 shadow-xl shadow-primary/10 transition hover:-translate-y-1 hover:shadow-primary/30 dark:border-base-800/60 dark:bg-base-900/80 dark:shadow-primary/20"
                   >
                     <CardHeader className="space-y-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:scale-105">
@@ -204,7 +205,7 @@ export default function MarketingPage() {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)]">
+          <section className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80">
             <div className="grid gap-10 lg:grid-cols-2">
               <div className="space-y-4">
                 <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Built for every stakeholder</h3>
@@ -214,15 +215,15 @@ export default function MarketingPage() {
                 </p>
               </div>
               <div className="grid gap-4 text-sm text-muted-foreground">
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm">
+                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
                   <p className="font-semibold text-foreground">District leaders</p>
                   <p>Unlock clear ROI with dashboards that showcase readiness gains across every campus.</p>
                 </div>
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm">
+                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
                   <p className="font-semibold text-foreground">Teachers &amp; coaches</p>
                   <p>Launch curated playlists in minutes and monitor classroom engagement at a glance.</p>
                 </div>
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm">
+                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
                   <p className="font-semibold text-foreground">Students</p>
                   <p>Earn micro-credentials, build interview confidence, and bring positivity into every team.</p>
                 </div>
@@ -230,7 +231,7 @@ export default function MarketingPage() {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] border border-primary/30 bg-gradient-to-br from-primary/15 via-base-100/90 to-secondary/15 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.5)]">
+          <section className="rounded-[2.5rem] border border-primary/30 bg-gradient-to-br from-primary/15 via-base-100/90 to-secondary/15 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.5)] dark:border-primary/40 dark:from-primary/10 dark:via-base-900/80 dark:to-secondary/10">
             <div className="flex flex-col gap-6 text-center sm:text-left sm:items-center sm:justify-between sm:gap-8 md:flex-row">
               <div className="max-w-xl space-y-3">
                 <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Ready to launch POP for your learners?</h3>
@@ -255,11 +256,11 @@ export default function MarketingPage() {
               </div>
             </div>
           </section>
-        </div>
+        </PageContainer>
       </div>
 
-      <footer className="border-t border-base-300/70 bg-base-100/80 py-10 text-muted-foreground backdrop-blur">
-        <div className="container mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm lg:flex-row lg:px-10">
+      <footer className="border-t border-base-300/70 bg-base-100/80 py-10 text-muted-foreground backdrop-blur dark:border-base-800/70 dark:bg-base-950/60">
+        <PageContainer className="flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
           <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground/80">Built by the POP Initiative</p>
           <nav className="flex items-center gap-6">
             <Link href="https://www.linkedin.com/company/pop-initiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
@@ -272,7 +273,7 @@ export default function MarketingPage() {
               hello@poplearning.com
             </Link>
           </nav>
-        </div>
+        </PageContainer>
       </footer>
     </PageFadeIn>
   );

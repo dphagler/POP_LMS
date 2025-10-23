@@ -2,13 +2,14 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
+import { PageContainer } from "@/components/layout/page-container";
 
 export default function SignupPage() {
   return (
     <PageFadeIn className="min-h-screen bg-slate-950 text-slate-50">
-      <div className="relative flex min-h-screen items-center justify-center px-6 py-24">
+      <div className="relative flex min-h-screen items-center justify-center py-24">
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-950 via-slate-950/90 to-slate-950" aria-hidden />
-        <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center gap-8 text-center">
+        <PageContainer className="relative z-10 flex flex-col items-center gap-8 text-center !max-w-3xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
             Start your trial
           </span>
@@ -30,7 +31,7 @@ export default function SignupPage() {
               </Link>
             </Button>
           </div>
-        </div>
+        </PageContainer>
       </div>
     </PageFadeIn>
   );

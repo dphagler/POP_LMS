@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
+import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth, signIn } from "@/lib/auth";
@@ -93,16 +94,17 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <PageFadeIn
-      className="relative flex min-h-[80vh] items-center justify-center overflow-hidden bg-gradient-to-br from-white via-base-100 to-base-200 p-6"
+      className="relative flex min-h-[80vh] items-center justify-center overflow-hidden bg-gradient-to-br from-white via-base-100 to-base-200"
       role="main"
     >
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-16 top-10 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
         <div className="absolute right-0 bottom-0 h-72 w-72 translate-x-1/3 rounded-full bg-secondary/15 blur-3xl" />
       </div>
-      <Card className="w-full max-w-md border border-base-300/60 bg-base-100/90 shadow-[0_35px_90px_-50px_rgba(79,70,229,0.6)] backdrop-blur">
-        <CardContent className="flex flex-col items-center gap-7 p-10 text-center">
-          <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
+      <PageContainer className="flex justify-center">
+        <Card className="w-full max-w-md border border-base-300/60 bg-base-100/90 shadow-[0_35px_90px_-50px_rgba(79,70,229,0.6)] backdrop-blur">
+          <CardContent className="flex flex-col items-center gap-7 p-10 text-center">
+            <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
           <div className="space-y-3">
             <h1 className="text-balance text-2xl font-semibold text-foreground">Welcome back</h1>
             <p className="text-sm text-muted-foreground">
@@ -135,7 +137,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <p>Reach out to your program admin to get connected to POP Initiative.</p>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </PageContainer>
     </PageFadeIn>
   );
 }
