@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide-react";
@@ -8,8 +9,8 @@ import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
-import { PageContainer } from "@/components/layout/page-container";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
+import { cn } from "@/lib/utils";
 
 const benefits = [
   {
@@ -42,6 +43,13 @@ const heroHighlights = [
   "AI-tailored, bite-sized lessons students actually finish.",
   "Leaderboards and streaks that boost collaboration.",
   "Dashboards that translate growth into career pathways.",
+];
+
+const stats = [
+  { value: "92%", label: "Completion rate across districts" },
+  { value: "4.3 days", label: "Average student streak" },
+  { value: "12 cohorts", label: "Classes collaborating weekly" },
+  { value: "100+", label: "Micro-lessons ready to launch" },
 ];
 
 const TOAST_AUTO_DISMISS_MS = 4000;
@@ -87,180 +95,16 @@ export default function MarketingPage() {
         />
       </div>
 
-      <div className="relative z-10">
-        <PageContainer className="flex flex-col gap-24 py-20">
-          <section className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-            <motion.div
-              className="space-y-8 text-center lg:text-left"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-            >
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
-                Workforce readiness reimagined
-              </span>
-              <h1 className="text-balance bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl">
-                A modern LMS that feels like the apps students love.
-              </h1>
-              <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
-                POP Initiative delivers assessment-driven, video-first learning that equips every student with the
-                essential skills employers expect—while giving educators the analytics they need to prove growth.
-              </p>
-              <ul className="mx-auto grid max-w-2xl gap-3 text-left text-sm text-muted-foreground lg:mx-0">
-                {heroHighlights.map((highlight) => (
-                  <li key={highlight} className="flex items-start gap-2">
-                    <Sparkles className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-                <Button size="lg" asChild className="shadow-lg shadow-primary/20">
-                  <Link href="/signin" className="gap-2">
-                    Log in
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild className="border-primary/40 bg-base-100/60 backdrop-blur">
-                  <Link href="/signup" className="gap-2">
-                    Start free trial
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                Essential skills. Positive people. Powerful teams.
-              </p>
-            </motion.div>
-            <motion.div
-              className="relative hidden h-full w-full justify-center lg:flex"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.7 }}
-            >
-              <div className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-8 shadow-[0_45px_140px_-80px_rgba(79,70,229,0.7)] backdrop-blur dark:border-base-800/60 dark:bg-base-900/80">
-                <div className="absolute -top-16 right-6 h-48 w-48 rounded-full bg-secondary/20 blur-3xl" />
-                <div className="space-y-6 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Daily streak</span>
-                    <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">6 days</span>
-                  </div>
-                  <div className="space-y-3 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                    <p className="text-sm font-semibold text-foreground">Featured lesson</p>
-                    <p className="text-sm text-muted-foreground">&ldquo;Build strong communication habits&rdquo;</p>
-                    <div className="h-2 w-full rounded-full bg-base-300">
-                      <div className="h-full w-3/4 rounded-full bg-primary" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">75% complete · Resume now</p>
-                  </div>
-                  <div className="grid gap-4 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-foreground">Active cohorts</span>
-                      <span className="text-sm text-primary">12 classrooms</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Completion rate</span>
-                      <span className="font-semibold text-secondary">92%</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Average streak</span>
-                      <span className="font-semibold text-secondary">4.3 days</span>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100/80 p-4 text-xs text-muted-foreground dark:border-base-800/70 dark:bg-base-900/60">
-                    &ldquo;The first platform our students actually ask to log into.&rdquo; — CTE Director, Austin ISD
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </section>
-
-          <section className="space-y-10">
-            <div className="space-y-4 text-center">
-              <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Why schools choose POP Learning</h2>
-              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-                Everything you need to nurture employability skills in every classroom—no extra prep required.
-              </p>
-            </div>
-            <div className="mx-auto grid w-full max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-6xl xl:grid-cols-4">
-              {benefits.map((benefit) => {
-                const Icon = benefit.icon;
-                return (
-                  <Card
-                    key={benefit.title}
-                    className="group h-full border border-base-300/60 bg-base-100/90 shadow-xl shadow-primary/10 transition hover:-translate-y-1 hover:shadow-primary/30 dark:border-base-800/60 dark:bg-base-900/80 dark:shadow-primary/20"
-                  >
-                    <CardHeader className="space-y-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:scale-105">
-                        <Icon className="h-6 w-6" aria-hidden="true" />
-                      </div>
-                      <CardTitle className="text-xl font-semibold text-foreground">{benefit.title}</CardTitle>
-                      <CardDescription className="text-base text-muted-foreground">
-                        {benefit.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Built for every stakeholder</h3>
-                <p className="text-base text-muted-foreground">
-                  POP connects administrators, teachers, and students with a shared growth language. AI-curated lessons,
-                  gamified cohorts, and real-time reporting keep everyone aligned on essential-skill mastery.
-                </p>
-              </div>
-              <div className="grid gap-4 text-sm text-muted-foreground">
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                  <p className="font-semibold text-foreground">District leaders</p>
-                  <p>Unlock clear ROI with dashboards that showcase readiness gains across every campus.</p>
-                </div>
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                  <p className="font-semibold text-foreground">Teachers &amp; coaches</p>
-                  <p>Launch curated playlists in minutes and monitor classroom engagement at a glance.</p>
-                </div>
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-                  <p className="font-semibold text-foreground">Students</p>
-                  <p>Earn micro-credentials, build interview confidence, and bring positivity into every team.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[2.5rem] border border-primary/30 bg-gradient-to-br from-primary/15 via-base-100/90 to-secondary/15 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.5)] dark:border-primary/40 dark:from-primary/10 dark:via-base-900/80 dark:to-secondary/10">
-            <div className="flex flex-col gap-6 text-center sm:text-left sm:items-center sm:justify-between sm:gap-8 md:flex-row">
-              <div className="max-w-xl space-y-3">
-                <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Ready to launch POP for your learners?</h3>
-                <p className="text-base text-muted-foreground">
-                  Get started in minutes with instant access to the full platform, plug-and-play lesson plans, and a pilot
-                  playbook you can run this semester.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <Button asChild className="shadow-lg shadow-primary/20">
-                  <Link href="/signin" className="gap-2">
-                    Log in
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild className="border-primary/40 bg-base-100/70 backdrop-blur">
-                  <Link href="/signup" className="gap-2">
-                    Book a demo
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </section>
-        </PageContainer>
+      <div className="relative z-10 space-y-0">
+        <HeroSection highlights={heroHighlights} />
+        <FeaturesSection />
+        <StatsSection />
+        <StakeholdersSection />
+        <CTASection />
       </div>
 
       <footer className="border-t border-base-300/70 bg-base-100/80 py-10 text-muted-foreground backdrop-blur dark:border-base-800/70 dark:bg-base-950/60">
-        <PageContainer className="flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
+        <MaxContainer className="flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
           <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground/80">Built by the POP Initiative</p>
           <nav className="flex items-center gap-6">
             <Link href="https://www.linkedin.com/company/pop-initiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
@@ -273,9 +117,221 @@ export default function MarketingPage() {
               hello@poplearning.com
             </Link>
           </nav>
-        </PageContainer>
+        </MaxContainer>
       </footer>
     </PageFadeIn>
+  );
+}
+
+type HeroSectionProps = {
+  highlights: string[];
+};
+
+function HeroSection({ highlights }: HeroSectionProps) {
+  return (
+    <Section className="pt-24">
+      <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <motion.div
+          className="space-y-6 text-center lg:text-left"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
+            Workforce readiness reimagined
+          </span>
+          <h1 className="text-balance bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl">
+            A modern LMS that feels like the apps students love.
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
+            POP Initiative delivers assessment-driven, video-first learning that equips every student with the essential
+            skills employers expect—while giving educators the analytics they need to prove growth.
+          </p>
+          <ul className="mx-auto grid max-w-2xl gap-3 text-left text-sm text-muted-foreground lg:mx-0">
+            {highlights.map((highlight) => (
+              <li key={highlight} className="flex items-start gap-2">
+                <Sparkles className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
+                <span>{highlight}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+            <Button size="lg" asChild className="shadow-lg shadow-primary/20">
+              <Link href="/signin" className="gap-2">
+                Log in
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="border-primary/40 bg-base-100/60 backdrop-blur">
+              <Link href="/signup" className="gap-2">
+                Start free trial
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+            Essential skills. Positive people. Powerful teams.
+          </p>
+        </motion.div>
+        <motion.div
+          className="relative hidden h-full w-full justify-center lg:flex"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+        >
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-8 shadow-[0_45px_140px_-80px_rgba(79,70,229,0.7)] backdrop-blur dark:border-base-800/60 dark:bg-base-900/80">
+            <div className="absolute -top-16 right-6 h-48 w-48 rounded-full bg-secondary/20 blur-3xl" />
+            <div className="space-y-6 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Daily streak</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">6 days</span>
+              </div>
+              <div className="space-y-3 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
+                <p className="text-sm font-semibold text-foreground">Featured lesson</p>
+                <p className="text-sm text-muted-foreground">&ldquo;Build strong communication habits&rdquo;</p>
+                <div className="h-2 w-full rounded-full bg-base-300">
+                  <div className="h-full w-3/4 rounded-full bg-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground">75% complete · Resume now</p>
+              </div>
+              <div className="grid gap-4 rounded-3xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-foreground">Active cohorts</span>
+                  <span className="text-sm text-primary">12 classrooms</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Completion rate</span>
+                  <span className="font-semibold text-secondary">92%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Average streak</span>
+                  <span className="font-semibold text-secondary">4.3 days</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100/80 p-4 text-xs text-muted-foreground dark:border-base-800/70 dark:bg-base-900/60">
+                &ldquo;The first platform our students actually ask to log into.&rdquo; — CTE Director, Austin ISD
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </Section>
+  );
+}
+
+function FeaturesSection() {
+  return (
+    <Section>
+      <SectionHeader
+        title="Why schools choose POP Learning"
+        description="Everything you need to nurture employability skills in every classroom—no extra prep required."
+      />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {benefits.map((benefit) => {
+          const Icon = benefit.icon;
+          return (
+            <Card
+              key={benefit.title}
+              className="card group h-full border border-base-300/60 bg-base-100/90 shadow-xl shadow-primary/10 transition hover:-translate-y-1 hover:shadow-primary/30 dark:border-base-800/60 dark:bg-base-900/80 dark:shadow-primary/20"
+            >
+              <CardHeader className="space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:scale-105">
+                  <Icon className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <CardTitle className="text-xl font-semibold text-foreground">{benefit.title}</CardTitle>
+                <CardDescription className="text-base text-muted-foreground">{benefit.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+function StatsSection() {
+  return (
+    <Section className="bg-base-100/80">
+      <SectionHeader
+        title="Momentum you can measure"
+        description="Transparent metrics keep educators, students, and administrators aligned on real progress."
+      />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="card space-y-2 rounded-3xl border border-base-300/60 bg-base-100/90 p-8 text-center shadow-sm dark:border-base-800/60 dark:bg-base-900/70"
+          >
+            <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function StakeholdersSection() {
+  return (
+    <Section>
+      <div className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80">
+        <div className="grid gap-10 lg:grid-cols-2">
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-foreground">Built for every stakeholder</h2>
+            <p className="text-base text-muted-foreground">
+              POP connects administrators, teachers, and students with a shared growth language. AI-curated lessons,
+              gamified cohorts, and real-time reporting keep everyone aligned on essential-skill mastery.
+            </p>
+          </div>
+          <div className="grid gap-4 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
+              <h3 className="text-xl font-semibold text-foreground">District leaders</h3>
+              <p>Unlock clear ROI with dashboards that showcase readiness gains across every campus.</p>
+            </div>
+            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
+              <h3 className="text-xl font-semibold text-foreground">Teachers &amp; coaches</h3>
+              <p>Launch curated playlists in minutes and monitor classroom engagement at a glance.</p>
+            </div>
+            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
+              <h3 className="text-xl font-semibold text-foreground">Students</h3>
+              <p>Earn micro-credentials, build interview confidence, and bring positivity into every team.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function CTASection() {
+  return (
+    <Section>
+      <div className="rounded-[2.5rem] border border-primary/30 bg-gradient-to-br from-primary/15 via-base-100/90 to-secondary/15 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.5)] dark:border-primary/40 dark:from-primary/10 dark:via-base-900/80 dark:to-secondary/10">
+        <div className="flex flex-col items-center justify-between gap-8 text-center sm:flex-row sm:text-left">
+          <div className="max-w-xl space-y-4">
+            <h2 className="text-3xl font-bold text-foreground">Ready to launch POP for your learners?</h2>
+            <p className="text-base text-muted-foreground">
+              Get started in minutes with instant access to the full platform, plug-and-play lesson plans, and a pilot
+              playbook you can run this semester.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button asChild className="shadow-lg shadow-primary/20">
+              <Link href="/signin" className="gap-2">
+                Log in
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="border-primary/40 bg-base-100/70 backdrop-blur">
+              <Link href="/signup" className="gap-2">
+                Book a demo
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Section>
   );
 }
 
@@ -305,4 +361,40 @@ function SignedOutToast({ message, onDismiss }: SignedOutToastProps) {
       </button>
     </div>
   );
+}
+
+type SectionProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+function Section({ children, className }: SectionProps) {
+  return (
+    <section className={cn("py-16 sm:py-24", className)}>
+      <MaxContainer className="space-y-6">{children}</MaxContainer>
+    </section>
+  );
+}
+
+type SectionHeaderProps = {
+  title: string;
+  description?: string;
+};
+
+function SectionHeader({ title, description }: SectionHeaderProps) {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 text-center">
+      <h2 className="text-3xl font-bold text-foreground">{title}</h2>
+      {description ? <p className="text-base text-muted-foreground sm:text-lg">{description}</p> : null}
+    </div>
+  );
+}
+
+type MaxContainerProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+function MaxContainer({ children, className }: MaxContainerProps) {
+  return <div className={cn("container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8", className)}>{children}</div>;
 }
