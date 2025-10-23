@@ -115,6 +115,41 @@ export default function StyleguidePage() {
         </div>
       </section>
 
+      <section className="rounded-3xl border border-base-300 bg-base-100/80 p-6 shadow-sm">
+        <h2 className="text-xl font-semibold">Cards</h2>
+        <p className="text-sm text-muted-foreground">
+          Card surfaces combine POP tokens with rounded corners and layered shadows.
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="card border border-base-300 bg-base-100/95 shadow-md">
+            <div className="card-body gap-3">
+              <span className="badge badge-accent badge-sm w-fit uppercase tracking-wide">Featured</span>
+              <h3 className="card-title text-lg">Design systems 101</h3>
+              <p className="text-sm text-muted-foreground">
+                Explore how POP colors, typography, and spacing connect to craft cohesive experiences.
+              </p>
+              <div className="card-actions justify-end gap-2">
+                <Button size="sm" variant="ghost">
+                  Preview
+                </Button>
+                <Button size="sm">Enroll</Button>
+              </div>
+            </div>
+          </div>
+          <div className="card border border-dashed border-base-300 bg-base-200/70 shadow-inner">
+            <div className="card-body gap-3">
+              <h3 className="card-title text-lg">Empty state</h3>
+              <p className="text-sm text-muted-foreground">
+                Softer neutrals and dashed outlines provide gentle affordances for adding new content.
+              </p>
+              <Button size="sm" variant="secondary" className="w-fit">
+                Create module
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="grid gap-6 lg:grid-cols-2">
         <Card className="border border-base-300 bg-base-100/85">
           <CardHeader>
