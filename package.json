@@ -11,6 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --test lib/__tests__/auth-adapter.test.cjs",
+    "check:routes": "node scripts/check-routes.mjs",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",

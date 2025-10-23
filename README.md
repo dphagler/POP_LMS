@@ -91,10 +91,11 @@ The script updates the matching `User` record to `role = "ADMIN"` and prints the
 - `pnpm prisma:migrate` – run/create migrations
 - `pnpm prisma:generate` – generate Prisma client
 - `pnpm prisma db seed` – seed database with the POP Initiative org and admin
+- `pnpm check:routes` – verify that critical application routes still exist
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-checking on pull requests.
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-checking on pull requests. Add `pnpm check:routes` to any CI job to fail fast when essential routes such as `/app`, `/settings`, or `/admin` are accidentally removed.
 
 ## Optional integrations
 
