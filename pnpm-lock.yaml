@@ -93,6 +93,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.6)
+      daisyui:
+        specifier: file:./packages/daisyui
+        version: link:packages/daisyui
       eslint:
         specifier: ^9.38.0
         version: 9.38.0(jiti@2.6.1)
@@ -123,6 +126,8 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+
+  packages/daisyui: {}
 
   packages/tailwindcss-postcss: {}
 

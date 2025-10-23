@@ -11,7 +11,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
   const initialPasswordState: ChangePasswordFormState = { status: "idle" };
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100/85 p-6 shadow-md">
       <header className="space-y-1">
         <h2 className="text-balance">Account security</h2>
         <p className="text-sm text-muted-foreground">
@@ -31,7 +31,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-dashed bg-muted/40">
+        <Card className="border border-dashed border-base-300 bg-base-100/70">
           <CardContent className="py-6 text-sm text-muted-foreground">
             Your organization uses single sign-on—no password needed.
           </CardContent>

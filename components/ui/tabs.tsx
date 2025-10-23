@@ -13,13 +13,7 @@ const TabsTrigger = TabsPrimitive.Trigger;
 const TabsContent = TabsPrimitive.Content;
 
 const StyledTabsList = ({ className, ...props }: TabsPrimitive.TabsListProps) => (
-  <TabsList
-    className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
+  <TabsList className={cn("tabs tabs-boxed", className)} {...props} />
 );
 
 const StyledTabsTrigger = (
@@ -27,10 +21,9 @@ const StyledTabsTrigger = (
 ) => (
   <TabsTrigger
     className={cn(
-      "inline-flex min-w-[100px] items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-      "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      "data-[state=active]:bg-background data-[state=active]:text-foreground",
-      "data-[state=active]:shadow",
+      "tab min-w-[100px] text-sm font-semibold transition-colors",
+      "focus-visible:outline-none",
+      "data-[state=active]:bg-base-100 data-[state=active]:text-foreground data-[state=active]:shadow-lg",
       className
     )}
     {...props}
@@ -42,8 +35,8 @@ const StyledTabsContent = (
 ) => (
   <TabsContent
     className={cn(
-      "mt-2 border border-border bg-card text-card-foreground shadow-sm",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "mt-4 rounded-2xl border border-base-300 bg-base-100/90 p-6 text-foreground shadow-lg backdrop-blur",
+      "focus-visible:outline-none",
       className
     )}
     {...props}

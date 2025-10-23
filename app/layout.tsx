@@ -47,6 +47,7 @@ export default async function RootLayout({
   const htmlClassName = initialThemeMode === "dark" ? "dark" : undefined;
   const htmlThemeModeAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
   const htmlThemeResolvedAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
+  const htmlThemeAttr = initialThemeMode === "dark" ? "pop-dark" : initialThemeMode === "light" ? "pop" : undefined;
 
   return (
     <html
@@ -54,12 +55,13 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={htmlClassName}
       data-theme-mode={htmlThemeModeAttr}
+      data-theme={htmlThemeAttr}
       data-theme-resolved={htmlThemeResolvedAttr}
     >
       <body
         className={cn(
-          "min-h-screen bg-gradient-to-b from-slate-950 via-slate-950/95 to-slate-950 font-sans antialiased",
-          "dark:from-slate-950 dark:via-slate-950/90 dark:to-slate-950",
+          "min-h-screen bg-[color:var(--app-background)] text-[color:var(--text-primary)] font-sans antialiased",
+          "transition-colors duration-300",
           "[color-scheme:light_dark]"
         )}
         style={themeStyle}

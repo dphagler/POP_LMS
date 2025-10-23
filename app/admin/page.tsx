@@ -51,12 +51,12 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-10">
-      <Card className="relative overflow-hidden border border-border/70 bg-card/70 shadow-xl">
+      <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-xl">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(150%_150%_at_0%_0%,theme(colors.primary/0.18),transparent_60%)]"
         />
-        <CardHeader className="relative flex flex-col gap-6 pb-6 sm:flex-row sm:items-start sm:justify-between">
+          <CardHeader className="relative flex flex-col gap-6 pb-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-3">
             <CardTitle className="text-2xl font-semibold tracking-tight">Organization overview</CardTitle>
             <CardDescription className="max-w-2xl text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ export default async function AdminDashboard() {
         {overviewStats.map((stat) => (
           <Card
             key={stat.id}
-            className="group relative overflow-hidden border border-border/70 bg-card/80 shadow-lg transition hover:border-primary/50 hover:shadow-xl"
+            className="group relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50 hover:shadow-xl"
           >
             <div
               aria-hidden
@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
         ))}
       </section>
 
-      <Card className="relative overflow-hidden border border-border/70 bg-card/70 shadow-xl">
+      <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-xl">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_90%_at_100%_0%,theme(colors.primary/0.16),transparent_60%)]"
@@ -127,7 +127,7 @@ export default async function AdminDashboard() {
       </Card>
 
       <section className="grid gap-5 lg:grid-cols-3">
-        <Card className="relative overflow-hidden border border-border/70 bg-card/70 shadow-lg transition hover:border-primary/50">
+        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_0%_0%,theme(colors.primary/0.12),transparent_60%)]"
@@ -144,7 +144,7 @@ export default async function AdminDashboard() {
             </Button>
           </CardContent>
         </Card>
-        <Card className="relative overflow-hidden border border-border/70 bg-card/70 shadow-lg transition hover:border-primary/50">
+        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-20%,theme(colors.primary/0.12),transparent_65%)]"
@@ -161,7 +161,7 @@ export default async function AdminDashboard() {
             </Button>
           </CardContent>
         </Card>
-        <Card className="relative overflow-hidden border border-border/70 bg-card/70 shadow-lg transition hover:border-primary/50">
+        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_100%_0%,theme(colors.primary/0.12),transparent_60%)]"

@@ -76,7 +76,7 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col text-foreground">
+    <div className="flex min-h-screen flex-col bg-[color:var(--app-background)] text-foreground">
       <Header
         displayName={displayName}
         menuAvatar={<UserMenuAvatar image={userImage} initials={userInitials} name={displayName} />}
@@ -142,26 +142,26 @@ type HeaderProps = {
 
 function Header({ displayName, menuAvatar, orgName, pageTitle }: HeaderProps) {
   return (
-    <header className="border-b border-slate-200/10 bg-white/70 backdrop-blur dark:bg-slate-900/40">
+    <header className="border-b border-base-300 bg-base-100/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-base-100/80">
       <div className="container flex w-full items-center gap-3 px-6 py-4 lg:px-10">
         <div className="flex items-center gap-3">
           <Link
             href="/app"
-            className="text-sm font-semibold uppercase tracking-[0.28em] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="text-xs font-semibold uppercase tracking-[0.32em] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-background)]"
           >
             POP Initiative
           </Link>
           <span className="hidden text-xs text-muted-foreground sm:inline" aria-hidden>
             •
           </span>
-          <span className="hidden text-sm font-medium text-muted-foreground sm:inline">{orgName}</span>
+          <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">{orgName}</span>
         </div>
         <div className="mx-auto hidden text-center md:block">
           <p className="text-sm font-medium text-muted-foreground">{pageTitle ?? "Page title"}</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
           <ThemeModeToggle />
-          <span className="hidden text-sm font-medium sm:inline" aria-live="polite">
+          <span className="hidden text-sm font-semibold sm:inline" aria-live="polite">
             {displayName}
           </span>
           {menuAvatar}
@@ -178,8 +178,8 @@ type DesktopSidebarProps = {
 
 function DesktopSidebar({ navItems, orgName }: DesktopSidebarProps) {
   return (
-    <aside className="hidden w-64 flex-col border-r border-slate-200/10 bg-white/10 backdrop-blur dark:bg-slate-950/30 lg:flex">
-      <div className="border-b border-slate-200/10 px-6 py-6">
+    <aside className="hidden w-64 flex-col border-r border-base-300 bg-base-100/70 shadow-sm backdrop-blur lg:flex">
+      <div className="border-b border-base-300 px-6 py-6">
         <p className="text-sm font-semibold leading-tight text-foreground">{orgName}</p>
         <p className="text-xs text-muted-foreground">Learning journeys</p>
       </div>
@@ -200,7 +200,7 @@ function MobileNav({ navItems }: MobileNavProps) {
   if (navItems.length === 0) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/10 bg-white/80 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-slate-900/80 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-base-300 bg-base-100/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-base-100/85 lg:hidden">
       <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-around px-2">
         {navItems.map((item) => (
           <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} condensed />
@@ -219,11 +219,11 @@ type NavLinkProps = {
 
 function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
   const className = cn(
-    "inline-flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    condensed ? "flex-1 justify-center" : "w-full justify-start",
+    "btn btn-ghost gap-2 text-sm font-semibold transition-all duration-200",
+    condensed ? "btn-sm flex-1 justify-center" : "w-full justify-start",
     isActive
-      ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
-      : "text-muted-foreground hover:border-slate-200/40 hover:bg-white/40 hover:text-foreground dark:hover:bg-slate-900/40"
+      ? "border border-[color:var(--color-primary)]/45 bg-[color:var(--color-primary)]/15 text-primary shadow-md"
+      : "border border-transparent text-muted-foreground hover:bg-[color:var(--surface-hover)]"
   );
 
   return (
@@ -336,7 +336,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="user-menu"
-        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="rounded-full focus-visible:outline-none"
         ref={triggerRef}
       >
         <Avatar className="h-10 w-10">
@@ -349,7 +349,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         role="menu"
         aria-label="Account"
         className={cn(
-          "absolute right-0 mt-3 w-52 origin-top-right rounded-md border bg-popover p-1 text-sm shadow-lg outline-none",
+          "absolute right-0 mt-3 w-52 origin-top-right rounded-2xl border border-base-300 bg-base-100/95 p-3 text-sm shadow-xl backdrop-blur",
           open ? "block" : "hidden"
         )}
         ref={menuPanelRef}
@@ -364,7 +364,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         <Link
           href="/settings"
           role="menuitem"
-          className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:outline-none"
           onClick={() => closeMenu()}
           ref={firstItemRef}
         >
@@ -374,7 +374,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           type="button"
           role="menuitem"
           variant="ghost"
-          className="w-full justify-between rounded-md px-3 py-2 text-sm text-destructive hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="w-full justify-between rounded-xl px-3 py-2 text-sm text-error hover:text-error"
           onClick={handleSignOut}
           aria-busy={isPending}
           disabled={isPending}

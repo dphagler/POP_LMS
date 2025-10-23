@@ -60,17 +60,20 @@ export default function MarketingPage() {
   const dismissToast = () => setToastMessage(null);
 
   return (
-    <PageFadeIn className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50" role="main">
+    <PageFadeIn
+      className="relative min-h-screen overflow-hidden bg-gradient-to-b from-base-100 via-base-100/95 to-base-200 text-foreground"
+      role="main"
+    >
       <SignedOutToast message={toastMessage} onDismiss={dismissToast} />
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
-          className="absolute left-1/2 top-32 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-to-r from-sky-400/60 via-fuchsia-400/50 to-amber-300/40 blur-3xl"
+          className="absolute left-1/2 top-32 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-to-r from-primary/45 via-accent/35 to-warning/30 blur-3xl"
           initial={{ opacity: 0.4, scale: 0.8 }}
           animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.8, 1.05, 0.8] }}
           transition={{ duration: 12, repeat: Infinity }}
         />
         <motion.div
-          className="absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-tr from-sky-500/30 via-cyan-400/20 to-transparent blur-3xl"
+          className="absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-tr from-secondary/40 via-info/30 to-transparent blur-3xl"
           initial={{ x: 40, opacity: 0.3 }}
           animate={{ x: [40, 0, 40], opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 18, repeat: Infinity }}
@@ -81,7 +84,7 @@ export default function MarketingPage() {
         <div className="container mx-auto flex w-full max-w-6xl flex-col gap-24 px-6 py-16 lg:px-10">
           <section className="relative flex min-h-[70vh] flex-col items-center justify-center gap-10 text-center">
             <motion.span
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-200 shadow-lg backdrop-blur"
+              className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/10 px-5 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-primary shadow-sm"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -90,7 +93,7 @@ export default function MarketingPage() {
             </motion.span>
 
             <motion.h1
-              className="max-w-4xl bg-gradient-to-r from-sky-300 via-fuchsia-300 to-amber-200 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
+              className="max-w-4xl bg-gradient-to-r from-primary via-accent to-warning bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.7 }}
@@ -99,7 +102,7 @@ export default function MarketingPage() {
             </motion.h1>
 
             <motion.p
-              className="max-w-2xl text-lg text-slate-300 sm:text-xl"
+              className="max-w-2xl text-lg text-muted-foreground sm:text-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.7 }}
@@ -129,10 +132,10 @@ export default function MarketingPage() {
             </motion.div>
           </section>
 
-          <section className="rounded-3xl border border-slate-800/60 bg-white/5 p-10 shadow-[0_30px_80px_-45px_rgba(14,165,233,0.45)] backdrop-blur">
+          <section className="rounded-3xl border border-base-300 bg-base-100/80 p-10 shadow-[0_35px_90px_-55px_rgba(14,165,233,0.45)] backdrop-blur">
             <div className="space-y-4 text-center">
-              <h2 className="text-3xl font-semibold text-white sm:text-4xl">Why schools choose POP Learning</h2>
-              <p className="mx-auto max-w-2xl text-base text-slate-300 sm:text-lg">
+              <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Why schools choose POP Learning</h2>
+              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
                 Everything you need to nurture employability skills in every classroom—no extra prep required.
               </p>
             </div>
@@ -142,14 +145,14 @@ export default function MarketingPage() {
                 return (
                   <Card
                     key={benefit.title}
-                    className="group h-full border-slate-800/60 bg-slate-900/60 transition-transform duration-300 hover:scale-[1.03] hover:border-sky-400/50 hover:shadow-[0_20px_50px_-40px_rgba(56,189,248,0.75)]"
+                    className="group h-full border-none bg-base-100/95 shadow-none transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_32px_90px_-60px_rgba(14,165,233,0.55)]"
                   >
-                    <CardHeader className="space-y-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-500/10 text-sky-200">
+                    <CardHeader className="space-y-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-primary)]/12 text-primary">
                         <Icon className="h-6 w-6" aria-hidden="true" />
                       </div>
                       <CardTitle>{benefit.title}</CardTitle>
-                      <CardDescription className="text-slate-300">
+                      <CardDescription className="text-muted-foreground">
                         {benefit.description}
                       </CardDescription>
                     </CardHeader>
@@ -159,18 +162,18 @@ export default function MarketingPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-800/60 bg-white/5 px-8 py-14 text-center shadow-[0_25px_60px_-40px_rgba(56,189,248,0.6)] backdrop-blur">
-            <h2 className="text-3xl font-semibold text-white sm:text-4xl">Who it&apos;s for</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-300 sm:text-lg">
+          <section className="rounded-3xl border border-base-300 bg-base-100/80 px-8 py-14 text-center shadow-[0_30px_80px_-50px_rgba(99,102,241,0.45)] backdrop-blur">
+            <h2 className="text-3xl font-semibold text-foreground sm:text-4xl">Who it&apos;s for</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
               Built in partnership with high schools and CTE programs preparing students for the future of work.
               POP Learning supports district leaders, teachers, and students with curated resources at every stage.
             </p>
           </section>
 
-          <section className="flex flex-col gap-6 rounded-3xl border border-slate-800/60 bg-gradient-to-br from-sky-500/10 via-slate-900/60 to-fuchsia-500/10 px-8 py-10 text-center shadow-[0_20px_50px_-40px_rgba(129,140,248,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <section className="flex flex-col gap-6 rounded-3xl border border-base-300 bg-gradient-to-br from-primary/10 via-base-100 to-accent/10 px-8 py-10 text-center shadow-[0_30px_80px_-55px_rgba(129,140,248,0.5)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:text-left">
             <div className="space-y-3">
-              <h3 className="text-2xl font-semibold text-white sm:text-3xl">Ready to launch POP for your learners?</h3>
-              <p className="max-w-xl text-base text-slate-300">
+              <h3 className="text-2xl font-semibold text-foreground sm:text-3xl">Ready to launch POP for your learners?</h3>
+              <p className="max-w-xl text-base text-muted-foreground">
                 Get started in minutes with instant access to the full platform and plug-and-play lesson plans.
               </p>
             </div>
@@ -192,17 +195,17 @@ export default function MarketingPage() {
         </div>
       </div>
 
-      <footer className="border-t border-white/10 bg-black/40 py-10 text-slate-300 backdrop-blur">
+      <footer className="border-t border-base-300 bg-base-100/85 py-10 text-muted-foreground backdrop-blur">
         <div className="container mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm lg:flex-row lg:px-10">
-          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Built by the POP Initiative</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground/80">Built by the POP Initiative</p>
           <nav className="flex items-center gap-6">
-            <Link href="https://www.linkedin.com/company/pop-initiative" className="transition hover:text-slate-100" target="_blank" rel="noreferrer">
+            <Link href="https://www.linkedin.com/company/pop-initiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
               LinkedIn
             </Link>
-            <Link href="https://twitter.com/POPinitiative" className="transition hover:text-slate-100" target="_blank" rel="noreferrer">
+            <Link href="https://twitter.com/POPinitiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
               X (Twitter)
             </Link>
-            <Link href="mailto:hello@poplearning.com" className="transition hover:text-slate-100">
+            <Link href="mailto:hello@poplearning.com" className="transition hover:text-primary">
               hello@poplearning.com
             </Link>
           </nav>
@@ -225,13 +228,13 @@ function SignedOutToast({ message, onDismiss }: SignedOutToastProps) {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="pointer-events-auto fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/20 bg-slate-900/90 px-4 py-2 text-sm font-medium text-white shadow-xl backdrop-blur"
+      className="pointer-events-auto fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-base-300 bg-base-100/95 px-4 py-2 text-sm font-medium text-foreground shadow-xl backdrop-blur"
     >
       <span>{message}</span>
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-full border border-white/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-white hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        className="btn btn-ghost btn-sm rounded-full px-3 text-xs font-semibold uppercase tracking-wide"
         aria-label="Dismiss notification"
       >
         Dismiss

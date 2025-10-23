@@ -35,10 +35,10 @@ export function SettingsToast({ toast, onDismiss }: SettingsToastProps) {
       role={role}
       aria-live={liveRegion}
       className={cn(
-        "fixed right-4 top-4 z-50 w-full max-w-sm rounded-md border p-4 shadow-lg",
+        "fixed right-4 top-4 z-50 w-full max-w-sm rounded-2xl border p-4 shadow-xl backdrop-blur bg-base-100/95",
         isSuccess
-          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-          : "border-red-200 bg-red-50 text-red-900"
+          ? "border-[color:var(--color-success)]/40 text-[color:var(--color-success-content)]"
+          : "border-[color:var(--color-error)]/40 text-[color:var(--color-error-content)]"
       )}
     >
       <div className="flex items-start gap-3">
@@ -53,7 +53,7 @@ export function SettingsToast({ toast, onDismiss }: SettingsToastProps) {
           onClick={onDismiss}
           variant="ghost"
           size="icon"
-          className="h-8 w-8 p-0 text-current/70 transition hover:text-current focus-visible:ring-primary/50"
+          className="h-8 w-8 rounded-full p-0 text-current/80 hover:text-current"
           aria-label="Dismiss notification"
         >
           <X className="h-4 w-4" aria-hidden />
