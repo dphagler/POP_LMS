@@ -448,10 +448,7 @@ function StatusBadge({ action, count }: StatusBadgeProps) {
 
 function LogPanel({ logs, isSubmitting }: { logs: string[]; isSubmitting: boolean }) {
   return (
-    <div
-      className="rounded-box border border-base-300 bg-base-200/70 p-4 font-mono text-xs text-base-content shadow-inner"
-      aria-live="polite"
-    >
+    <div className="rounded-box bg-base-200 p-4 font-mono text-xs text-base-content shadow-inner" aria-live="polite">
       <div className="flex max-h-48 flex-col gap-2 overflow-y-auto">
         {logs.length === 0 ? (
           <p className="text-base-content/60">No sync activity yet.</p>

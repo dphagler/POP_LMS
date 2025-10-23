@@ -2,8 +2,6 @@ import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getMissingSanityEnvVars } from "@/lib/sanity";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import ContentSyncControls from "./content-sync-controls";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -51,133 +49,102 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-10">
-      <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-xl">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(150%_150%_at_0%_0%,theme(colors.primary/0.18),transparent_60%)]"
-        />
-          <CardHeader className="relative flex flex-col gap-6 pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-3">
-            <CardTitle className="text-2xl font-semibold tracking-tight">Organization overview</CardTitle>
-            <CardDescription className="max-w-2xl text-sm text-muted-foreground">
-              Manage learners, assignments, and keep your Sanity content in sync with the LMS.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild size="sm" variant="outline">
-              <Link href="/admin/assign">Assign learning</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/admin/groups">Manage groups</Link>
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {overviewStats.map((stat) => (
-          <Card
-            key={stat.id}
-            className="group relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50 hover:shadow-xl"
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 translate-y-[-10%] bg-[radial-gradient(140%_90%_at_0%_0%,theme(colors.primary/0.12),transparent_65%)] opacity-0 transition group-hover:opacity-100"
-            />
-            <CardHeader className="relative space-y-3 pb-6">
-              <CardTitle className="text-base font-semibold tracking-tight text-foreground">{stat.title}</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">{stat.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="relative">
-              <p className="text-4xl font-semibold tracking-tight text-foreground">
-                {numberFormatter.format(stat.value)}
+      <section className="card border border-base-300 bg-base-100 shadow-xl">
+        <div className="card-body gap-6">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-3">
+              <h1 className="card-title text-2xl">Organization overview</h1>
+              <p className="max-w-2xl text-sm text-base-content/70">
+                Manage learners, assignments, and keep your Sanity content in sync with the LMS.
               </p>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/admin/assign" className="btn btn-outline btn-sm">
+                Assign learning
+              </Link>
+              <Link href="/admin/groups" className="btn btn-outline btn-sm">
+                Manage groups
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-xl">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_90%_at_100%_0%,theme(colors.primary/0.16),transparent_60%)]"
-        />
-        <CardHeader className="relative space-y-3 pb-6">
-          <CardTitle className="text-xl font-semibold tracking-tight">Content sync</CardTitle>
-          <CardDescription className="max-w-2xl text-sm text-muted-foreground">
-            Pull the latest courses, modules, and lessons from Sanity without leaving the admin dashboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Ensure your database stays aligned with your headless CMS. Dry runs preview changes before committing them, and you
-              can optionally allow deletes when you&apos;re ready to mirror removals from Sanity.
+      <section aria-label="Key organization stats">
+        <div className="stats stats-vertical gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-lg sm:stats-horizontal sm:gap-0">
+          {overviewStats.map((stat) => (
+            <div key={stat.id} className="stat">
+              <div className="stat-title text-base-content/70">{stat.title}</div>
+              <div className="stat-value text-primary">
+                {numberFormatter.format(stat.value)}
+              </div>
+              <div className="stat-desc text-base-content/70">{stat.description}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card border border-base-300 bg-base-100 shadow-xl">
+        <div className="card-body space-y-6">
+          <div className="space-y-2">
+            <h2 className="card-title text-xl">Sync from Sanity</h2>
+            <p className="max-w-2xl text-sm text-base-content/70">
+              Pull the latest courses, modules, and lessons from Sanity without leaving the admin dashboard.
             </p>
-            {syncDisabledReason ? (
-              <p className="font-medium text-destructive">{syncDisabledReason}</p>
-            ) : (
-              <p className="text-xs uppercase tracking-wide text-muted-foreground/80">
-                Syncs run in the background—feel free to navigate away once submitted.
-              </p>
-            )}
           </div>
-          <ContentSyncControls disabled={Boolean(syncDisabledReason)} disabledReason={syncDisabledReason} />
-        </CardContent>
-      </Card>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+            <div className="space-y-3 text-sm text-base-content/70">
+              <p>
+                Ensure your database stays aligned with your headless CMS. Dry runs preview changes before committing them, and you
+                can optionally allow deletes when you&apos;re ready to mirror removals from Sanity.
+              </p>
+              {syncDisabledReason ? (
+                <p className="font-medium text-error">{syncDisabledReason}</p>
+              ) : (
+                <p className="text-xs uppercase tracking-wide text-base-content/60">
+                  Syncs run in the background—feel free to navigate away once submitted.
+                </p>
+              )}
+            </div>
+            <ContentSyncControls disabled={Boolean(syncDisabledReason)} disabledReason={syncDisabledReason} />
+          </div>
+        </div>
+      </section>
 
       <section className="grid gap-5 lg:grid-cols-3">
-        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_0%_0%,theme(colors.primary/0.12),transparent_60%)]"
-          />
-          <CardHeader className="relative space-y-3 pb-6">
-            <CardTitle className="text-lg font-semibold tracking-tight">Assignments</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+        <article className="card border border-base-300 bg-base-100 shadow-lg">
+          <div className="card-body space-y-3">
+            <h3 className="card-title text-lg">Assignments</h3>
+            <p className="text-sm text-base-content/70">
               Enroll learners into modules and courses with guided previews before you commit.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative">
-            <Button asChild>
-              <Link href="/admin/assign">Create assignment</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-20%,theme(colors.primary/0.12),transparent_65%)]"
-          />
-          <CardHeader className="relative space-y-3 pb-6">
-            <CardTitle className="text-lg font-semibold tracking-tight">Analytics</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            </p>
+            <Link href="/admin/assign" className="btn btn-primary btn-sm w-fit">
+              Create assignment
+            </Link>
+          </div>
+        </article>
+        <article className="card border border-base-300 bg-base-100 shadow-lg">
+          <div className="card-body space-y-3">
+            <h3 className="card-title text-lg">Analytics</h3>
+            <p className="text-sm text-base-content/70">
               Track assignments, active learners, and completion rates across your organization.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative">
-            <Button asChild variant="outline">
-              <Link href="/admin/analytics">View analytics snapshot</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden border border-base-300 bg-base-100/85 shadow-lg transition hover:border-[color:var(--color-primary)]/50">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_100%_0%,theme(colors.primary/0.12),transparent_60%)]"
-          />
-          <CardHeader className="relative space-y-3 pb-6">
-            <CardTitle className="text-lg font-semibold tracking-tight">Groups</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            </p>
+            <Link href="/admin/analytics" className="btn btn-outline btn-sm w-fit">
+              View analytics snapshot
+            </Link>
+          </div>
+        </article>
+        <article className="card border border-base-300 bg-base-100 shadow-lg">
+          <div className="card-body space-y-3">
+            <h3 className="card-title text-lg">Groups</h3>
+            <p className="text-sm text-base-content/70">
               Create cohorts, manage CSV roster uploads, and keep memberships in sync.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative">
-            <Button asChild>
-              <Link href="/admin/groups">Manage groups</Link>
-            </Button>
-          </CardContent>
-        </Card>
+            </p>
+            <Link href="/admin/groups" className="btn btn-primary btn-sm w-fit">
+              Manage groups
+            </Link>
+          </div>
+        </article>
       </section>
     </div>
   );
