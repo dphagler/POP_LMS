@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, BarChart3, GraduationCap, Sparkles, Trophy } from "lucide-react";
+import { ArrowUpRight, BarChart3, GraduationCap, Menu, Sparkles, Trophy, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,8 +54,18 @@ const stats = [
 
 const TOAST_AUTO_DISMISS_MS = 4000;
 
+const NAV_ITEMS = [
+  { id: "features", label: "Features" },
+  { id: "why-pop", label: "Why POP" },
+  { id: "who-its-for", label: "Who it's for" },
+];
+
 export default function MarketingPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string>(NAV_ITEMS[0]?.id ?? "");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,6 +83,76 @@ export default function MarketingPage() {
   }, [toastMessage]);
 
   const dismissToast = () => setToastMessage(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sectionElements = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
+      (element): element is HTMLElement => Boolean(element),
+    );
+
+    if (sectionElements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: "-55% 0px -35% 0px",
+        threshold: [0.1, 0.25, 0.5],
+      },
+    );
+
+    sectionElements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleHashChange = () => setMobileMenuOpen(false);
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(target) &&
+        mobileMenuButtonRef.current &&
+        !mobileMenuButtonRef.current.contains(target)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [mobileMenuOpen]);
+
+  const handleMenuToggle = () => setMobileMenuOpen((open) => !open);
+
+  const handleNavItemClick = () => setMobileMenuOpen(false);
 
   return (
     <PageFadeIn
@@ -94,6 +174,118 @@ export default function MarketingPage() {
           transition={{ duration: 18, repeat: Infinity }}
         />
       </div>
+
+      <header className="sticky top-0 z-40 border-b border-base-200/60 bg-base-100/90 backdrop-blur dark:border-base-800/60 dark:bg-base-950/70">
+        <MaxContainer className="relative flex items-center gap-4 py-4">
+          <div className="flex flex-1 items-center justify-start">
+            <Link
+              href="#hero"
+              className="btn btn-ghost px-2 text-lg font-semibold normal-case tracking-tight text-foreground"
+              onClick={handleNavItemClick}
+            >
+              POP Initiative
+            </Link>
+          </div>
+          <nav className="hidden flex-1 items-center justify-center lg:flex">
+            <ul className="menu menu-horizontal gap-2 rounded-full bg-transparent p-0">
+              {NAV_ITEMS.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={`#${item.id}`}
+                      className={cn(
+                        "btn btn-ghost text-sm font-semibold normal-case tracking-tight",
+                        "px-4 py-2 transition",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground/80 hover:bg-base-200/60 hover:text-primary",
+                      )}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+          <div className="flex flex-1 items-center justify-end gap-3">
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                href="/signin"
+                className="btn btn-ghost px-5 py-2 text-sm font-semibold normal-case text-foreground"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className="btn btn-primary px-6 py-2 text-sm font-semibold normal-case text-primary-content shadow-primary/30"
+              >
+                Sign up
+              </Link>
+            </div>
+            <div className="relative flex items-center md:hidden">
+              <button
+                ref={mobileMenuButtonRef}
+                type="button"
+                className="btn btn-ghost px-3 py-2"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-navigation"
+                aria-label="Toggle navigation menu"
+                onClick={handleMenuToggle}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+              </button>
+              {mobileMenuOpen ? (
+                <div
+                  ref={mobileMenuRef}
+                  id="mobile-navigation"
+                  className="dropdown-content absolute right-0 top-full mt-3 w-64 space-y-2 rounded-2xl border border-base-200/70 bg-base-100/95 p-4 shadow-xl backdrop-blur-lg dark:border-base-800/70 dark:bg-base-950/95"
+                >
+                  <nav className="flex flex-col gap-2">
+                    {NAV_ITEMS.map((item) => {
+                      const isActive = activeSection === item.id;
+                      return (
+                        <Link
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className={cn(
+                            "rounded-xl px-4 py-3 text-base font-semibold transition",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-base-200/70 hover:text-primary",
+                          )}
+                          aria-current={isActive ? "page" : undefined}
+                          onClick={handleNavItemClick}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <Link
+                      href="/signin"
+                      className="btn btn-ghost w-full px-4 py-3 text-base font-semibold normal-case"
+                      onClick={handleNavItemClick}
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="btn btn-primary w-full px-4 py-3 text-base font-semibold normal-case text-primary-content"
+                      onClick={handleNavItemClick}
+                    >
+                      Sign up
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </MaxContainer>
+      </header>
 
       <div className="relative z-10 space-y-0">
         <HeroSection highlights={heroHighlights} />
@@ -129,7 +321,7 @@ type HeroSectionProps = {
 
 function HeroSection({ highlights }: HeroSectionProps) {
   return (
-    <Section className="pt-24">
+    <Section id="hero" className="pt-24">
       <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <motion.div
           className="space-y-6 text-center lg:text-left"
@@ -221,7 +413,7 @@ function HeroSection({ highlights }: HeroSectionProps) {
 
 function FeaturesSection() {
   return (
-    <Section>
+    <Section id="features">
       <SectionHeader
         title="Why schools choose POP Learning"
         description="Everything you need to nurture employability skills in every classroom—no extra prep required."
@@ -251,7 +443,7 @@ function FeaturesSection() {
 
 function StatsSection() {
   return (
-    <Section className="bg-base-100/80">
+    <Section id="why-pop" className="bg-base-100/80">
       <SectionHeader
         title="Momentum you can measure"
         description="Transparent metrics keep educators, students, and administrators aligned on real progress."
@@ -273,7 +465,7 @@ function StatsSection() {
 
 function StakeholdersSection() {
   return (
-    <Section>
+    <Section id="who-its-for">
       <div className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80">
         <div className="grid gap-10 lg:grid-cols-2">
           <div className="space-y-6">
@@ -366,11 +558,12 @@ function SignedOutToast({ message, onDismiss }: SignedOutToastProps) {
 type SectionProps = {
   children: ReactNode;
   className?: string;
+  id?: string;
 };
 
-function Section({ children, className }: SectionProps) {
+function Section({ children, className, id }: SectionProps) {
   return (
-    <section className={cn("py-16 sm:py-24", className)}>
+    <section id={id} className={cn("scroll-mt-32 py-16 sm:py-24", className)}>
       <MaxContainer className="space-y-6">{children}</MaxContainer>
     </section>
   );
