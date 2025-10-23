@@ -40,9 +40,9 @@ const benefits = [
 ];
 
 const heroHighlights = [
-  "AI-tailored, bite-sized lessons students actually finish.",
-  "Leaderboards and streaks that boost collaboration.",
-  "Dashboards that translate growth into career pathways.",
+  "Launch sequenced essential-skill pathways in minutes—no new staff required.",
+  "Automated nudges, leaderboards, and streaks keep classrooms engaged every day.",
+  "District dashboards tie participation to career readiness benchmarks you can report on.",
 ];
 
 const heroStats = [
@@ -81,8 +81,8 @@ const TOAST_AUTO_DISMISS_MS = 4000;
 
 const NAV_ITEMS = [
   { id: "features", label: "Features" },
-  { id: "why-pop", label: "Why POP" },
-  { id: "who-its-for", label: "Who it's for" },
+  { id: "why", label: "Why POP" },
+  { id: "who", label: "Who it's for" },
 ];
 
 export default function MarketingPage() {
@@ -359,11 +359,11 @@ function HeroSection({ highlights }: HeroSectionProps) {
               Workforce readiness reimagined
             </span>
             <h1 className="text-balance text-5xl font-bold tracking-tight sm:text-6xl">
-              Essential Skills. Positive People. Powerful Teams.
+              Career readiness that scales across your district
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl lg:mx-0">
-              POP Initiative delivers assessment-driven, video-first learning that equips every student with the essential
-              skills employers expect—while giving educators the analytics they need to prove growth.
+              POP Initiative operationalizes employability skills with cinematic micro-lessons, AI-guided practice, and
+              reporting that proves impact to boards, partners, and funders.
             </p>
             <ul className="mx-auto grid max-w-2xl gap-3 text-left text-sm text-muted-foreground lg:mx-0">
               {highlights.map((highlight) => (
@@ -464,10 +464,10 @@ function FeaturesSection() {
 
 function StatsSection() {
   return (
-    <Section id="why-pop" className="bg-base-100/80">
+    <Section id="why" className="bg-base-100/80">
       <SectionHeader
         title="Momentum you can measure"
-        description="Transparent metrics keep educators, students, and administrators aligned on real progress."
+        description="Transparent metrics keep leadership, teachers, and students aligned on measurable skill growth."
       />
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -486,7 +486,7 @@ function StatsSection() {
 
 function StakeholdersSection() {
   return (
-    <Section id="who-its-for">
+    <Section id="who">
       <div className="space-y-10 rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 text-center shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80 dark:text-foreground">
         <div className="mx-auto max-w-3xl space-y-4">
           <h2 className="text-3xl font-bold text-foreground">Built for every stakeholder</h2>
