@@ -59,6 +59,24 @@ const stats = [
   { value: "100+", label: "Micro-lessons ready to launch" },
 ];
 
+const stakeholders = [
+  {
+    title: "District leaders",
+    description: "Unlock clear ROI with dashboards that showcase readiness gains across every campus.",
+    icon: BarChart3,
+  },
+  {
+    title: "Teachers & coaches",
+    description: "Launch curated playlists in minutes and monitor classroom engagement at a glance.",
+    icon: Sparkles,
+  },
+  {
+    title: "Students",
+    description: "Earn micro-credentials, build interview confidence, and bring positivity into every team.",
+    icon: GraduationCap,
+  },
+];
+
 const TOAST_AUTO_DISMISS_MS = 4000;
 
 const NAV_ITEMS = [
@@ -302,18 +320,18 @@ export default function MarketingPage() {
         <CTASection />
       </div>
 
-      <footer className="border-t border-base-300/70 bg-base-100/80 py-10 text-muted-foreground backdrop-blur dark:border-base-800/70 dark:bg-base-950/60">
-        <MaxContainer className="flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
+      <footer className="border-t border-base-300/70 bg-base-100/80 py-8 text-muted-foreground backdrop-blur dark:border-base-800/70 dark:bg-base-950/60">
+        <MaxContainer className="flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
           <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground/80">Built by the POP Initiative</p>
           <nav className="flex items-center gap-6">
-            <Link href="https://www.linkedin.com/company/pop-initiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
-              LinkedIn
+            <Link href="/about" className="transition hover:text-primary">
+              About
             </Link>
-            <Link href="https://twitter.com/POPinitiative" className="transition hover:text-primary" target="_blank" rel="noreferrer">
-              X (Twitter)
+            <Link href="#pricing" className="transition hover:text-primary">
+              Pricing
             </Link>
             <Link href="mailto:hello@poplearning.com" className="transition hover:text-primary">
-              hello@poplearning.com
+              Contact
             </Link>
           </nav>
         </MaxContainer>
@@ -469,29 +487,34 @@ function StatsSection() {
 function StakeholdersSection() {
   return (
     <Section id="who-its-for">
-      <div className="rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-foreground">Built for every stakeholder</h2>
-            <p className="text-base text-muted-foreground">
-              POP connects administrators, teachers, and students with a shared growth language. AI-curated lessons,
-              gamified cohorts, and real-time reporting keep everyone aligned on essential-skill mastery.
-            </p>
-          </div>
-          <div className="grid gap-4 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-              <h3 className="text-xl font-semibold text-foreground">District leaders</h3>
-              <p>Unlock clear ROI with dashboards that showcase readiness gains across every campus.</p>
-            </div>
-            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-              <h3 className="text-xl font-semibold text-foreground">Teachers &amp; coaches</h3>
-              <p>Launch curated playlists in minutes and monitor classroom engagement at a glance.</p>
-            </div>
-            <div className="rounded-2xl border border-base-300/60 bg-base-100/90 p-4 shadow-sm dark:border-base-800/60 dark:bg-base-900/70">
-              <h3 className="text-xl font-semibold text-foreground">Students</h3>
-              <p>Earn micro-credentials, build interview confidence, and bring positivity into every team.</p>
-            </div>
-          </div>
+      <div className="space-y-10 rounded-[2.5rem] border border-base-300/60 bg-base-100/90 p-10 text-center shadow-[0_45px_120px_-70px_rgba(79,70,229,0.6)] dark:border-base-800/60 dark:bg-base-900/80 dark:text-foreground">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <h2 className="text-3xl font-bold text-foreground">Built for every stakeholder</h2>
+          <p className="text-base text-muted-foreground">
+            POP connects administrators, teachers, and students with a shared growth language. AI-curated lessons,
+            gamified cohorts, and real-time reporting keep everyone aligned on essential-skill mastery.
+          </p>
+        </div>
+        <div className="grid gap-6 text-left sm:grid-cols-2 xl:grid-cols-3">
+          {stakeholders.map((stakeholder) => {
+            const Icon = stakeholder.icon;
+            return (
+              <Card
+                key={stakeholder.title}
+                className="h-full border border-base-300/70 bg-base-100/95 shadow-lg shadow-primary/10 transition hover:-translate-y-1 hover:shadow-primary/30 dark:border-base-800/60 dark:bg-base-900/70"
+              >
+                <CardHeader className="space-y-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <CardTitle className="text-xl font-semibold text-foreground">{stakeholder.title}</CardTitle>
+                  <CardDescription className="text-base text-muted-foreground">
+                    {stakeholder.description}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </Section>
@@ -501,23 +524,26 @@ function StakeholdersSection() {
 function CTASection() {
   return (
     <Section>
-      <div className="rounded-[2.5rem] border border-primary/30 bg-gradient-to-br from-primary/15 via-base-100/90 to-secondary/15 p-10 shadow-[0_45px_120px_-70px_rgba(79,70,229,0.5)] dark:border-primary/40 dark:from-primary/10 dark:via-base-900/80 dark:to-secondary/10">
-        <div className="flex flex-col items-center justify-between gap-8 text-center sm:flex-row sm:text-left">
-          <div className="max-w-xl space-y-4">
-            <h2 className="text-3xl font-bold text-foreground">Ready to launch POP for your learners?</h2>
+      <div className="join join-vertical w-full rounded-box bg-base-200 p-8 text-foreground shadow-[0_35px_80px_-60px_rgba(79,70,229,0.55)] dark:bg-base-900/80">
+        <div className="join-item flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-3 text-center sm:text-left">
+            <h2 className="text-3xl font-bold">Bring POP Learning to your community</h2>
             <p className="text-base text-muted-foreground">
-              Get started in minutes with instant access to the full platform, plug-and-play lesson plans, and a pilot
-              playbook you can run this semester.
+              Activate your district in days with guided onboarding and ready-to-launch career readiness pathways.
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button asChild className="shadow-lg shadow-primary/20">
+          <div className="join join-horizontal join-item flex flex-wrap items-center justify-center gap-3">
+            <Button asChild className="join-item shadow-lg shadow-primary/25">
               <Link href="/signin" className="gap-2">
                 Log in
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
-            <Button variant="outline" asChild className="border-primary/40 bg-base-100/70 backdrop-blur">
+            <Button
+              variant="outline"
+              asChild
+              className="join-item border-primary/40 bg-base-100/80 text-primary shadow-sm backdrop-blur dark:border-primary/50"
+            >
               <Link href="/signup" className="gap-2">
                 Book a demo
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
