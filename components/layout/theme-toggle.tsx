@@ -17,7 +17,12 @@ const OPTIONS: Array<{ icon: typeof Sun; label: string; value: ThemeMode }> = [
 export function ThemeModeToggle({ className }: { className?: string }) {
   const { mode, resolvedMode, setMode } = useThemeMode();
   const [open, setOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +51,8 @@ export function ThemeModeToggle({ className }: { className?: string }) {
 
   const activeOption = OPTIONS.find((option) => option.value === mode) ?? OPTIONS[2];
   const ActiveIcon = activeOption.icon;
-  const systemStatus = mode === "system" ? ` (currently ${resolvedMode} mode)` : "";
+  const systemStatus =
+    mode === "system" && isMounted ? ` (currently ${resolvedMode} mode)` : "";
 
   const handleSelect = (value: ThemeMode) => {
     setMode(value);
@@ -69,7 +75,7 @@ export function ThemeModeToggle({ className }: { className?: string }) {
         <ActiveIcon className="h-5 w-5" aria-hidden />
         <span className="sr-only" aria-live="polite">
           Theme set to {activeOption.label}
-          {mode === "system" ? ` (${resolvedMode} mode active)` : null}
+          {mode === "system" && isMounted ? ` (${resolvedMode} mode active)` : null}
         </span>
       </Button>
       <div
