@@ -348,22 +348,22 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
     <Card className="relative h-full">
       {toast ? (
         <div
-          role="status"
+          role={toast.variant === "error" ? "alert" : "status"}
           className={cn(
-            "pointer-events-auto absolute right-4 top-4 z-10 w-full max-w-sm rounded-md border px-4 py-3 text-sm shadow-lg",
+            "pointer-events-auto absolute right-4 top-4 z-10 w-full max-w-sm",
             toast.variant === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-red-200 bg-red-50 text-red-900"
+              ? "alert alert-success shadow-lg"
+              : "alert alert-error shadow-lg"
           )}
         >
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/70">
-              {toast.variant === "success" ? <UserPlus className="h-4 w-4" aria-hidden /> : <X className="h-4 w-4" aria-hidden />}
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-base-100 text-base-content shadow">
+              {toast.variant === "success" ? <UserPlus className="h-5 w-5" aria-hidden /> : <X className="h-5 w-5" aria-hidden />}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 text-sm">
               <p className="font-semibold leading-none">{toast.title}</p>
               {toast.description ? (
-                <p className="text-xs leading-snug text-muted-foreground">{toast.description}</p>
+                <p className="text-xs text-base-content/70">{toast.description}</p>
               ) : null}
             </div>
           </div>
@@ -397,9 +397,9 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
               <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             </div>
             {combinedSuggestions.length > 0 || isSearching ? (
-              <ul className="max-h-52 overflow-y-auto rounded-md border border-border bg-background text-sm shadow-md">
+              <ul className="menu menu-sm max-h-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 text-sm shadow-xl">
                 {isSearching ? (
-                  <li className="flex items-center justify-center gap-2 px-3 py-2 text-muted-foreground">
+                  <li className="flex items-center justify-center gap-2 px-3 py-2 text-base-content/70">
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     Searching…
                   </li>
@@ -410,27 +410,27 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                       type="button"
                       onClick={() => handleSuggestionClick(suggestion)}
                       className={cn(
-                        "flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left transition hover:bg-muted",
+                        "w-full rounded-box px-3 py-2 text-left transition",
                         selectedSuggestion &&
                           ((selectedSuggestion.type === "existing" && suggestion.type === "existing" && selectedSuggestion.id === suggestion.id) ||
                             (selectedSuggestion.type === "invite" && suggestion.type === "invite"))
-                          ? "bg-muted"
-                          : undefined
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-base-200"
                       )}
                     >
-                      <span className="font-medium">
+                      <span className="font-semibold">
                         {suggestion.type === "existing"
                           ? suggestion.name?.trim() || suggestion.email
                           : `Invite ${suggestion.displayEmail}`}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-base-content/70">
                         {suggestion.type === "existing" ? suggestion.email : "Create a new user and add to this group"}
                       </span>
                     </button>
                   </li>
                 ))}
                 {combinedSuggestions.length === 0 && !isSearching ? (
-                  <li className="px-3 py-2 text-muted-foreground">No matches found.</li>
+                  <li className="px-3 py-2 text-base-content/70">No matches found.</li>
                 ) : null}
               </ul>
             ) : null}
@@ -466,37 +466,52 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
           {members.length === 0 ? (
             <p className="text-sm text-muted-foreground">No members yet. Add someone to get started.</p>
           ) : (
-            <ul className="space-y-2">
-              {members.map((member) => (
-                <li
-                  key={member.membershipId}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-card/60 px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {member.name?.trim() || member.email}
-                      {member.isPending ? (
-                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                          Adding…
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => handleRemoveMember(member)}
-                    disabled={member.isPending || pendingRemovals.has(member.membershipId)}
-                  >
-                    Remove
-                  </Button>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100 shadow">
+              <table className="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Learner</th>
+                    <th className="hidden sm:table-cell">Email</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((member) => {
+                    const isRemoving = pendingRemovals.has(member.membershipId);
+                    return (
+                      <tr key={member.membershipId}>
+                        <td>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {member.name?.trim() || member.email}
+                            </span>
+                            <span className="text-xs text-base-content/70 sm:hidden">{member.email}</span>
+                            {member.isPending ? (
+                              <span className="mt-1 inline-flex items-center gap-1 text-xs text-base-content/70">
+                                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                                Adding…
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="hidden font-mono text-sm text-base-content/80 sm:table-cell">{member.email}</td>
+                        <td className="text-right">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMember(member)}
+                            disabled={member.isPending || isRemoving}
+                          >
+                            Remove
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </CardContent>

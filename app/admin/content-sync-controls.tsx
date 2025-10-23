@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 type SyncItem = {
   id: string;
@@ -168,20 +169,21 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
     <div className="flex w-full flex-col gap-5">
       {toast ? (
         <div
-          role="status"
-          className={`fixed right-4 top-4 z-50 w-full max-w-sm rounded-md border p-4 shadow-lg ${
-            toast.variant === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-red-200 bg-red-50 text-red-900"
-          }`}
+          role={toast.variant === "error" ? "alert" : "status"}
+          className={cn(
+            "alert fixed right-4 top-4 z-50 w-full max-w-sm shadow-lg",
+            toast.variant === "success" ? "alert-success" : "alert-error"
+          )}
         >
-          <p className="font-semibold">{toast.title}</p>
-          {toast.description ? (
-            <p className="mt-1 text-sm leading-relaxed">{toast.description}</p>
-          ) : null}
-          {toast.requestId ? (
-            <p className="mt-2 text-xs opacity-75">Request ID: {toast.requestId}</p>
-          ) : null}
+          <div className="flex flex-col text-sm">
+            <span className="font-semibold">{toast.title}</span>
+            {toast.description ? (
+              <span className="mt-1 leading-relaxed">{toast.description}</span>
+            ) : null}
+            {toast.requestId ? (
+              <span className="mt-2 text-xs opacity-80">Request ID: {toast.requestId}</span>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -259,10 +261,10 @@ const ACTION_DEFINITIONS = [
 ] as const satisfies ReadonlyArray<{ key: keyof SyncSummarySection; label: string }>;
 
 const ACTION_STYLES: Record<keyof SyncSummarySection, string> = {
-  created: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  updated: "border-sky-200 bg-sky-50 text-sky-900",
-  deleted: "border-rose-200 bg-rose-50 text-rose-900",
-  skipped: "border-amber-200 bg-amber-50 text-amber-900"
+  created: "badge-success",
+  updated: "badge-info",
+  deleted: "badge-error",
+  skipped: "badge-warning"
 };
 
 function SyncReport({ summary }: { summary: SyncSummary }) {
@@ -284,7 +286,7 @@ function SyncReport({ summary }: { summary: SyncSummary }) {
   ] as const;
 
   return (
-    <div className="w-full self-stretch rounded-lg border border-border/60 bg-card/60 p-4 text-left shadow-sm">
+    <div className="w-full self-stretch rounded-box border border-base-300 bg-base-100 p-4 text-left shadow-lg">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Sync report
@@ -310,7 +312,7 @@ function SummarySection({ label, data }: { label: string; data: SyncSummarySecti
   const totalEntries = ACTION_DEFINITIONS.reduce((acc, action) => acc + data[action.key].length, 0);
 
   return (
-    <section className="rounded-md border border-border/50 bg-background/70 p-3">
+    <section className="rounded-box border border-base-300 bg-base-100/80 p-4 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h4 className="font-semibold text-foreground">{label}</h4>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -406,7 +408,7 @@ function ToggleRow({ id, label, description, hint, checked, onCheckedChange, dis
   const describedBy = [descriptionId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/40 p-3 shadow-sm">
+    <div className="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-100/80 p-4 shadow-sm">
       <div className="flex min-w-0 flex-col gap-1 text-left">
         <p id={`${id}-label`} className="text-sm font-medium text-foreground">
           {label}
@@ -438,7 +440,7 @@ type StatusBadgeProps = {
 
 function StatusBadge({ action, count }: StatusBadgeProps) {
   return (
-    <Badge className={`${ACTION_STYLES[action]} ${count === 0 ? "opacity-60" : ""}`}>
+    <Badge className={cn(ACTION_STYLES[action], "text-xs", count === 0 && "opacity-60")}>
       {ACTION_DEFINITIONS.find((definition) => definition.key === action)?.label}: {count}
     </Badge>
   );
@@ -447,12 +449,12 @@ function StatusBadge({ action, count }: StatusBadgeProps) {
 function LogPanel({ logs, isSubmitting }: { logs: string[]; isSubmitting: boolean }) {
   return (
     <div
-      className="rounded-xl border border-slate-900/50 bg-slate-950/50 p-4 font-mono text-xs text-slate-200 shadow-inner"
+      className="rounded-box border border-base-300 bg-base-200/70 p-4 font-mono text-xs text-base-content shadow-inner"
       aria-live="polite"
     >
       <div className="flex max-h-48 flex-col gap-2 overflow-y-auto">
         {logs.length === 0 ? (
-          <p className="text-slate-500">No sync activity yet.</p>
+          <p className="text-base-content/60">No sync activity yet.</p>
         ) : (
           logs.map((log, index) => (
             <p key={`${index}-${log}`} className="whitespace-pre-wrap break-words">
@@ -461,7 +463,7 @@ function LogPanel({ logs, isSubmitting }: { logs: string[]; isSubmitting: boolea
           ))
         )}
         {isSubmitting ? (
-          <p className="flex items-center gap-2 text-slate-300">
+          <p className="flex items-center gap-2 text-base-content/80">
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Processing…
           </p>
         ) : null}

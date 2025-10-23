@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { captureError } from "@/lib/client-error-reporting";
+import { cn } from "@/lib/utils";
 
 type QuizOption = {
   key: string;
@@ -256,26 +257,28 @@ export function LessonQuizCard({
   return (
     <div className="space-y-4">
       {!watchRequirementMet && !hasResults && (
-        <div className="rounded-md border border-dashed border-muted-foreground/40 bg-muted/30 p-4 text-sm text-muted-foreground">
-          Keep watching the lesson video to unlock this quiz.
+        <div className="alert alert-warning shadow">
+          <span className="text-sm">
+            Keep watching the lesson video to unlock this quiz.
+          </span>
         </div>
       )}
 
       {message && messageType === "success" && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          {message}
+        <div className="alert alert-success shadow">
+          <span className="text-sm">{message}</span>
         </div>
       )}
 
       {message && messageType === "error" && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {message}
+        <div className="alert alert-error shadow">
+          <span className="text-sm">{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
+        <div className="alert alert-error shadow">
+          <span className="text-sm">{error}</span>
         </div>
       )}
 
@@ -289,13 +292,11 @@ export function LessonQuizCard({
           return (
             <div
               key={question.id}
-              className={`rounded-md border p-4 transition ${
-                isCorrect
-                  ? "border-emerald-300 bg-emerald-50"
-                  : isIncorrect
-                    ? "border-red-300 bg-red-50"
-                    : "border-border bg-card"
-              }`}
+              className={cn(
+                "rounded-box border border-base-300 bg-base-100 p-4 shadow-sm transition",
+                isCorrect && "border-success/60 bg-success/10",
+                isIncorrect && "border-error/60 bg-error/10"
+              )}
             >
               <p className="text-sm font-medium text-foreground">{question.prompt}</p>
               <div className="mt-3 space-y-2">
@@ -305,9 +306,11 @@ export function LessonQuizCard({
                   return (
                     <label
                       key={option.key}
-                      className={`flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm transition ${
-                        disabled ? "cursor-not-allowed opacity-75" : "hover:border-foreground/50"
-                      } ${isSelected ? "border-foreground" : "border-border"}`}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
+                        disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
+                        isSelected && "border-primary bg-primary/10 text-primary"
+                      )}
                     >
                       <input
                         type="radio"
@@ -316,7 +319,7 @@ export function LessonQuizCard({
                         checked={isSelected}
                         disabled={disabled}
                         onChange={() => handleSelect(question, option.key)}
-                        className="h-4 w-4"
+                        className="radio radio-primary"
                       />
                       <span>{option.label}</span>
                     </label>
@@ -325,12 +328,12 @@ export function LessonQuizCard({
               </div>
 
               {isCorrect && (
-                <p className="mt-3 text-sm font-medium text-emerald-700">Correct!</p>
+                <p className="mt-3 text-sm font-medium text-success">Correct!</p>
               )}
 
               {isIncorrect && (
                 <div className="mt-3 space-y-1 text-sm">
-                  <p className="font-medium text-red-700">Not quite.</p>
+                  <p className="font-medium text-error">Not quite.</p>
                   {state?.correctLabel && (
                     <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
                   )}
