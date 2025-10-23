@@ -169,26 +169,15 @@ export function syncDocumentTheme(mode: ThemeMode, resolved: "light" | "dark") {
 
     root.setAttribute("data-theme-resolved", resolved);
     root.style.colorScheme = resolved;
-  }
 
-  if (typeof document !== "undefined") {
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toUTCString();
     document.cookie = `${MODE_COOKIE}=${mode}; path=/; expires=${expires}; SameSite=Lax`;
-
-    if (mode === "system") {
-      document.cookie = `${THEME_COOKIE}=; path=/; expires=${new Date(0).toUTCString()}; SameSite=Lax`;
-    } else {
-      document.cookie = `${THEME_COOKIE}=${themeName}; path=/; expires=${expires}; SameSite=Lax`;
-    }
+    document.cookie = `${THEME_COOKIE}=${themeName}; path=/; expires=${expires}; SameSite=Lax`;
   }
 
   if (typeof window !== "undefined") {
     window.localStorage.setItem(MODE_STORAGE_KEY, mode);
-    if (mode === "system") {
-      window.localStorage.removeItem(THEME_STORAGE_KEY);
-    } else {
-      window.localStorage.setItem(THEME_STORAGE_KEY, themeName);
-    }
+    window.localStorage.setItem(THEME_STORAGE_KEY, themeName);
   }
 }
 

@@ -25,6 +25,50 @@ const heading = Space_Grotesk({
   display: "swap",
 });
 
+const THEME_BOOT_SCRIPT = `
+(function() {
+  try {
+    const root = document.documentElement;
+    const getCookie = (name) => {
+      const value = "; " + document.cookie;
+      const parts = value.split("; " + name + "=");
+      if (parts.length === 2) {
+        return parts.pop().split(";").shift() || null;
+      }
+      return null;
+    };
+    const storedMode = localStorage.getItem('pop-theme-mode') || getCookie('pop-theme-mode');
+    const storedTheme = localStorage.getItem('pop-theme-name') || getCookie('pop-theme-name');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const mode = storedMode === 'light' || storedMode === 'dark' || storedMode === 'system' ? storedMode : 'system';
+    const fallbackResolved = prefersDark ? 'dark' : 'light';
+    const resolved = mode === 'dark' ? 'dark' : mode === 'light' ? 'light' : fallbackResolved;
+    let theme = storedTheme === 'pop' || storedTheme === 'pop-dark' ? storedTheme : null;
+    if (!theme) {
+      theme = resolved === 'dark' ? 'pop-dark' : 'pop';
+    }
+    if (mode === 'dark') {
+      theme = 'pop-dark';
+    }
+    if (mode === 'light') {
+      theme = 'pop';
+    }
+    const resolvedFromTheme = theme === 'pop-dark' ? 'dark' : 'light';
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-theme-resolved', resolvedFromTheme);
+    if (mode === 'system') {
+      root.removeAttribute('data-theme-mode');
+    } else {
+      root.setAttribute('data-theme-mode', mode);
+    }
+    root.classList.toggle('dark', resolvedFromTheme === 'dark');
+    root.style.colorScheme = resolvedFromTheme;
+  } catch (error) {
+    // Ignore initial theme sync errors.
+  }
+})();
+`;
+
 export const metadata: Metadata = {
   title: "POP Initiative LMS",
   description: "Production-ready starter for the POP Initiative LMS"
@@ -83,6 +127,9 @@ export default async function RootLayout({
       data-theme={htmlThemeAttr}
       data-theme-resolved={htmlThemeResolvedAttr}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body
         className={cn(
           sans.variable,
