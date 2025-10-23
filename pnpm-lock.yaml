@@ -81,6 +81,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: file:./packages/tailwindcss-postcss
         version: link:packages/tailwindcss-postcss
+      daisyui:
+        specifier: ^4.0.0
+        version: 4.12.10
       '@types/node':
         specifier: ^24.9.1
         version: 24.9.1
@@ -93,9 +96,6 @@ importers:
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.6)
-      daisyui:
-        specifier: file:./packages/daisyui
-        version: link:packages/daisyui
       eslint:
         specifier: ^9.38.0
         version: 9.38.0(jiti@2.6.1)
@@ -126,8 +126,6 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
-
-  packages/daisyui: {}
 
   packages/tailwindcss-postcss: {}
 
@@ -3170,6 +3168,9 @@ packages:
 
   data-uri-to-buffer@1.2.0:
     resolution: {integrity: sha512-vKQ9DTQPN1FLYiiEEOQ6IBGFqvjCa5rSK3cWMy/Nespm5d/x3dGFT9UBZnkLxCwua/IXBi2TYnwTEpsOvhC4UQ==}
+
+  daisyui@4.12.10:
+    resolution: {integrity: sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==, tarball: https://registry.npmjs.org/daisyui/-/daisyui-4.12.10.tgz}
 
   data-urls@5.0.0:
     resolution: {integrity: sha512-ZYP5VBHshaDAiVZxjbRVcFJpc+4xGgT0bK3vzy1HLN8jTO975HEbuYzZJcHoQEY5K1a0z8YayJkyVETa08eNTg==}
