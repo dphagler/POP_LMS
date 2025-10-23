@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
 
-const config: Config = {
+const config = {
   darkMode: "class",
   content: [
     "./app/**/*.{ts,tsx}",
@@ -110,6 +110,10 @@ const config: Config = {
     ]
   },
   plugins: [require("daisyui"), require("tailwindcss-animate")]
+} satisfies Config & {
+  daisyui: {
+    themes: Record<string, unknown>[];
+  };
 };
 
 export default config;
