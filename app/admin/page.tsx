@@ -2,9 +2,15 @@ import Link from "next/link";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getMissingSanityEnvVars } from "@/lib/sanity";
+import { loadOrgAnalyticsSnapshot } from "@/lib/admin-analytics";
 import ContentSyncControls from "./content-sync-controls";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
+const percentFormatter = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1
+});
 
 export default async function AdminDashboard() {
   const session = await requireRole("ADMIN");
@@ -20,29 +26,34 @@ export default async function AdminDashboard() {
       ? `Sanity sync is unavailable. Missing environment variables: ${missingSanityEnvVars.join(", ")}.`
       : undefined;
 
-  const [userCount, courseCount, groupCount] = await Promise.all([
-    prisma.user.count({ where: { orgId } }),
-    prisma.course.count({ where: { orgId } }),
-    prisma.orgGroup.count({ where: { orgId } })
+  const [groupCount, analyticsSnapshot] = await Promise.all([
+    prisma.orgGroup.count({ where: { orgId } }),
+    loadOrgAnalyticsSnapshot(orgId)
   ]);
 
   const overviewStats = [
     {
-      id: "learners",
-      title: "Learners",
-      value: userCount,
-      description: "Active members across your organization.",
+      id: "active-learners",
+      title: "Active learners",
+      formattedValue: numberFormatter.format(analyticsSnapshot.activeLearnerCount),
+      description: "Learners currently enrolled in at least one assignment.",
     },
     {
-      id: "courses",
-      title: "Courses",
-      value: courseCount,
-      description: "Courses published to your learners.",
+      id: "assignments",
+      title: "Assignments",
+      formattedValue: numberFormatter.format(analyticsSnapshot.assignmentCount),
+      description: "Assignments issued across your organization.",
+    },
+    {
+      id: "completion-rate",
+      title: "Completion rate",
+      formattedValue: percentFormatter.format(analyticsSnapshot.completionRate || 0),
+      description: "Completed lesson targets compared to assigned targets.",
     },
     {
       id: "groups",
       title: "Groups",
-      value: groupCount,
+      formattedValue: numberFormatter.format(groupCount),
       description: "Peer or cohort groups you&apos;ve created.",
     },
   ] as const;
@@ -71,15 +82,18 @@ export default async function AdminDashboard() {
       </section>
 
       <section aria-label="Key organization stats">
-        <div className="stats stats-vertical gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-lg sm:stats-horizontal sm:gap-0">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {overviewStats.map((stat) => (
-            <div key={stat.id} className="stat">
-              <div className="stat-title text-base-content/70">{stat.title}</div>
-              <div className="stat-value text-primary">
-                {numberFormatter.format(stat.value)}
-              </div>
-              <div className="stat-desc text-base-content/70">{stat.description}</div>
-            </div>
+            <article
+              key={stat.id}
+              className="rounded-box border border-base-300 bg-base-100 p-5 shadow-lg"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/70">
+                {stat.title}
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-primary">{stat.formattedValue}</p>
+              <p className="mt-2 text-sm text-base-content/70">{stat.description}</p>
+            </article>
           ))}
         </div>
       </section>

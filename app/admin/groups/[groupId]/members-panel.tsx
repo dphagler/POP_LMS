@@ -436,7 +436,7 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" onClick={handleAddMember} disabled={isSubmitting}>
+            <Button type="button" onClick={handleAddMember} disabled={isSubmitting} size="sm">
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -455,6 +455,7 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                 setSuggestions([]);
               }}
               disabled={isSubmitting && !query}
+              size="sm"
             >
               Clear
             </Button>
