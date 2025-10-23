@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { captureError } from "@/lib/client-error-reporting";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +91,8 @@ export function LessonQuizCard({
   const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [completionToastVisible, setCompletionToastVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState("quiz");
 
   const hasResults = useMemo(() => {
     return questions.length > 0 && questions.every((question) => typeof responses.get(question.id)?.isCorrect === "boolean");
@@ -109,6 +112,17 @@ export function LessonQuizCard({
       setMessageType(null);
     }
   }, [hasResults]);
+
+  useEffect(() => {
+    if (completionToastVisible) {
+      const timeout = setTimeout(() => setCompletionToastVisible(false), 8000);
+      return () => clearTimeout(timeout);
+    }
+  }, [completionToastVisible]);
+
+  useEffect(() => {
+    setActiveTab("quiz");
+  }, [questions]);
 
   const handleSelect = (question: QuizQuestion, key: string) => {
     if (hasResults) {
@@ -199,9 +213,13 @@ export function LessonQuizCard({
           return next;
         });
 
-        setMessage(data.passed ? "Nice work! You passed the quiz." : "Please review the questions below and try again.");
-        setMessageType(data.passed ? "success" : "error");
+        const passed = data.passed;
+        setMessage(
+          passed ? "Nice work! You passed the quiz." : "Please review the questions below and try again before resubmitting."
+        );
+        setMessageType(passed ? "success" : "error");
         setError(null);
+        setCompletionToastVisible((prev) => prev || passed);
         router.refresh();
       } catch (submissionError) {
         setError(submissionError instanceof Error ? submissionError.message : "Unable to submit quiz");
@@ -243,6 +261,7 @@ export function LessonQuizCard({
         setMessage(null);
         setMessageType(null);
         setError(null);
+        setCompletionToastVisible(false);
         router.refresh();
       } catch (resetError) {
         setError(resetError instanceof Error ? resetError.message : "Unable to reset quiz");
@@ -250,99 +269,123 @@ export function LessonQuizCard({
     });
   };
 
+  const tabs = useMemo(() => [{ id: "quiz", label: "Quiz", questions }], [questions]);
+
   if (questions.length === 0) {
     return <p className="text-sm text-muted-foreground">Quiz questions will appear here once configured.</p>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-6 p-6">
+      {completionToastVisible && (
+        <div className="toast toast-top toast-end">
+          <div className="alert alert-success shadow-lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <span className="text-sm font-semibold">Lesson complete! Ready for what&apos;s next?</span>
+              <Button type="button" size="sm" onClick={() => router.push("/app")}>
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!watchRequirementMet && !hasResults && (
-        <div className="alert alert-warning shadow">
-          <span className="text-sm">
-            Keep watching the lesson video to unlock this quiz.
-          </span>
+        <div className="rounded-box border border-dashed border-warning/60 bg-warning/10 p-4 text-sm text-warning">
+          Keep watching the lesson video to unlock this quiz.
         </div>
       )}
 
-      {message && messageType === "success" && (
-        <div className="alert alert-success shadow">
-          <span className="text-sm">{message}</span>
-        </div>
-      )}
-
-      {message && messageType === "error" && (
-        <div className="alert alert-error shadow">
-          <span className="text-sm">{message}</span>
+      {message && (
+        <div
+          className={cn(
+            "rounded-box border p-4 text-sm",
+            messageType === "success"
+              ? "border-success/60 bg-success/10 text-success"
+              : "border-error/60 bg-error/10 text-error"
+          )}
+        >
+          {message}
         </div>
       )}
 
       {error && (
-        <div className="alert alert-error shadow">
-          <span className="text-sm">{error}</span>
-        </div>
+        <div className="rounded-box border border-error/60 bg-error/10 p-4 text-sm text-error">{error}</div>
       )}
 
-      <div className="space-y-3">
-        {questions.map((question) => {
-          const state = responses.get(question.id);
-          const isCorrect = state?.isCorrect === true;
-          const isIncorrect = state?.isCorrect === false;
-          const selectedKey = state?.selectedKey;
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {tabs.length > 1 && (
+          <TabsList>
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
 
-          return (
-            <div
-              key={question.id}
-              className={cn(
-                "rounded-box border border-base-300 bg-base-100 p-4 shadow-sm transition",
-                isCorrect && "border-success/60 bg-success/10",
-                isIncorrect && "border-error/60 bg-error/10"
-              )}
-            >
-              <p className="text-sm font-medium text-foreground">{question.prompt}</p>
-              <div className="mt-3 space-y-2">
-                {question.options.map((option) => {
-                  const isSelected = selectedKey === option.key;
-                  const disabled = hasResults || !watchRequirementMet || isPending;
-                  return (
-                    <label
-                      key={option.key}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
-                        disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
-                        isSelected && "border-primary bg-primary/10 text-primary"
+        {tabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} className="space-y-4">
+            {tab.questions.map((question) => {
+              const state = responses.get(question.id);
+              const isCorrect = state?.isCorrect === true;
+              const isIncorrect = state?.isCorrect === false;
+              const selectedKey = state?.selectedKey;
+
+              return (
+                <div
+                  key={question.id}
+                  className={cn(
+                    "rounded-box border border-base-300 bg-base-100/95 p-4 shadow-sm transition",
+                    isCorrect && "border-success/60 bg-success/10",
+                    isIncorrect && "border-error/60 bg-error/10"
+                  )}
+                >
+                  <p className="text-sm font-semibold text-base-content">{question.prompt}</p>
+                  <div className="mt-4 space-y-2">
+                    {question.options.map((option) => {
+                      const isSelected = selectedKey === option.key;
+                      const disabled = hasResults || !watchRequirementMet || isPending;
+                      return (
+                        <label
+                          key={option.key}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
+                            disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
+                            isSelected && "border-primary bg-primary/10 text-primary"
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name={question.id}
+                            value={option.key}
+                            checked={isSelected}
+                            disabled={disabled}
+                            onChange={() => handleSelect(question, option.key)}
+                            className="radio radio-primary"
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {isCorrect && <p className="mt-4 text-sm font-medium text-success">Correct!</p>}
+
+                  {isIncorrect && (
+                    <div className="mt-4 space-y-1 text-sm">
+                      <p className="font-medium text-error">Not quite.</p>
+                      {state?.correctLabel && (
+                        <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
                       )}
-                    >
-                      <input
-                        type="radio"
-                        name={question.id}
-                        value={option.key}
-                        checked={isSelected}
-                        disabled={disabled}
-                        onChange={() => handleSelect(question, option.key)}
-                        className="radio radio-primary"
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-
-              {isCorrect && (
-                <p className="mt-3 text-sm font-medium text-success">Correct!</p>
-              )}
-
-              {isIncorrect && (
-                <div className="mt-3 space-y-1 text-sm">
-                  <p className="font-medium text-error">Not quite.</p>
-                  {state?.correctLabel && (
-                    <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </TabsContent>
+        ))}
+      </Tabs>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -350,11 +393,11 @@ export function LessonQuizCard({
           onClick={handleSubmit}
           disabled={!watchRequirementMet || hasResults || !allAnswered || isPending}
         >
-          Submit answers
+          Submit
         </Button>
         {hasResults && (
-          <Button type="button" variant="outline" onClick={handleReset} disabled={isPending}>
-            Retake quiz
+          <Button type="button" variant="ghost" onClick={handleReset} disabled={isPending}>
+            Retake
           </Button>
         )}
       </div>
