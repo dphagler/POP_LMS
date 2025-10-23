@@ -110,10 +110,6 @@ const config = {
     ]
   },
   plugins: [require("daisyui"), require("tailwindcss-animate")]
-} satisfies Config & {
-  daisyui: {
-    themes: Record<string, unknown>[];
-  };
-};
+} satisfies Config & { daisyui: unknown };
 
 export default config;

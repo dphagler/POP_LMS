@@ -1,7 +1,0 @@
-{
-  "name": "daisyui",
-  "version": "4.0.0-local",
-  "description": "Lightweight DaisyUI-inspired component plugin for POP LMS",
-  "main": "index.cjs",
-  "license": "MIT"
-}
