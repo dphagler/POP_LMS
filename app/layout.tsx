@@ -23,7 +23,9 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const rawTheme = cookieStore.get("pop-theme")?.value ?? null;
   const rawThemeMode = cookieStore.get("pop-theme-mode")?.value ?? null;
+  const rawThemeName = cookieStore.get("pop-theme-name")?.value ?? null;
   const initialThemeMode = parseThemeMode(rawThemeMode) ?? "system";
+  const initialThemeName = parseThemeName(rawThemeName);
   let initialTheme: Record<string, string> | null = null;
 
   if (rawTheme) {
@@ -44,10 +46,18 @@ export default async function RootLayout({
       ) as CSSProperties)
     : undefined;
 
-  const htmlClassName = initialThemeMode === "dark" ? "dark" : undefined;
+  const htmlThemeAttr =
+    initialThemeName ??
+    (initialThemeMode === "dark" ? "pop-dark" : initialThemeMode === "light" ? "pop" : undefined);
+
+  const themeResolvedFromName =
+    htmlThemeAttr === "pop-dark" ? "dark" : htmlThemeAttr === "pop" ? "light" : null;
+
+  const htmlClassName =
+    themeResolvedFromName === "dark" || initialThemeMode === "dark" ? "dark" : undefined;
   const htmlThemeModeAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
-  const htmlThemeResolvedAttr = initialThemeMode === "system" ? undefined : initialThemeMode;
-  const htmlThemeAttr = initialThemeMode === "dark" ? "pop-dark" : initialThemeMode === "light" ? "pop" : undefined;
+  const htmlThemeResolvedAttr =
+    themeResolvedFromName ?? (initialThemeMode === "system" ? undefined : initialThemeMode);
 
   return (
     <html
@@ -80,6 +90,13 @@ export default async function RootLayout({
 function parseThemeMode(value: string | null) {
   if (!value) return null;
   if (value === "light" || value === "dark" || value === "system") {
+    return value;
+  }
+  return null;
+}
+
+function parseThemeName(value: string | null): "pop" | "pop-dark" | null {
+  if (value === "pop" || value === "pop-dark") {
     return value;
   }
   return null;
