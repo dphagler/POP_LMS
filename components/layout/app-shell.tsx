@@ -245,6 +245,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const pointerDownOutsideRef = useRef(false);
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
   const router = useRouter();
 
@@ -265,9 +266,14 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
 
     const handlePointerDown = (event: PointerEvent) => {
       if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) {
+      pointerDownOutsideRef.current = !containerRef.current.contains(event.target as Node);
+    };
+
+    const handlePointerUp = () => {
+      if (pointerDownOutsideRef.current) {
         closeMenu();
       }
+      pointerDownOutsideRef.current = false;
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -277,11 +283,14 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerup", handlePointerUp);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerup", handlePointerUp);
       document.removeEventListener("keydown", handleKeyDown);
+      pointerDownOutsideRef.current = false;
     };
   }, [closeMenu, open]);
 
