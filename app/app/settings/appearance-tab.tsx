@@ -44,7 +44,7 @@ export function AppearanceSettings() {
   }, [mode, resolvedMode]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 rounded-2xl border border-base-300 bg-base-100/85 p-6 shadow-md">
       <div className="space-y-1">
         <h2 className="text-balance">Theme</h2>
         <p className="text-sm text-muted-foreground">
@@ -52,7 +52,7 @@ export function AppearanceSettings() {
         </p>
       </div>
       <fieldset className="space-y-4">
-        <legend className="text-sm font-medium">Color mode</legend>
+        <legend className="text-sm font-semibold text-foreground">Color mode</legend>
         <div className="grid gap-3 md:grid-cols-3">
           {OPTIONS.map((option) => {
             const Icon = option.icon;
@@ -62,10 +62,10 @@ export function AppearanceSettings() {
                 key={option.value}
                 htmlFor={`theme-${option.value}`}
                 className={cn(
-                  "group relative flex cursor-pointer flex-col gap-3 rounded-md border p-4 text-left transition",
+                  "group relative flex cursor-pointer flex-col gap-3 rounded-2xl border border-base-300 bg-base-100/90 p-4 text-left shadow-sm transition",
                   isActive
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-background hover:bg-muted/50"
+                    ? "border-[color:var(--color-primary)]/60 bg-[color:var(--color-primary)]/12"
+                    : "hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--surface-hover)]/40"
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -74,7 +74,7 @@ export function AppearanceSettings() {
                     {option.label}
                   </span>
                   {isActive ? (
-                    <span className="flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                    <span className="flex items-center gap-1 rounded-full bg-[color:var(--color-primary)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-primary-content)]">
                       <Check className="h-3 w-3" aria-hidden />
                       Active
                     </span>

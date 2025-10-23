@@ -90,6 +90,7 @@ export function ThemeProvider({
 
     const root = document.documentElement;
     root.classList.toggle("dark", resolvedMode === "dark");
+    root.setAttribute("data-theme", resolvedMode === "dark" ? "pop-dark" : "pop");
 
     if (mode === "system") {
       root.removeAttribute("data-theme-mode");

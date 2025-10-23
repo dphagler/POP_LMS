@@ -82,7 +82,7 @@ export function ThemeModeToggle({ className }: { className?: string }) {
         role="menu"
         aria-label="Select theme"
         className={cn(
-          "absolute right-0 z-30 mt-2 w-48 origin-top-right rounded-md border bg-popover p-1 text-sm shadow-lg outline-none",
+          "absolute right-0 z-30 mt-2 w-48 origin-top-right rounded-2xl border border-base-300 bg-base-100/95 p-2 text-sm shadow-xl backdrop-blur",
           open ? "block" : "hidden"
         )}
       >
@@ -96,8 +96,11 @@ export function ThemeModeToggle({ className }: { className?: string }) {
               role="menuitemradio"
               aria-checked={isActive}
               className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition-colors duration-200 ease-in-out hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                isActive ? "text-foreground" : "text-muted-foreground"
+                "flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left transition-colors duration-200 ease-in-out",
+                "hover:bg-[color:var(--surface-hover)] focus-visible:outline-none",
+                isActive
+                  ? "bg-[color:var(--surface-muted-strong)] text-foreground shadow-inner"
+                  : "text-muted-foreground"
               )}
               onClick={() => handleSelect(option.value)}
             >

@@ -154,7 +154,7 @@ export function ProfileSettingsForm({
 
   return (
     <>
-      <form action={formAction} className="space-y-6 p-6">
+      <form action={formAction} className="space-y-6 rounded-2xl border border-base-300 bg-base-100/85 p-6 shadow-md">
         <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Avatar className="h-20 w-20">

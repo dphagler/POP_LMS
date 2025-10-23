@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import type { ChangePasswordFormState } from "./actions";
 
@@ -88,7 +89,12 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
       {state.message ? (
         <p
           id={messageId}
-          className={`text-sm ${state.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+          className={cn(
+            "text-sm",
+            state.status === "error"
+              ? "text-[color:var(--color-error)]"
+              : "text-muted-foreground"
+          )}
           role={state.status === "error" ? "alert" : undefined}
         >
           {state.message}
