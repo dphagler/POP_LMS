@@ -313,7 +313,8 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
   const handleMenuBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
     const nextFocus = event.relatedTarget as Node | null;
     if (!menuPanelRef.current) return;
-    if (!nextFocus || !menuPanelRef.current.contains(nextFocus)) {
+    if (!nextFocus) return;
+    if (!menuPanelRef.current.contains(nextFocus)) {
       closeMenu();
     }
   };
