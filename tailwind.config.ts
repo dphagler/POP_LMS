@@ -11,7 +11,8 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans]
+        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+        heading: ["var(--font-heading)", ...defaultTheme.fontFamily.sans]
       },
       colors: {
         border: "var(--surface-border)",
@@ -71,38 +72,38 @@ const config = {
     themes: [
       {
         pop: {
-          primary: "#2563eb",
-          "primary-content": "#f8fafc",
-          secondary: "#f97316",
-          "secondary-content": "#0f172a",
-          accent: "#facc15",
-          "accent-content": "#0f172a",
+          primary: "#4f46e5",
+          "primary-content": "#eef2ff",
+          secondary: "#0ea5e9",
+          "secondary-content": "#052241",
+          accent: "#f472b6",
+          "accent-content": "#2f0f23",
           neutral: "#111827",
           "neutral-content": "#f8fafc",
-          "base-100": "#f9fafb",
-          "base-200": "#e5e7eb",
-          "base-300": "#d1d5db",
-          info: "#0284c7",
+          "base-100": "#f6f7ff",
+          "base-200": "#e9ebff",
+          "base-300": "#d9ddff",
+          info: "#2563eb",
           success: "#16a34a",
-          warning: "#d97706",
+          warning: "#f59e0b",
           error: "#dc2626"
         }
       },
       {
         "pop-dark": {
-          primary: "#60a5fa",
+          primary: "#818cf8",
           "primary-content": "#0b1120",
-          secondary: "#fb923c",
-          "secondary-content": "#0f172a",
-          accent: "#facc15",
-          "accent-content": "#0f172a",
+          secondary: "#38bdf8",
+          "secondary-content": "#021427",
+          accent: "#f472b6",
+          "accent-content": "#311022",
           neutral: "#0f172a",
           "neutral-content": "#e2e8f0",
           "base-100": "#020617",
-          "base-200": "#111827",
-          "base-300": "#1f2937",
-          info: "#0ea5e9",
-          success: "#22c55e",
+          "base-200": "#0f172a",
+          "base-300": "#1e293b",
+          info: "#60a5fa",
+          success: "#34d399",
           warning: "#fbbf24",
           error: "#f87171"
         }
