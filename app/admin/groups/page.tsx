@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import GroupsList from "./groups-list";
 import {
   createGroupAction,
@@ -71,8 +70,10 @@ export default async function AdminGroupsPage() {
         </CardHeader>
         <CardContent>
           <form action={createGroup} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <div className="space-y-2">
-              <Label htmlFor="name">Group name</Label>
+            <div className="form-control">
+              <label htmlFor="name" className="label">
+                <span className="label-text font-semibold">Group name</span>
+              </label>
               <Input id="name" name="name" required placeholder="e.g. Spring 2025 Cohort" />
             </div>
             <Button type="submit" className="w-full sm:w-auto">

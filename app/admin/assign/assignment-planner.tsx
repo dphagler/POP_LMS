@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 type ModuleOption = {
@@ -227,8 +226,10 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
         </CardHeader>
         <CardContent className="space-y-4">
           {mode === "course" ? (
-            <div className="space-y-2">
-              <Label htmlFor="course-select">Course</Label>
+            <div className="form-control w-full">
+              <label htmlFor="course-select" className="label">
+                <span className="label-text font-semibold">Course</span>
+              </label>
               <Select
                 id="course-select"
                 value={selectedCourseId}
@@ -242,8 +243,10 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
               </Select>
             </div>
           ) : (
-            <div className="space-y-2">
-              <Label htmlFor="module-select">Module</Label>
+            <div className="form-control w-full">
+              <label htmlFor="module-select" className="label">
+                <span className="label-text font-semibold">Module</span>
+              </label>
               <Select
                 id="module-select"
                 value={selectedModuleId}
@@ -281,28 +284,35 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
             <p className="text-sm text-muted-foreground">No groups available. Create a group first to assign content.</p>
           ) : (
             <div className={groupListClasses}>
-              {groups.map((group) => (
-                <label
-                  key={group.id}
-                  className={cn(
-                    "flex items-start rounded-xl border border-slate-200/10 bg-white/10 text-sm shadow-sm backdrop-blur transition hover:border-slate-200/30 hover:bg-white/20 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background dark:border-slate-800/40 dark:bg-slate-900/20 dark:hover:border-slate-700/60 dark:hover:bg-slate-900/30",
-                    isCompact ? "gap-2 p-2" : "gap-3 p-3"
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border border-input"
-                    checked={selectedGroupIds.includes(group.id)}
-                    onChange={() => handleGroupToggle(group.id)}
-                  />
-                  <span className="space-y-1">
-                    <span className="block font-medium text-foreground">{group.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {group.members.length} member{group.members.length === 1 ? "" : "s"}
-                    </span>
-                  </span>
-                </label>
-              ))}
+              {groups.map((group) => {
+                const checkboxId = `group-${group.id}`;
+                return (
+                  <label
+                    key={group.id}
+                    htmlFor={checkboxId}
+                    className={cn(
+                      "card cursor-pointer border border-base-200 bg-base-100 transition hover:border-primary/40 hover:shadow-lg",
+                      isCompact ? "p-3" : "p-4"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        className="checkbox checkbox-primary mt-1"
+                        checked={selectedGroupIds.includes(group.id)}
+                        onChange={() => handleGroupToggle(group.id)}
+                      />
+                      <span className="space-y-1">
+                        <span className="block font-semibold text-base-content">{group.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {group.members.length} member{group.members.length === 1 ? "" : "s"}
+                        </span>
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -336,13 +346,13 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           {preview.newMembers.length > 0 ? (
             <div className="space-y-4">
               <p className="text-sm font-medium">Learners gaining access</p>
-              <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200/10 bg-white/10 p-3 shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/20">
+              <div className="max-h-64 overflow-y-auto rounded-box border border-base-200 bg-base-100 p-3 shadow-inner">
                 <ul className={cn("flex flex-col", memberListSpacing)}>
                   {preview.newMembers.map((member) => (
                     <li
                       key={member.id}
                       className={cn(
-                        "rounded-lg border border-slate-200/20 bg-white/20 px-3 text-sm shadow-sm backdrop-blur dark:border-slate-800/40 dark:bg-slate-900/40",
+                        "rounded-box bg-base-200 px-3 text-sm",
                         isCompact ? "py-1.5" : "py-2"
                       )}
                     >
@@ -357,25 +367,18 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
           )}
 
           {error ? (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
+            <div className="alert alert-error">
+              <span>{error}</span>
+            </div>
           ) : null}
           {result ? (
-            <div
-              className={cn(
-                "rounded-md border px-3 py-2 text-sm shadow-sm backdrop-blur",
-                result.enrollmentsCreated > 0
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-900"
-                  : "border-sky-500/40 bg-sky-500/10 text-sky-900"
-              )}
-            >
+            <div className={cn("alert", result.enrollmentsCreated > 0 ? "alert-success" : "alert-info")}> 
               {result.enrollmentsCreated > 0 ? (
-                <p>
+                <span>
                   Enrolled {result.enrollmentsCreated} learner{result.enrollmentsCreated === 1 ? "" : "s"}. {result.alreadyEnrolled} were already enrolled.
-                </p>
+                </span>
               ) : (
-                <p>Everything is already assigned—no new enrollments were needed.</p>
+                <span>Everything is already assigned—no new enrollments were needed.</span>
               )}
             </div>
           ) : null}

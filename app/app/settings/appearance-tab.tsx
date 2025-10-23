@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Check, Monitor, Moon, Sun } from "lucide-react";
 
 import { useThemeMode, type ThemeMode } from "@/components/layout/theme-provider";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type ThemeOption = {
@@ -44,60 +45,62 @@ export function AppearanceSettings() {
   }, [mode, resolvedMode]);
 
   return (
-    <div className="space-y-6 rounded-2xl border border-base-300 bg-base-100/85 p-6 shadow-md">
-      <div className="space-y-1">
-        <h2 className="text-balance">Theme</h2>
-        <p className="text-sm text-muted-foreground">
-          Choose how POP Initiative looks on this device. Your selection is saved in this browser.
-        </p>
-      </div>
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-semibold text-foreground">Color mode</legend>
-        <div className="grid gap-3 md:grid-cols-3">
-          {OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isActive = option.value === mode;
-            return (
-              <label
-                key={option.value}
-                htmlFor={`theme-${option.value}`}
-                className={cn(
-                  "group relative flex cursor-pointer flex-col gap-3 rounded-2xl border border-base-300 bg-base-100/90 p-4 text-left shadow-sm transition",
-                  isActive
-                    ? "border-[color:var(--color-primary)]/60 bg-[color:var(--color-primary)]/12"
-                    : "hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--surface-hover)]/40"
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <Icon className="h-4 w-4" aria-hidden />
-                    {option.label}
-                  </span>
-                  {isActive ? (
-                    <span className="flex items-center gap-1 rounded-full bg-[color:var(--color-primary)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-primary-content)]">
-                      <Check className="h-3 w-3" aria-hidden />
-                      Active
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-xs text-muted-foreground">{option.description}</p>
-                <input
-                  id={`theme-${option.value}`}
-                  type="radio"
-                  name="theme-mode"
-                  value={option.value}
-                  checked={isActive}
-                  onChange={() => setMode(option.value)}
-                  className="sr-only"
-                />
-              </label>
-            );
-          })}
+    <Card className="shadow-xl">
+      <div className="card-body space-y-6">
+        <div className="space-y-1">
+          <h2 className="text-balance">Theme</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose how POP Initiative looks on this device. Your selection is saved in this browser.
+          </p>
         </div>
-      </fieldset>
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        {statusMessage}
-      </p>
-    </div>
+        <fieldset className="space-y-4">
+          <legend className="text-sm font-semibold text-foreground">Color mode</legend>
+          <div className="grid gap-4 md:grid-cols-3">
+            {OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const isActive = option.value === mode;
+              return (
+                <label
+                  key={option.value}
+                  htmlFor={`theme-${option.value}`}
+                  className={cn(
+                    "card cursor-pointer border border-base-300 bg-base-100 transition hover:border-primary/60 hover:shadow-lg",
+                    isActive ? "border-primary shadow-lg" : "shadow-sm"
+                  )}
+                >
+                  <div className="card-body gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        <Icon className="h-5 w-5" aria-hidden />
+                        {option.label}
+                      </span>
+                      {isActive ? (
+                        <span className="badge badge-primary badge-sm gap-1">
+                          <Check className="h-3 w-3" aria-hidden />
+                          Active
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{option.description}</p>
+                  </div>
+                  <input
+                    id={`theme-${option.value}`}
+                    type="radio"
+                    name="theme-mode"
+                    value={option.value}
+                    checked={isActive}
+                    onChange={() => setMode(option.value)}
+                    className="hidden"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        <div className="alert alert-info" aria-live="polite">
+          <span>{statusMessage}</span>
+        </div>
+      </div>
+    </Card>
   );
 }

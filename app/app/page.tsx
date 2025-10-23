@@ -196,11 +196,7 @@ export default async function LearnerDashboard() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Progress
-                      value={upNextPercent}
-                      indicatorClassName="bg-gradient-to-r from-sky-400 to-indigo-500"
-                      aria-label={`Progress for ${upNext.title}`}
-                    />
+                    <Progress value={upNextPercent} aria-label={`Progress for ${upNext.title}`} />
                     <p className="text-sm text-muted-foreground">
                       {upNextProgress?.isComplete
                         ? "Completed — review to stay sharp."
@@ -236,11 +232,7 @@ export default async function LearnerDashboard() {
             </div>
             <div className="space-y-2">
               <p className="text-sm font-semibold text-foreground">Assignment progress</p>
-              <Progress
-                value={hasAssignments ? percent : 0}
-                indicatorClassName="bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
-                aria-label="Overall assignment progress"
-              />
+              <Progress value={hasAssignments ? percent : 0} aria-label="Overall assignment progress" />
               <p className="text-sm text-muted-foreground">
                 {hasAssignments
                   ? `${completion} of ${totalLessons} lessons complete`
@@ -303,11 +295,7 @@ export default async function LearnerDashboard() {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    <Progress
-                      value={lessonPercent}
-                      indicatorClassName="bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
-                      aria-label={`Progress for ${lesson.title}`}
-                    />
+                    <Progress value={lessonPercent} aria-label={`Progress for ${lesson.title}`} />
                     <p className="text-sm text-muted-foreground">{helperText}</p>
                   </div>
                 </div>
@@ -394,11 +382,7 @@ export default async function LearnerDashboard() {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    <Progress
-                      value={100}
-                      indicatorClassName="bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
-                      aria-label={`${item.lesson.title} completion`}
-                    />
+                    <Progress value={100} aria-label={`${item.lesson.title} completion`} />
                     <p className="text-sm text-muted-foreground">Great job! Keep the streak going.</p>
                   </div>
                 </div>

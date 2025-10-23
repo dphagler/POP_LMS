@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { PageFadeIn } from "@/components/layout/page-fade-in";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { auth, signIn } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { EmailSignInForm, type EmailSignInFormState } from "./email-signin-form";
@@ -91,37 +92,39 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   const initialEmailState: EmailSignInFormState = { status: "idle" };
 
   return (
-    <PageFadeIn className="flex min-h-[80vh] items-center justify-center p-6" role="main">
-      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-lg border bg-card p-8 text-center">
-        <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
-        <div className="space-y-2">
-          <h1 className="text-balance">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">
-            Choose how you’d like to sign in to your POP Initiative account.
-          </p>
-        </div>
-        <form action={handleGoogleSignIn} className="w-full">
-          <Button type="submit" className="w-full">
-            Continue with Google
-          </Button>
-        </form>
-        {emailAuthEnabled ? (
-          <div className="w-full space-y-3 text-left">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold">Or use a magic link</p>
-              <p className="text-xs text-muted-foreground">
-                We’ll email you a single-use link that expires shortly after it’s sent.
-              </p>
-            </div>
-            <EmailSignInForm action={handleEmailSignIn} initialState={initialEmailState} />
+    <PageFadeIn className="flex min-h-[80vh] items-center justify-center bg-base-200 p-6" role="main">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardContent className="flex flex-col items-center gap-6 p-8 text-center">
+          <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
+          <div className="space-y-2">
+            <h1 className="text-balance">Welcome back</h1>
+            <p className="text-sm text-muted-foreground">
+              Choose how you’d like to sign in to your POP Initiative account.
+            </p>
           </div>
-        ) : null}
-        {!emailAuthEnabled ? (
-          <p className="w-full text-left text-xs text-muted-foreground">
-            Email sign-in is not available for this environment. Contact your administrator if you need access.
-          </p>
-        ) : null}
-      </div>
+          <form action={handleGoogleSignIn} className="w-full">
+            <Button type="submit" className="w-full">
+              Continue with Google
+            </Button>
+          </form>
+          {emailAuthEnabled ? (
+            <div className="w-full space-y-3 text-left">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Or use a magic link</p>
+                <p className="text-xs text-muted-foreground">
+                  We’ll email you a single-use link that expires shortly after it’s sent.
+                </p>
+              </div>
+              <EmailSignInForm action={handleEmailSignIn} initialState={initialEmailState} />
+            </div>
+          ) : null}
+          {!emailAuthEnabled ? (
+            <p className="w-full text-left text-xs text-muted-foreground">
+              Email sign-in is not available for this environment. Contact your administrator if you need access.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
     </PageFadeIn>
   );
 }

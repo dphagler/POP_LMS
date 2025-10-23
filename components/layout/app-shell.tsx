@@ -76,7 +76,7 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-[color:var(--app-background)] text-foreground">
+    <div className="flex min-h-screen flex-col bg-base-200 text-base-content">
       <Header
         displayName={displayName}
         menuAvatar={<UserMenuAvatar image={userImage} initials={userInitials} name={displayName} />}
@@ -86,7 +86,7 @@ export function AppShell({
       <div className="flex flex-1">
         <DesktopSidebar navItems={navItems} orgName={orgName} />
         <main className="relative flex-1">
-          <PageFadeIn className="container mx-auto max-w-6xl py-10 px-6 lg:px-10">
+          <PageFadeIn className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-10">
             {children}
           </PageFadeIn>
         </main>
@@ -142,30 +142,22 @@ type HeaderProps = {
 
 function Header({ displayName, menuAvatar, orgName, pageTitle }: HeaderProps) {
   return (
-    <header className="border-b border-base-300 bg-base-100/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-base-100/80">
-      <div className="container flex w-full items-center gap-3 px-6 py-4 lg:px-10">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/app"
-            className="text-xs font-semibold uppercase tracking-[0.32em] text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-background)]"
-          >
-            POP Initiative
-          </Link>
-          <span className="hidden text-xs text-muted-foreground sm:inline" aria-hidden>
-            •
-          </span>
-          <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">{orgName}</span>
-        </div>
-        <div className="mx-auto hidden text-center md:block">
-          <p className="text-sm font-medium text-muted-foreground">{pageTitle ?? "Page title"}</p>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <ThemeModeToggle />
-          <span className="hidden text-sm font-semibold sm:inline" aria-live="polite">
-            {displayName}
-          </span>
-          {menuAvatar}
-        </div>
+    <header className="navbar sticky top-0 z-30 bg-base-100 shadow-sm">
+      <div className="navbar-start flex-col items-start gap-1">
+        <Link href="/app" className="btn btn-ghost px-3 text-left">
+          <span className="text-xs font-semibold uppercase tracking-[0.32em] text-primary">POP Initiative</span>
+        </Link>
+        <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">{orgName}</span>
+      </div>
+      <div className="navbar-center hidden md:flex">
+        <span className="text-sm font-semibold text-muted-foreground">{pageTitle ?? "Page title"}</span>
+      </div>
+      <div className="navbar-end gap-3">
+        <ThemeModeToggle />
+        <span className="hidden text-sm font-semibold sm:inline" aria-live="polite">
+          {displayName}
+        </span>
+        {menuAvatar}
       </div>
     </header>
   );
@@ -178,15 +170,17 @@ type DesktopSidebarProps = {
 
 function DesktopSidebar({ navItems, orgName }: DesktopSidebarProps) {
   return (
-    <aside className="hidden w-64 flex-col border-r border-base-300 bg-base-100/70 shadow-sm backdrop-blur lg:flex">
-      <div className="border-b border-base-300 px-6 py-6">
-        <p className="text-sm font-semibold leading-tight text-foreground">{orgName}</p>
+    <aside className="hidden w-72 flex-col gap-4 border-r border-base-300 bg-base-200/70 p-4 lg:flex">
+      <div className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
+        <p className="text-sm font-semibold leading-tight text-base-content">{orgName}</p>
         <p className="text-xs text-muted-foreground">Learning journeys</p>
       </div>
-      <nav aria-label="Primary" className="flex flex-1 flex-col gap-2 px-4 py-6">
-        {navItems.map((item) => (
-          <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} />
-        ))}
+      <nav aria-label="Primary" className="flex-1">
+        <ul className="menu menu-lg gap-2 rounded-box bg-base-100 p-3 shadow-sm">
+          {navItems.map((item) => (
+            <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} />
+          ))}
+        </ul>
       </nav>
     </aside>
   );
@@ -200,12 +194,10 @@ function MobileNav({ navItems }: MobileNavProps) {
   if (navItems.length === 0) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-base-300 bg-base-100/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-base-100/85 lg:hidden">
-      <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-around px-2">
-        {navItems.map((item) => (
-          <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} condensed />
-        ))}
-      </div>
+    <nav className="btm-nav z-30 border-t border-base-300 bg-base-100/95 shadow-lg backdrop-blur lg:hidden">
+      {navItems.map((item) => (
+        <NavLink key={item.href} href={item.href} isActive={item.isActive} label={item.label} condensed />
+      ))}
     </nav>
   );
 }
@@ -218,18 +210,31 @@ type NavLinkProps = {
 };
 
 function NavLink({ condensed, href, isActive, label }: NavLinkProps) {
-  const className = cn(
-    "btn btn-ghost gap-2 text-sm font-semibold transition-all duration-200",
-    condensed ? "btn-sm flex-1 justify-center" : "w-full justify-start",
-    isActive
-      ? "border border-[color:var(--color-primary)]/45 bg-[color:var(--color-primary)]/15 text-primary shadow-md"
-      : "border border-transparent text-muted-foreground hover:bg-[color:var(--surface-hover)]"
-  );
+  if (condensed) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold",
+          isActive ? "active text-primary" : "text-muted-foreground hover:text-primary"
+        )}
+        aria-current={isActive ? "page" : undefined}
+      >
+        {label}
+      </Link>
+    );
+  }
 
   return (
-    <Link href={href} className={className} aria-current={isActive ? "page" : undefined}>
-      {label}
-    </Link>
+    <li className={isActive ? "active" : undefined}>
+      <Link
+        href={href}
+        className="text-sm font-semibold"
+        aria-current={isActive ? "page" : undefined}
+      >
+        {label}
+      </Link>
+    </li>
   );
 }
 
@@ -336,7 +341,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="user-menu"
-        className="rounded-full focus-visible:outline-none"
+        className="btn btn-ghost btn-circle"
         ref={triggerRef}
       >
         <Avatar className="h-10 w-10">
@@ -344,47 +349,50 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
       </button>
-      <div
+      <ul
         id="user-menu"
         role="menu"
         aria-label="Account"
         className={cn(
-          "absolute right-0 mt-3 w-52 origin-top-right rounded-2xl border border-base-300 bg-base-100/95 p-3 text-sm shadow-xl backdrop-blur",
+          "menu menu-sm absolute right-0 mt-3 w-56 rounded-box border border-base-300 bg-base-100 p-3 text-sm shadow-xl",
           open ? "block" : "hidden"
         )}
         ref={menuPanelRef}
         onBlur={handleMenuBlur}
       >
-        <div className="px-3 py-2">
+        <li className="rounded-box bg-base-200/80 p-3">
           <p className="text-xs text-muted-foreground">Signed in as</p>
-          <p className="truncate text-sm font-medium text-foreground" aria-live="polite">
+          <p className="truncate text-sm font-medium text-base-content" aria-live="polite">
             {name}
           </p>
-        </div>
-        <Link
-          href="/settings"
-          role="menuitem"
-          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-[color:var(--surface-hover)] focus-visible:outline-none"
-          onClick={() => closeMenu()}
-          ref={firstItemRef}
-        >
-          Profile &amp; settings
-        </Link>
-        <Button
-          type="button"
-          role="menuitem"
-          variant="ghost"
-          className="w-full justify-between rounded-xl px-3 py-2 text-sm text-error hover:text-error"
-          onClick={handleSignOut}
-          aria-busy={isPending}
-          disabled={isPending}
-        >
-          <span className="flex w-full items-center justify-between gap-2">
-            <span>Sign out</span>
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          </span>
-        </Button>
-      </div>
+        </li>
+        <li>
+          <Link
+            href="/settings"
+            role="menuitem"
+            className="rounded-lg"
+            onClick={() => closeMenu()}
+            ref={firstItemRef}
+          >
+            Profile &amp; settings
+          </Link>
+        </li>
+        <li>
+          <button
+            type="button"
+            role="menuitem"
+            className="btn btn-error btn-sm text-base-100"
+            onClick={handleSignOut}
+            aria-busy={isPending}
+            disabled={isPending}
+          >
+            <span className="flex w-full items-center justify-between gap-2">
+              <span>Sign out</span>
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+            </span>
+          </button>
+        </li>
+      </ul>
     </div>
   );
 }

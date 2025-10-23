@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import { type UpdateProfileFormState } from "./actions";
@@ -154,96 +155,100 @@ export function ProfileSettingsForm({
 
   return (
     <>
-      <form action={formAction} className="space-y-6 rounded-2xl border border-base-300 bg-base-100/85 p-6 shadow-md">
-        <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Avatar className="h-20 w-20">
-            {preview ? <AvatarImage src={preview} alt="Avatar preview" /> : null}
-            <AvatarFallback>{avatarInitials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-3">
-            <div>
-              <h3 className="text-balance">Profile photo</h3>
-              <p id={avatarDescriptionId} className="text-sm text-muted-foreground">
-                Use a square image (recommended 240px or larger). PNG or JPG files up to 4 MB are supported.
-              </p>
+      <Card className="shadow-xl">
+        <form action={formAction} className="card-body space-y-6">
+          <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <Avatar className="h-24 w-24">
+              {preview ? <AvatarImage src={preview} alt="Avatar preview" /> : null}
+              <AvatarFallback>{avatarInitials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold">Profile photo</h3>
+                <p id={avatarDescriptionId} className="text-sm text-muted-foreground">
+                  Use a square image (recommended 240px or larger). PNG or JPG files up to 4 MB are supported.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label htmlFor={avatarInputId} className="sr-only">
+                  Upload profile photo
+                </label>
+                <Input
+                  ref={fileInputRef}
+                  id={avatarInputId}
+                  name="avatar"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={pending}
+                  className="min-w-[220px]"
+                  aria-describedby={avatarDescribedBy}
+                  aria-invalid={hasError || undefined}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveAvatar}
+                  disabled={pending || (!preview && !savedAvatar)}
+                >
+                  Remove
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label htmlFor={avatarInputId} className="sr-only">
-                Upload profile photo
-              </label>
-              <Input
-                ref={fileInputRef}
-                id={avatarInputId}
-                name="avatar"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={pending}
-                className="min-w-[220px]"
-                aria-describedby={avatarDescribedBy}
-                aria-invalid={hasError || undefined}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleRemoveAvatar}
-                disabled={pending || (!preview && !savedAvatar)}
-              >
-                Remove
-              </Button>
-            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label htmlFor="displayName" className="text-sm font-medium">
-            Display name
-          </label>
-          <Input
-            id="displayName"
-            name="displayName"
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            maxLength={80}
-            autoComplete="name"
-            required
-            disabled={pending}
-            aria-describedby={displayNameDescribedBy}
-            aria-invalid={hasError || undefined}
-          />
-          <p id={displayNameHelpId} className="text-xs text-muted-foreground">
-            This name will appear on certificates and progress reports.
-          </p>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Email</p>
-          <p className="text-sm text-muted-foreground" aria-live="polite">
-            {initialEmail}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <div id={successMessageId} aria-live="polite" className="sr-only">
-            {state.status === "success" ? state.message : null}
-          </div>
-          <div id={errorMessageId} aria-live="assertive" className="sr-only">
-            {state.status === "error" ? state.message : null}
-          </div>
-          <Button type="submit" disabled={pending} className="sm:w-auto">
-            {pending ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                Saving…
+          <div className="form-control w-full">
+            <label htmlFor="displayName" className="label">
+              <span className="label-text font-semibold">Display name</span>
+            </label>
+            <Input
+              id="displayName"
+              name="displayName"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              maxLength={80}
+              autoComplete="name"
+              required
+              disabled={pending}
+              aria-describedby={displayNameDescribedBy}
+              aria-invalid={hasError || undefined}
+            />
+            <label className="label" htmlFor="displayName">
+              <span id={displayNameHelpId} className="label-text-alt text-xs text-muted-foreground">
+                This name will appear on certificates and progress reports.
               </span>
-            ) : (
-              "Save changes"
-            )}
-          </Button>
-        </div>
-      </form>
+            </label>
+          </div>
+
+          <div className="form-control">
+            <span className="label-text font-semibold">Email</span>
+            <span className="label-text-alt text-sm text-muted-foreground" aria-live="polite">
+              {initialEmail}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div id={successMessageId} aria-live="polite" className="sr-only">
+              {state.status === "success" ? state.message : null}
+            </div>
+            <div id={errorMessageId} aria-live="assertive" className="sr-only">
+              {state.status === "error" ? state.message : null}
+            </div>
+            <Button type="submit" disabled={pending} className="sm:w-auto">
+              {pending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Saving…
+                </span>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Card>
       <SettingsToast toast={toast} onDismiss={() => setToast(null)} />
     </>
   );

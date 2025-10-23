@@ -29,10 +29,10 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
   }, [state.status]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="currentPassword" className="text-sm font-medium">
-          Current password
+    <form ref={formRef} action={formAction} className="space-y-5">
+      <div className="form-control">
+        <label htmlFor="currentPassword" className="label">
+          <span className="label-text font-semibold">Current password</span>
         </label>
         <Input
           id="currentPassword"
@@ -45,9 +45,9 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
           aria-describedby={describedBy}
         />
       </div>
-      <div className="space-y-2">
-        <label htmlFor="newPassword" className="text-sm font-medium">
-          New password
+      <div className="form-control">
+        <label htmlFor="newPassword" className="label">
+          <span className="label-text font-semibold">New password</span>
         </label>
         <Input
           id="newPassword"
@@ -61,9 +61,9 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
           aria-describedby={describedBy}
         />
       </div>
-      <div className="space-y-2">
-        <label htmlFor="confirmPassword" className="text-sm font-medium">
-          Confirm new password
+      <div className="form-control">
+        <label htmlFor="confirmPassword" className="label">
+          <span className="label-text font-semibold">Confirm new password</span>
         </label>
         <Input
           id="confirmPassword"
@@ -78,27 +78,25 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? (
-          <>
+          <span className="flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Saving…
-          </>
+          </span>
         ) : (
           "Change password"
         )}
       </Button>
       {state.message ? (
-        <p
+        <div
           id={messageId}
           className={cn(
-            "text-sm",
-            state.status === "error"
-              ? "text-[color:var(--color-error)]"
-              : "text-muted-foreground"
+            "alert", 
+            state.status === "error" ? "alert-error" : "alert-info"
           )}
           role={state.status === "error" ? "alert" : undefined}
         >
-          {state.message}
-        </p>
+          <span>{state.message}</span>
+        </div>
       ) : null}
     </form>
   );

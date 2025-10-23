@@ -24,10 +24,10 @@ export function EmailSignInForm({ action, initialState, disabled }: EmailSignInF
   const isError = state.status === "error";
 
   return (
-    <form action={formAction} className="flex w-full flex-col gap-3 text-left">
-      <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium">
-          Work email
+    <form action={formAction} className="flex w-full flex-col gap-4 text-left">
+      <div className="form-control">
+        <label htmlFor="email" className="label">
+          <span className="label-text font-semibold">Work email</span>
         </label>
         <Input
           id="email"
@@ -52,13 +52,13 @@ export function EmailSignInForm({ action, initialState, disabled }: EmailSignInF
         )}
       </Button>
       {state.message ? (
-        <p
+        <div
           id={messageId}
-          className={`text-sm ${state.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+          className={`alert ${state.status === "error" ? "alert-error" : "alert-info"}`}
           role={state.status === "error" ? "alert" : undefined}
         >
-          {state.message}
-        </p>
+          <span>{state.message}</span>
+        </div>
       ) : null}
     </form>
   );
