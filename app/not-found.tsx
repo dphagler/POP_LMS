@@ -19,12 +19,12 @@ export default async function NotFound() {
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         {isSignedIn ? (
-          <Button asChild size="lg">
-            <Link href="/app">Go to dashboard</Link>
+          <Button as={Link} href="/app" size="lg">
+            Go to dashboard
           </Button>
         ) : (
-          <Button asChild size="lg" variant="outline">
-            <Link href="/">Go home</Link>
+          <Button as={Link} href="/" size="lg" variant="outline">
+            Go home
           </Button>
         )}
       </div>

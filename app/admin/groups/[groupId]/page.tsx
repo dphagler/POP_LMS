@@ -83,11 +83,12 @@ export default async function AdminGroupDetailPage({
             </CardDescription>
           </div>
           <Button
+            as={Link}
+            href="/admin/groups"
             variant="ghost"
-            asChild
             className="h-9 w-full justify-start px-0 text-muted-foreground hover:text-foreground sm:w-auto"
           >
-            <Link href="/admin/groups">← Back to groups</Link>
+            ← Back to groups
           </Button>
         </CardHeader>
       </Card>

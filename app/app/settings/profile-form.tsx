@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -217,7 +217,7 @@ export function ProfileSettingsForm({
               id="displayName"
               name="displayName"
               value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setDisplayName(event.target.value)}
               maxLength={80}
               autoComplete="name"
               required

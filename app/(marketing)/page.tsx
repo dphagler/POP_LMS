@@ -12,6 +12,8 @@ import { PageFadeIn } from "@/components/layout/page-fade-in";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
 
+// NOTE: Tooltip/PopoverTrigger/MenuButton/AspectRatio must receive exactly one element child.
+
 const benefits = [
   {
     title: "Micro-learning videos",
@@ -204,13 +206,13 @@ export default function MarketingPage() {
         <MaxContainer className="relative flex items-center gap-4 py-4">
           <div className="flex flex-1 items-center justify-start">
             <Button
-              asChild
+              as={Link}
+              href="#hero"
+              onClick={handleNavItemClick}
               variant="ghost"
               className="px-2 text-lg font-semibold normal-case tracking-tight text-foreground"
             >
-              <Link href="#hero" onClick={handleNavItemClick}>
-                POP Initiative
-              </Link>
+              POP Initiative
             </Button>
           </div>
           <nav className="hidden flex-1 items-center justify-center lg:flex">
@@ -220,7 +222,8 @@ export default function MarketingPage() {
                 return (
                   <li key={item.id}>
                     <Button
-                      asChild
+                      as={Link}
+                      href={`#${item.id}`}
                       variant="ghost"
                       className={cn(
                         "px-4 py-2 text-sm font-semibold normal-case tracking-tight transition",
@@ -230,7 +233,7 @@ export default function MarketingPage() {
                       )}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <Link href={`#${item.id}`}>{item.label}</Link>
+                      {item.label}
                     </Button>
                   </li>
                 );
@@ -240,17 +243,19 @@ export default function MarketingPage() {
           <div className="flex flex-1 items-center justify-end gap-3">
             <div className="hidden md:flex items-center gap-3">
               <Button
-                asChild
+                as={Link}
+                href="/signin"
                 variant="ghost"
                 className="px-5 py-2 text-sm font-semibold normal-case text-foreground"
               >
-                <Link href="/signin">Log in</Link>
+                Log in
               </Button>
               <Button
-                asChild
+                as={Link}
+                href="/signup"
                 className="px-6 py-2 text-sm font-semibold normal-case text-primary-content shadow-primary/30"
               >
-                <Link href="/signup">Sign up</Link>
+                Sign up
               </Button>
             </div>
             <div className="relative flex items-center md:hidden">
@@ -296,21 +301,21 @@ export default function MarketingPage() {
                   </nav>
                   <div className="flex flex-col gap-2 pt-2">
                     <Button
-                      asChild
+                      as={Link}
+                      href="/signin"
+                      onClick={handleNavItemClick}
                       variant="ghost"
                       className="w-full px-4 py-3 text-base font-semibold normal-case"
                     >
-                      <Link href="/signin" onClick={handleNavItemClick}>
-                        Log in
-                      </Link>
+                      Log in
                     </Button>
                     <Button
-                      asChild
+                      as={Link}
+                      href="/signup"
+                      onClick={handleNavItemClick}
                       className="w-full px-4 py-3 text-base font-semibold normal-case text-primary-content"
                     >
-                      <Link href="/signup" onClick={handleNavItemClick}>
-                        Sign up
-                      </Link>
+                      Sign up
                     </Button>
                   </div>
                 </div>
@@ -382,11 +387,11 @@ function HeroSection({ highlights }: HeroSectionProps) {
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-              <Button asChild className="btn-wide text-base font-semibold normal-case">
-                <Link href="/signin">Log in</Link>
+              <Button as={Link} href="/signin" size="lg" fontSize="lg">
+                Log in
               </Button>
-              <Button asChild variant="outline" className="btn-wide text-base font-semibold normal-case">
-                <Link href="/signup">Sign up</Link>
+              <Button as={Link} href="/signup" variant="outline" size="lg" fontSize="lg">
+                Sign up
               </Button>
             </div>
           </motion.div>
@@ -541,21 +546,22 @@ function CTASection() {
             </p>
           </div>
           <div className="join join-horizontal join-item flex flex-wrap items-center justify-center gap-3">
-            <Button asChild className="join-item shadow-lg shadow-primary/25">
-              <Link href="/signin" className="gap-2">
-                Log in
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+            <Button
+              as={Link}
+              href="/signin"
+              className="join-item inline-flex items-center gap-2 shadow-lg shadow-primary/25"
+            >
+              Log in
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
+              as={Link}
+              href="/signup"
               variant="outline"
-              asChild
-              className="join-item border-primary/40 bg-base-100/80 text-primary shadow-sm backdrop-blur dark:border-primary/50"
+              className="join-item inline-flex items-center gap-2 border-primary/40 bg-base-100/80 text-primary shadow-sm backdrop-blur dark:border-primary/50"
             >
-              <Link href="/signup" className="gap-2">
-                Book a demo
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              Book a demo
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

@@ -20,15 +20,17 @@ export default function SignupPage() {
             We are onboarding districts and partners in waves. Sign in to explore the product or reach out to our team to schedule a live walkthrough and discuss pricing.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button asChild size="lg">
-              <Link href="/signin" className="gap-2">
-                Log in with Google
-              </Link>
+            <Button as={Link} href="/signin" size="lg" className="gap-2">
+              Log in with Google
             </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="mailto:hello@poplearning.com" className="gap-2">
-                Contact sales
-              </Link>
+            <Button
+              as={Link}
+              href="mailto:hello@poplearning.com"
+              size="lg"
+              variant="outline"
+              className="gap-2"
+            >
+              Contact sales
             </Button>
           </div>
         </PageContainer>

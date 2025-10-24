@@ -1,47 +1,99 @@
 "use client";
 
-import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { forwardRef } from "react";
+import {
+  Tab,
+  TabList,
+  TabPanels,
+  Tabs as ChakraTabs,
+  type TabListProps as ChakraTabListProps,
+  type TabPanelProps as ChakraTabPanelProps,
+  TabPanel,
+  type TabProps as ChakraTabProps,
+  type TabPanelsProps as ChakraTabPanelsProps,
+  type TabsProps as ChakraTabsProps
+} from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
+export type TabsProps = ChakraTabsProps;
 
-const Tabs = TabsPrimitive.Root;
+const Tabs = forwardRef<HTMLDivElement, TabsProps>((props, ref) => {
+  const { colorScheme = "primary", variant = "enclosed", children, ...rest } = props;
+  return (
+    <ChakraTabs ref={ref} colorScheme={colorScheme} variant={variant} {...rest}>
+      {children}
+    </ChakraTabs>
+  );
+});
+Tabs.displayName = "Tabs";
 
-const TabsList = TabsPrimitive.List;
+const TabsList = forwardRef<HTMLDivElement, ChakraTabListProps>((props, ref) => {
+  const { gap, borderBottom, borderColor, px, py, ...rest } = props;
 
-const TabsTrigger = TabsPrimitive.Trigger;
+  return (
+    <TabList
+      ref={ref}
+      gap={gap ?? 2}
+      borderBottom={borderBottom ?? "1px solid"}
+      borderColor={borderColor ?? "border.subtle"}
+      px={px ?? 2}
+      py={py ?? 1}
+      {...rest}
+    />
+  );
+});
+TabsList.displayName = "TabsList";
 
-const TabsContent = TabsPrimitive.Content;
+const TabsTrigger = forwardRef<HTMLButtonElement, ChakraTabProps>((props, ref) => {
+  const { fontWeight, fontSize, borderTopRadius, _selected, _focusVisible, ...rest } = props;
 
-const StyledTabsList = ({ className, ...props }: TabsPrimitive.TabsListProps) => (
-  <TabsList className={cn("tabs tabs-lifted w-full", className)} {...props} />
-);
+  return (
+    <Tab
+      ref={ref}
+      fontWeight={fontWeight ?? "semibold"}
+      fontSize={fontSize ?? "sm"}
+      borderTopRadius={borderTopRadius ?? "lg"}
+      _selected=
+        {_selected ?? {
+          color: "fg.default",
+          bg: "bg.surface",
+          borderColor: "border.subtle",
+          borderBottomColor: "bg.surface"
+        }}
+      _focusVisible=
+        {_focusVisible ?? {
+          boxShadow: "0 0 0 2px var(--chakra-colors-primary-200)",
+          _dark: { boxShadow: "0 0 0 2px var(--chakra-colors-primary-400)" }
+        }}
+      _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+      {...rest}
+    />
+  );
+});
+TabsTrigger.displayName = "TabsTrigger";
 
-const StyledTabsTrigger = (
-  { className, ...props }: TabsPrimitive.TabsTriggerProps & { asChild?: boolean }
-) => (
-  <TabsTrigger
-    className={cn(
-      "tab min-w-[9rem] whitespace-nowrap text-sm font-semibold transition-colors",
-      "focus-visible:outline-none",
-      "data-[state=active]:!border-base-300 data-[state=active]:bg-base-100 data-[state=active]:text-base-content",
-      "data-[state=inactive]:text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-);
+const TabsPanelsWrapper = forwardRef<HTMLDivElement, ChakraTabPanelsProps>((props, ref) => {
+  const { mt, ...rest } = props;
+  return <TabPanels ref={ref} mt={mt ?? 4} {...rest} />;
+});
+TabsPanelsWrapper.displayName = "TabsPanels";
 
-const StyledTabsContent = (
-  { className, ...props }: TabsPrimitive.TabsContentProps & { asChild?: boolean }
-) => (
-  <TabsContent
-    className={cn(
-      "mt-0 rounded-b-box border border-base-300 bg-base-100 p-6 text-base-content shadow-lg",
-      "focus-visible:outline-none",
-      className
-    )}
-    {...props}
-  />
-);
+const TabsContent = forwardRef<HTMLDivElement, ChakraTabPanelProps>((props, ref) => {
+  const { px, py, borderRadius, borderWidth, borderColor, background, boxShadow, ...rest } = props;
 
-export { Tabs, StyledTabsList as TabsList, StyledTabsTrigger as TabsTrigger, StyledTabsContent as TabsContent };
+  return (
+    <TabPanel
+      ref={ref}
+      px={px ?? 6}
+      py={py ?? 4}
+      borderRadius={borderRadius ?? "xl"}
+      borderWidth={borderWidth ?? "1px"}
+      borderColor={borderColor ?? "border.subtle"}
+      background={background ?? "bg.surface"}
+      boxShadow={boxShadow ?? "sm"}
+      {...rest}
+    />
+  );
+});
+TabsContent.displayName = "TabsContent";
+
+export { Tabs, TabsList, TabsTrigger, TabsPanelsWrapper as TabsPanels, TabsContent };

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsPanels, TabsTrigger } from "@/components/ui/tabs";
 import { captureError } from "@/lib/client-error-reporting";
 import { cn } from "@/lib/utils";
 
@@ -313,78 +313,86 @@ export function LessonQuizCard({
         <div className="rounded-box border border-error/60 bg-error/10 p-4 text-sm text-error">{error}</div>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        index={Math.max(0, tabs.findIndex((tab) => tab.id === activeTab))}
+        onChange={(nextIndex: number) => {
+          const nextTab = tabs[nextIndex];
+          if (!nextTab) return;
+          setActiveTab(nextTab.id);
+        }}
+        w="full"
+      >
         {tabs.length > 1 && (
           <TabsList>
             {tabs.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id}>
-                {tab.label}
-              </TabsTrigger>
+              <TabsTrigger key={tab.id}>{tab.label}</TabsTrigger>
             ))}
           </TabsList>
         )}
 
-        {tabs.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id} className="space-y-4">
-            {tab.questions.map((question) => {
-              const state = responses.get(question.id);
-              const isCorrect = state?.isCorrect === true;
-              const isIncorrect = state?.isCorrect === false;
-              const selectedKey = state?.selectedKey;
+        <TabsPanels>
+          {tabs.map((tab) => (
+            <TabsContent key={tab.id} className="space-y-4">
+              {tab.questions.map((question) => {
+                const state = responses.get(question.id);
+                const isCorrect = state?.isCorrect === true;
+                const isIncorrect = state?.isCorrect === false;
+                const selectedKey = state?.selectedKey;
 
-              return (
-                <div
-                  key={question.id}
-                  className={cn(
-                    "rounded-box border border-base-300 bg-base-100/95 p-4 shadow-sm transition",
-                    isCorrect && "border-success/60 bg-success/10",
-                    isIncorrect && "border-error/60 bg-error/10"
-                  )}
-                >
-                  <p className="text-sm font-semibold text-base-content">{question.prompt}</p>
-                  <div className="mt-4 space-y-2">
-                    {question.options.map((option) => {
-                      const isSelected = selectedKey === option.key;
-                      const disabled = hasResults || !watchRequirementMet || isPending;
-                      return (
-                        <label
-                          key={option.key}
-                          className={cn(
-                            "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
-                            disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
-                            isSelected && "border-primary bg-primary/10 text-primary"
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name={question.id}
-                            value={option.key}
-                            checked={isSelected}
-                            disabled={disabled}
-                            onChange={() => handleSelect(question, option.key)}
-                            className="radio radio-primary"
-                          />
-                          <span>{option.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  {isCorrect && <p className="mt-4 text-sm font-medium text-success">Correct!</p>}
-
-                  {isIncorrect && (
-                    <div className="mt-4 space-y-1 text-sm">
-                      <p className="font-medium text-error">Not quite.</p>
-                      {state?.correctLabel && (
-                        <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
-                      )}
+                return (
+                  <div
+                    key={question.id}
+                    className={cn(
+                      "rounded-box border border-base-300 bg-base-100/95 p-4 shadow-sm transition",
+                      isCorrect && "border-success/60 bg-success/10",
+                      isIncorrect && "border-error/60 bg-error/10"
+                    )}
+                  >
+                    <p className="text-sm font-semibold text-base-content">{question.prompt}</p>
+                    <div className="mt-4 space-y-2">
+                      {question.options.map((option) => {
+                        const isSelected = selectedKey === option.key;
+                        const disabled = hasResults || !watchRequirementMet || isPending;
+                        return (
+                          <label
+                            key={option.key}
+                            className={cn(
+                              "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
+                              disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
+                              isSelected && "border-primary bg-primary/10 text-primary"
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name={question.id}
+                              value={option.key}
+                              checked={isSelected}
+                              disabled={disabled}
+                              onChange={() => handleSelect(question, option.key)}
+                              className="radio radio-primary"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </TabsContent>
-        ))}
+
+                    {isCorrect && <p className="mt-4 text-sm font-medium text-success">Correct!</p>}
+
+                    {isIncorrect && (
+                      <div className="mt-4 space-y-1 text-sm">
+                        <p className="font-medium text-error">Not quite.</p>
+                        {state?.correctLabel && (
+                          <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </TabsContent>
+          ))}
+        </TabsPanels>
       </Tabs>
 
       <div className="flex flex-wrap items-center gap-2">

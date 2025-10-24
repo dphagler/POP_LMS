@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsPanels, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { type ThemeMode, useThemeMode } from "@/components/layout/theme-provider";
 import { PageContainer } from "@/components/layout/page-container";
@@ -35,13 +35,11 @@ type PaletteSection = {
   tokens: PaletteToken[];
 };
 
-const buttonVariants: NonNullable<ButtonProps["variant"]>[] = [
-  "primary",
-  "secondary",
-  "accent",
-  "outline",
-  "ghost",
-  "destructive"
+const buttonVariants: Array<{ label: string; props: ButtonProps }> = [
+  { label: "Primary", props: { variant: "solid", colorScheme: "primary" } },
+  { label: "Secondary", props: { variant: "solid", colorScheme: "secondary" } },
+  { label: "Outline", props: { variant: "outline" } },
+  { label: "Ghost", props: { variant: "ghost" } }
 ];
 
 const paletteSections: PaletteSection[] = [
@@ -307,7 +305,7 @@ export default function StyleguidePage() {
                 <p className="text-sm text-muted-foreground">
                   Softer neutrals and dashed outlines provide gentle affordances for adding new content.
                 </p>
-                <Button size="sm" variant="secondary" className="w-fit">
+                <Button size="sm" colorScheme="secondary" className="w-fit">
                   Create module
                 </Button>
               </div>
@@ -322,9 +320,9 @@ export default function StyleguidePage() {
               <CardDescription>Variants inherit the pop palette.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
-              {buttonVariants.map((variant) => (
-                <Button key={variant} variant={variant}>
-                  {variant.charAt(0).toUpperCase() + variant.slice(1)}
+              {buttonVariants.map(({ label, props }) => (
+                <Button key={label} {...props}>
+                  {label}
                 </Button>
               ))}
               <Button disabled>Disabled</Button>
@@ -358,27 +356,29 @@ export default function StyleguidePage() {
               <CardDescription>Triggers align with the pop theme tokens.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="overview">
+              <Tabs defaultIndex={0}>
                 <TabsList>
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="activity">Activity</TabsTrigger>
+                  <TabsTrigger>Overview</TabsTrigger>
+                  <TabsTrigger>Details</TabsTrigger>
+                  <TabsTrigger>Activity</TabsTrigger>
                 </TabsList>
-                <TabsContent value="overview">
-                  <p className="text-sm text-muted-foreground">
-                    The pop theme focuses on high-contrast typography, luminous accents, and rounded surfaces.
-                  </p>
-                </TabsContent>
-                <TabsContent value="details">
-                  <p className="text-sm text-muted-foreground">
-                    Components inherit tokens like primary, secondary, accent, success, warning, and error.
-                  </p>
-                </TabsContent>
-                <TabsContent value="activity">
-                  <p className="text-sm text-muted-foreground">
-                    Theme toggles switch between the pop (light) and pop-dark (dark) palettes instantly.
-                  </p>
-                </TabsContent>
+                <TabsPanels>
+                  <TabsContent>
+                    <p className="text-sm text-muted-foreground">
+                      The pop theme focuses on high-contrast typography, luminous accents, and rounded surfaces.
+                    </p>
+                  </TabsContent>
+                  <TabsContent>
+                    <p className="text-sm text-muted-foreground">
+                      Components inherit tokens like primary, secondary, accent, success, warning, and error.
+                    </p>
+                  </TabsContent>
+                  <TabsContent>
+                    <p className="text-sm text-muted-foreground">
+                      Theme toggles switch between the pop (light) and pop-dark (dark) palettes instantly.
+                    </p>
+                  </TabsContent>
+                </TabsPanels>
               </Tabs>
             </CardContent>
           </Card>

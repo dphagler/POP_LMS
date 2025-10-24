@@ -1,21 +1,52 @@
-import * as React from "react";
+"use client";
 
-import { cn } from "@/lib/utils";
+import { forwardRef } from "react";
+import { Input as ChakraInput, type InputProps as ChakraInputProps } from "@chakra-ui/react";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type InputProps = ChakraInputProps & { required?: boolean; disabled?: boolean };
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type = "text", ...props }, ref) => {
+const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  const {
+    variant,
+    size,
+    borderRadius,
+    borderColor,
+    focusBorderColor,
+    _hover,
+    _focusVisible,
+    _disabled,
+    required,
+    disabled,
+    isRequired,
+    isDisabled,
+    ...rest
+  } = props;
+
   return (
-    <input
-      type={type}
-      className={cn(
-        "input input-bordered h-10 min-h-10 w-full shadow-sm placeholder:text-muted-foreground",
-        "focus-visible:outline-none",
-        "file:me-3 file:btn file:btn-sm file:btn-primary file:font-semibold",
-        className
-      )}
+    <ChakraInput
       ref={ref}
-      {...props}
+      variant={variant ?? "outline"}
+      size={size ?? "md"}
+      borderRadius={borderRadius ?? "lg"}
+      borderColor={borderColor ?? "border.subtle"}
+      focusBorderColor={focusBorderColor ?? "primary.400"}
+      _hover={_hover ?? { borderColor: "border.emphasis" }}
+      _focusVisible=
+        {_focusVisible ?? {
+          borderColor: "primary.400",
+          boxShadow: "0 0 0 1px var(--chakra-colors-primary-300)",
+          _dark: { boxShadow: "0 0 0 1px var(--chakra-colors-primary-400)" }
+        }}
+      _disabled=
+        {_disabled ?? {
+          opacity: 0.6,
+          cursor: "not-allowed",
+          backgroundColor: "bg.muted"
+        }}
+      isRequired={isRequired ?? required}
+      isDisabled={isDisabled ?? disabled}
+      transition="box-shadow 0.2s ease, border-color 0.2s ease"
+      {...rest}
     />
   );
 });

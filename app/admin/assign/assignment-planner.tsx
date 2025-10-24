@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { assignToGroupsAction, type AssignToGroupsResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,7 +257,9 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                     <Select
                       id="course-select"
                       value={selectedCourseId}
-                      onChange={(event) => setSelectedCourseId(event.target.value)}
+                      onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                        setSelectedCourseId(event.target.value)
+                      }
                     >
                       {courses.map((course) => (
                         <option key={course.id} value={course.id}>
@@ -274,7 +276,9 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                     <Select
                       id="module-select"
                       value={selectedModuleId}
-                      onChange={(event) => setSelectedModuleId(event.target.value)}
+                      onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                        setSelectedModuleId(event.target.value)
+                      }
                     >
                       {moduleOptions.map((module) => (
                         <option key={module.id} value={module.id}>
