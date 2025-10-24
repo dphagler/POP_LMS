@@ -430,7 +430,7 @@ export default async function LearnerDashboard() {
                   <Stack direction="row" spacing={2} flexWrap="wrap">
                     {badges.map((badge) => (
                       <Badge key={badge.id} colorScheme="primary" borderRadius="full" px={3} py={1}>
-                        {badge.badge.title}
+                        {badge.badge.name}
                       </Badge>
                     ))}
                   </Stack>
