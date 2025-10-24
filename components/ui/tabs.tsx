@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, forwardRef, isValidElement } from "react";
+import { Children, Fragment, forwardRef, isValidElement } from "react";
 import {
   Tab,
   TabList,
@@ -21,9 +21,13 @@ const Tabs = (props: TabsProps) => {
   const normalizedChildren = Children.toArray(children).filter((child) =>
     isValidElement(child)
   );
+  const content =
+    normalizedChildren.length === 1 ? normalizedChildren[0] : (
+      <Fragment>{normalizedChildren}</Fragment>
+    );
   return (
     <ChakraTabs colorScheme={colorScheme} variant={variant} {...rest}>
-      {normalizedChildren}
+      {content}
     </ChakraTabs>
   );
 };
