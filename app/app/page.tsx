@@ -1,22 +1,37 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Flex,
+  Heading,
+  Icon,
+  Progress,
+  SimpleGrid,
+  Stack,
+  Text
+} from "@chakra-ui/react";
+import { CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
+
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
-import { CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
 
 import type { Lesson as LessonModel, Progress as ProgressModel } from "@prisma/client";
 
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
-    return { label: "Review", description: "Review lesson" };
+    return { label: "Review", description: "Review lesson" } as const;
   }
 
   if (progress && progress.watchedSeconds > 0) {
-    return { label: "Resume", description: "Resume lesson" };
+    return { label: "Resume", description: "Resume lesson" } as const;
   }
 
-  return { label: "Start", description: "Start lesson" };
+  return { label: "Start", description: "Start lesson" } as const;
 }
 
 function getLessonProgressPercent(lesson: LessonModel, progress: ProgressModel | undefined) {
@@ -157,351 +172,279 @@ export default async function LearnerDashboard() {
     : "Progress will appear once a lesson is assigned.";
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold">Your learning</h1>
-        <p className="text-sm text-base-content/70">
+    <Stack spacing={10} align="flex-start">
+      <Stack spacing={3} align="flex-start">
+        <Heading size="lg">Your learning</Heading>
+        <Text color="fg.muted" fontSize="sm">
           Track today&apos;s priorities, keep momentum with what&apos;s next, and revisit your wins.
-        </p>
-      </header>
+        </Text>
+      </Stack>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section
-          id="today"
-          aria-labelledby="today-heading"
-          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm"
-        >
-          <div className="card-body space-y-5 p-6">
-            <header className="flex items-start gap-3">
-              <span className="rounded-full bg-primary/10 p-2.5 text-primary" aria-hidden>
-                <Target className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Today</p>
-                <h2 id="today-heading" className="card-title text-xl">
-                  Make today count
-                </h2>
-                <p className="text-sm text-base-content/70">
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} w="full">
+        <Card id="today" gridColumn={{ base: "auto", lg: "span 2" }}>
+          <CardHeader>
+            <Flex align="flex-start" gap={4} wrap="wrap">
+              <Flex
+                align="center"
+                justify="center"
+                boxSize={12}
+                borderRadius="full"
+                bg="primary.50"
+                color="primary.500"
+                _dark={{ bg: "primary.900", color: "primary.200" }}
+              >
+                <Icon as={Target} boxSize={6} />
+              </Flex>
+              <Stack spacing={2} flex="1" minW="220px">
+                <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.28em" color="primary.500">
+                  Today
+                </Text>
+                <Heading size="md">Make today count</Heading>
+                <Text fontSize="sm" color="fg.muted">
                   Focus on the priority assignment to keep your streak alive.
-                </p>
-              </div>
-            </header>
-
-            <ul className="list-none space-y-3 p-0">
+                </Text>
+              </Stack>
+              <Badge alignSelf="flex-start" colorScheme="primary" borderRadius="full" px={3} py={1} fontSize="xs">
+                Streak: {streak} day{streak === 1 ? "" : "s"}
+              </Badge>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing={6}>
               {hasAssignments ? (
                 upNext ? (
-                  <li>
-                    <article className="space-y-3 rounded-box border border-base-300 bg-base-200/60 p-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold text-base-content">{upNext.title}</p>
-                          <p className="flex items-center gap-2 text-xs text-base-content/70">
-                            <Clock className="h-3.5 w-3.5" aria-hidden />
-                            {formatLessonDuration(upNext.durationS)}
-                          </p>
-                        </div>
-                        <Button
-                          as={Link}
-                          href={`/app/lesson/${upNext.id}`}
-                          size="sm"
-                          aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
-                        >
-                          {upNextCta?.label ?? "Start"}
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <progress
-                          className="progress progress-primary w-full"
-                          value={upNextPercent}
-                          max={100}
-                          aria-label={`Progress for ${upNext.title}`}
-                        />
-                        <p className="text-sm text-base-content/70">
-                          {upNextProgress?.isComplete
-                            ? "Completed — review to stay sharp."
-                            : upNextProgress && upNextProgress.watchedSeconds > 0
-                              ? "Resume where you left off to build momentum."
-                              : "Start fresh and make today count."}
-                        </p>
-                      </div>
-                    </article>
-                  </li>
-                ) : (
-                  <li>
-                    <div className="space-y-3 rounded-box border border-dashed border-base-300 bg-base-200/50 p-6 text-sm text-base-content/70">
-                      <p className="font-medium text-base-content">All caught up</p>
-                      <p>Everything assigned is complete—new lessons will drop here when they&apos;re ready.</p>
-                      <div className="space-y-2">
-                        <div className="skeleton h-3 w-full" />
-                        <div className="skeleton h-3 w-2/3" />
-                      </div>
-                      {isAdmin ? (
-                        <Button
-                          as={Link}
-                          href="/admin/assign"
-                          size="sm"
-                          variant="outline"
-                          className="w-fit"
-                        >
-                          Assign a lesson
-                        </Button>
-                      ) : null}
-                    </div>
-                  </li>
-                )
-              ) : (
-                <li>
-                  <div className="space-y-3 rounded-box border border-dashed border-base-300 bg-base-200/50 p-6 text-sm text-base-content/70">
-                    <p className="font-medium text-base-content">No assignments yet</p>
-                    <p>We&apos;ll add your first lesson as soon as your organization assigns one.</p>
-                    <div className="space-y-2">
-                      <div className="skeleton h-3 w-full" />
-                      <div className="skeleton h-3 w-1/2" />
-                    </div>
-                    {isAdmin ? (
+                  <Stack spacing={3} borderWidth="1px" borderRadius="xl" p={5}>
+                    <Flex direction={{ base: "column", md: "row" }} gap={4} justify="space-between" align={{ base: "flex-start", md: "center" }}>
+                      <Stack spacing={1}>
+                        <Text fontSize="sm" fontWeight="semibold">
+                          {upNext.title}
+                        </Text>
+                        <Flex align="center" gap={2} color="fg.muted" fontSize="xs">
+                          <Icon as={Clock} boxSize={3} />
+                          {formatLessonDuration(upNext.durationS)}
+                        </Flex>
+                      </Stack>
                       <Button
                         as={Link}
-                        href="/admin/assign"
+                        href={`/app/lesson/${upNext.id}`}
+                        colorScheme="primary"
                         size="sm"
-                        variant="outline"
-                        className="w-fit"
+                        aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
                       >
+                        {upNextCta?.label ?? "Start"}
+                      </Button>
+                    </Flex>
+                    <Stack spacing={2}>
+                      <Progress value={upNextPercent} colorScheme="primary" borderRadius="full" />
+                      <Text fontSize="sm" color="fg.muted">
+                        {upNextProgress?.isComplete
+                          ? "Completed — review to stay sharp."
+                          : upNextProgress && upNextProgress.watchedSeconds > 0
+                            ? "Resume where you left off to build momentum."
+                            : "Start fresh and make today count."}
+                      </Text>
+                    </Stack>
+                  </Stack>
+                ) : (
+                  <Stack spacing={3} borderWidth="1px" borderStyle="dashed" borderRadius="xl" p={6} textAlign="left">
+                    <Heading size="sm">All caught up</Heading>
+                    <Text fontSize="sm" color="fg.muted">
+                      Everything assigned is complete—new lessons will drop here when they&apos;re ready.
+                    </Text>
+                    {isAdmin ? (
+                      <Button as={Link} href="/admin/assign" variant="outline" size="sm" alignSelf="flex-start">
                         Assign a lesson
                       </Button>
                     ) : null}
-                  </div>
-                </li>
+                  </Stack>
+                )
+              ) : (
+                <Stack spacing={3} borderWidth="1px" borderStyle="dashed" borderRadius="xl" p={6} textAlign="left">
+                  <Heading size="sm">No assignments yet</Heading>
+                  <Text fontSize="sm" color="fg.muted">
+                    We&apos;ll add your first lesson as soon as your organization assigns one.
+                  </Text>
+                  {isAdmin ? (
+                    <Button as={Link} href="/admin/assign" variant="outline" size="sm" alignSelf="flex-start">
+                      Assign a lesson
+                    </Button>
+                  ) : null}
+                </Stack>
               )}
-            </ul>
 
-            <div className="space-y-2 rounded-box border border-base-300 bg-base-100 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium text-base-content">Overall progress</p>
-                <span className="text-sm text-base-content/70">{hasAssignments ? `${percent}% complete` : "0% complete"}</span>
-              </div>
-              <progress
-                className="progress progress-primary w-full"
-                value={hasAssignments ? percent : 0}
-                max={100}
-                aria-label="Overall assignment progress"
-              />
-              <p className="text-xs text-base-content/70">{progressLabel}</p>
-              <p className="text-xs text-base-content/70">
-                Daily streak: <span className="font-medium text-base-content">{streak}</span> day{streak === 1 ? "" : "s"}
-              </p>
-            </div>
-          </div>
-        </section>
+              <Stack spacing={3} borderWidth="1px" borderRadius="xl" p={5}>
+                <Flex justify="space-between" align="center" fontSize="sm" fontWeight="medium">
+                  <Text>Overall progress</Text>
+                  <Text color="fg.muted">{hasAssignments ? `${percent}% complete` : "0% complete"}</Text>
+                </Flex>
+                <Progress value={hasAssignments ? percent : 0} colorScheme="primary" borderRadius="full" />
+                <Text fontSize="xs" color="fg.muted">
+                  {progressLabel}
+                </Text>
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
 
-        <section
-          id="up-next"
-          aria-labelledby="up-next-heading"
-          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm"
-        >
-          <div className="card-body space-y-5 p-6">
-            <header className="flex items-start gap-3">
-              <span className="rounded-full bg-secondary/10 p-2.5 text-secondary" aria-hidden>
-                <PlayCircle className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-secondary">Up next</p>
-                <h2 id="up-next-heading" className="card-title text-xl">
-                  Keep your flow
-                </h2>
-                <p className="text-sm text-base-content/70">
-                  Jump back into in-progress lessons or preview what&apos;s coming up.
-                </p>
-              </div>
-            </header>
+        <Card id="up-next">
+          <CardHeader>
+            <Flex align="center" gap={4}>
+              <Flex
+                align="center"
+                justify="center"
+                boxSize={10}
+                borderRadius="full"
+                bg="secondary.50"
+                color="secondary.500"
+                _dark={{ bg: "secondary.900", color: "secondary.200" }}
+              >
+                <Icon as={PlayCircle} boxSize={5} />
+              </Flex>
+              <Stack spacing={1}>
+                <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.28em" color="secondary.500">
+                  Up next
+                </Text>
+                <Heading size="sm">Keep your flow</Heading>
+              </Stack>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing={4}>
+              {queueLessons.length > 0 ? (
+                queueLessons.map((lesson) => {
+                  const lessonProgress = progressByLesson.get(lesson.id);
+                  const lessonCta = getLessonCta(lessonProgress);
+                  const lessonPercent = getLessonProgressPercent(lesson, lessonProgress);
+                  const helperText =
+                    lessonCta.label === "Resume"
+                      ? "Pick up where you paused."
+                      : lessonCta.label === "Review"
+                        ? "Revisit this lesson anytime."
+                        : "Preview what&apos;s coming up.";
 
-            <ul className="list-none space-y-3 p-0">
-              {queueLessons.map((lesson) => {
-                const lessonProgress = progressByLesson.get(lesson.id);
-                const lessonCta = getLessonCta(lessonProgress);
-                const lessonPercent = getLessonProgressPercent(lesson, lessonProgress);
-                const helperText =
-                  lessonCta.label === "Resume"
-                    ? "Pick up where you paused."
-                    : lessonCta.label === "Review"
-                      ? "Revisit this lesson anytime."
-                      : "Preview what&apos;s coming up.";
-
-                return (
-                  <li key={lesson.id}>
-                    <article className="space-y-3 rounded-box border border-base-300 bg-base-100 p-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold text-base-content">{lesson.title}</p>
-                          <p className="flex items-center gap-2 text-xs text-base-content/70">
-                            <Clock className="h-3.5 w-3.5" aria-hidden />
+                  return (
+                    <Stack key={lesson.id} spacing={3} borderWidth="1px" borderRadius="lg" p={4}>
+                      <Flex direction={{ base: "column", md: "row" }} gap={3} justify="space-between" align={{ base: "flex-start", md: "center" }}>
+                        <Stack spacing={1}>
+                          <Text fontSize="sm" fontWeight="semibold">
+                            {lesson.title}
+                          </Text>
+                          <Flex align="center" gap={2} color="fg.muted" fontSize="xs">
+                            <Icon as={Clock} boxSize={3} />
                             {formatLessonDuration(lesson.durationS)}
-                          </p>
-                        </div>
+                          </Flex>
+                        </Stack>
                         <Button
                           as={Link}
                           href={`/app/lesson/${lesson.id}`}
                           size="sm"
-                          variant={lessonCta.label === "Review" ? "outline" : "primary"}
+                          variant={lessonCta.label === "Review" ? "outline" : "solid"}
+                          colorScheme={lessonCta.label === "Review" ? "gray" : "secondary"}
                           aria-label={`${lessonCta.description}: ${lesson.title}`}
                         >
                           {lessonCta.label}
                         </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <progress
-                          className="progress progress-secondary w-full"
-                          value={lessonPercent}
-                          max={100}
-                          aria-label={`Progress for ${lesson.title}`}
-                        />
-                        <p className="text-sm text-base-content/70">{helperText}</p>
-                      </div>
-                    </article>
-                  </li>
-                );
-              })}
-
-              {queueLessons.length === 0 ? (
-                <li>
-                  <div className="space-y-3 rounded-box border border-dashed border-base-300 bg-base-200/50 p-6 text-sm text-base-content/70">
-                    <p className="font-medium text-base-content">No lessons queued</p>
-                    {allLessonsComplete ? (
-                      <p>Enjoy the breather—new lessons will appear once they&apos;re assigned.</p>
-                    ) : hasAssignments ? (
-                      <p>As soon as another lesson is assigned, it will land here for a quick resume.</p>
-                    ) : (
-                      <p>Lessons will appear here after your organization assigns them.</p>
-                    )}
-                    <div className="space-y-2">
-                      <div className="skeleton h-3 w-full" />
-                      <div className="skeleton h-3 w-3/4" />
-                    </div>
-                    {!hasAssignments && isAdmin ? (
-                      <Button
-                        as={Link}
-                        href="/admin/assign"
-                        size="sm"
-                        variant="outline"
-                        className="w-fit"
-                      >
-                        Assign a lesson
-                      </Button>
-                    ) : null}
-                  </div>
-                </li>
-              ) : null}
-            </ul>
-          </div>
-        </section>
-
-        <section
-          id="completed"
-          aria-labelledby="completed-heading"
-          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm lg:col-span-2"
-        >
-          <div className="card-body space-y-6 p-6">
-            <header className="flex items-start gap-3">
-              <span className="rounded-full bg-success/10 p-2.5 text-success" aria-hidden>
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-success">Completed</p>
-                <h2 id="completed-heading" className="card-title text-xl">
-                  Celebrate your wins
-                </h2>
-                <p className="text-sm text-base-content/70">
-                  Review recent lessons and show off the badges you&apos;ve earned.
-                </p>
-              </div>
-            </header>
-
-            <div className="space-y-5">
-              <div className="space-y-3 rounded-box border border-base-300 bg-base-100 p-5">
-                <p className="text-sm font-semibold text-base-content">Badges</p>
-                {badges.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {badges.map((item) => (
-                      <span key={item.id} className="badge badge-secondary badge-outline">
-                        {item.badge.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2 text-sm text-base-content/70">
-                    <p>Earn badges by completing lessons and reflections.</p>
-                    <div className="space-y-2">
-                      <div className="skeleton h-3 w-1/2" />
-                      <div className="skeleton h-3 w-2/3" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-semibold text-base-content">Latest activity</p>
-                <ul className="list-none space-y-3 p-0">
-                  {completedLessons.map((item) => (
-                    <li key={item.id}>
-                      <article className="space-y-3 rounded-box border border-base-300 bg-base-100 p-5">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-base-content">{item.lesson.title}</p>
-                            <p className="flex items-center gap-2 text-xs text-base-content/70">
-                              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed lesson
-                            </p>
-                          </div>
-                          <Button
-                            as={Link}
-                            href={`/app/lesson/${item.lesson.id}`}
-                            size="sm"
-                            variant="outline"
-                            aria-label={`Review lesson: ${item.lesson.title}`}
-                          >
-                            Review
-                          </Button>
-                        </div>
-                        <div className="space-y-2">
-                          <progress
-                            className="progress progress-success w-full"
-                            value={100}
-                            max={100}
-                            aria-label={`${item.lesson.title} completion`}
-                          />
-                          <p className="text-sm text-base-content/70">Great job! Keep the streak going.</p>
-                        </div>
-                      </article>
-                    </li>
-                  ))}
-
-                  {completedLessons.length === 0 ? (
-                    <li>
-                      <div className="space-y-3 rounded-box border border-dashed border-base-300 bg-base-200/50 p-6 text-sm text-base-content/70">
-                        <p className="font-medium text-base-content">No completed lessons yet</p>
-                        <p>Lessons you finish will show up here for quick review.</p>
-                        <div className="space-y-2">
-                          <div className="skeleton h-3 w-full" />
-                          <div className="skeleton h-3 w-2/3" />
-                        </div>
-                        {!hasAssignments && isAdmin ? (
-                          <Button
-                            as={Link}
-                            href="/admin/assign"
-                            size="sm"
-                            variant="outline"
-                            className="w-fit"
-                          >
-                            Assign a lesson
-                          </Button>
-                        ) : null}
-                      </div>
-                    </li>
+                      </Flex>
+                      <Stack spacing={2}>
+                        <Progress value={lessonPercent} colorScheme="secondary" borderRadius="full" />
+                        <Text fontSize="sm" color="fg.muted">
+                          {helperText}
+                        </Text>
+                      </Stack>
+                    </Stack>
+                  );
+                })
+              ) : (
+                <Stack spacing={3} borderWidth="1px" borderStyle="dashed" borderRadius="lg" p={6}>
+                  <Heading size="sm">No lessons queued</Heading>
+                  <Text fontSize="sm" color="fg.muted">
+                    {allLessonsComplete
+                      ? "Enjoy the breather—new lessons will appear once they&apos;re assigned."
+                      : hasAssignments
+                        ? "As soon as another lesson is assigned, it will land here for a quick resume."
+                        : "Lessons will appear here after your organization assigns them."}
+                  </Text>
+                  {!hasAssignments && isAdmin ? (
+                    <Button as={Link} href="/admin/assign" variant="outline" size="sm" alignSelf="flex-start">
+                      Assign a lesson
+                    </Button>
                   ) : null}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+                </Stack>
+              )}
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card id="completed" gridColumn={{ base: "auto", lg: "span 2" }}>
+          <CardHeader>
+            <Flex align="center" gap={4}>
+              <Flex
+                align="center"
+                justify="center"
+                boxSize={10}
+                borderRadius="full"
+                bg="green.50"
+                color="green.500"
+                _dark={{ bg: "green.900", color: "green.200" }}
+              >
+                <Icon as={CheckCircle2} boxSize={5} />
+              </Flex>
+              <Stack spacing={1}>
+                <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.28em" color="green.500">
+                  Completed
+                </Text>
+                <Heading size="sm">Celebrate your wins</Heading>
+              </Stack>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            {completedLessons.length > 0 ? (
+              <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={4}>
+                {completedLessons.map((progress) => (
+                  <Stack key={progress.id} spacing={2} borderWidth="1px" borderRadius="lg" p={4}>
+                    <Text fontSize="sm" fontWeight="semibold">
+                      {progress.lesson.title}
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                      Completed lesson review anytime.
+                    </Text>
+                    <Button
+                      as={Link}
+                      href={`/app/lesson/${progress.lessonId}`}
+                      size="sm"
+                      variant="outline"
+                      leftIcon={<Icon as={PlayCircle} boxSize={4} />}
+                    >
+                      Review
+                    </Button>
+                  </Stack>
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Stack spacing={3} borderWidth="1px" borderStyle="dashed" borderRadius="lg" p={6} textAlign="left">
+                <Heading size="sm">Finish lessons to unlock badges</Heading>
+                <Text fontSize="sm" color="fg.muted">
+                  Completed lessons will appear here for quick refreshers. Earn badges as you complete pathways.
+                </Text>
+                {badges.length > 0 ? (
+                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                    {badges.map((badge) => (
+                      <Badge key={badge.id} colorScheme="primary" borderRadius="full" px={3} py={1}>
+                        {badge.badge.name}
+                      </Badge>
+                    ))}
+                  </Stack>
+                ) : null}
+              </Stack>
+            )}
+          </CardBody>
+          <CardFooter>
+            <Button as={Link} href="/app/profile" variant="ghost" size="sm">
+              View profile & badges
+            </Button>
+          </CardFooter>
+        </Card>
+      </SimpleGrid>
+    </Stack>
   );
 }
