@@ -127,6 +127,7 @@ export default async function LearnerDashboard() {
   const lessons = Array.from(lessonMap.values());
   const lessonIds = new Set(lessons.map((lesson) => lesson.id));
   const relevantProgresses = progresses.filter((item) => lessonIds.has(item.lessonId));
+  const progressesWithLessons = relevantProgresses.filter((item) => item.lesson);
 
   const streak = await computeStreak(userId);
   const progressByLesson = new Map(relevantProgresses.map((item) => [item.lessonId, item]));
@@ -156,9 +157,9 @@ export default async function LearnerDashboard() {
   const completion = relevantProgresses.reduce((acc, item) => acc + (item.isComplete ? 1 : 0), 0);
   const totalLessons = lessons.length;
   const percent = totalLessons === 0 ? 0 : Math.round((completion / totalLessons) * 100);
-  const completedLessons = relevantProgresses
+  const completedLessons = progressesWithLessons
     .filter((item) => item.isComplete)
-    .sort((a, b) => a.lesson.title.localeCompare(b.lesson.title))
+    .sort((a, b) => (a.lesson?.title ?? "").localeCompare(b.lesson?.title ?? ""))
     .slice(0, 6);
   const isAdmin = session.user.role === "ADMIN";
   const allLessonsComplete = totalLessons > 0 && completion === totalLessons;
@@ -400,25 +401,34 @@ export default async function LearnerDashboard() {
           <CardBody>
             {completedLessons.length > 0 ? (
               <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={4}>
-                {completedLessons.map((progress) => (
-                  <Stack key={progress.id} spacing={2} borderWidth="1px" borderRadius="lg" p={4}>
-                    <Text fontSize="sm" fontWeight="semibold">
-                      {progress.lesson.title}
-                    </Text>
-                    <Text fontSize="xs" color="fg.muted">
-                      Completed lesson review anytime.
-                    </Text>
-                    <Button
-                      as={Link}
-                      href={`/app/lesson/${progress.lessonId}`}
-                      size="sm"
-                      variant="outline"
-                      leftIcon={<Icon as={PlayCircle} boxSize={4} />}
-                    >
-                      Review
-                    </Button>
-                  </Stack>
-                ))}
+                {completedLessons.map((progress) => {
+                  const lessonTitle = progress.lesson?.title ?? "Lesson unavailable";
+                  const lessonHref = progress.lesson ? `/app/lesson/${progress.lessonId}` : "/app";
+                  const isLessonAvailable = Boolean(progress.lesson);
+
+                  return (
+                    <Stack key={progress.id} spacing={2} borderWidth="1px" borderRadius="lg" p={4}>
+                      <Text fontSize="sm" fontWeight="semibold">
+                        {lessonTitle}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {isLessonAvailable
+                          ? "Completed lesson review anytime."
+                          : "This lesson is no longer available."}
+                      </Text>
+                      <Button
+                        as={Link}
+                        href={lessonHref}
+                        size="sm"
+                        variant="outline"
+                        leftIcon={<Icon as={PlayCircle} boxSize={4} />}
+                        isDisabled={!isLessonAvailable}
+                      >
+                        {isLessonAvailable ? "Review" : "View dashboard"}
+                      </Button>
+                    </Stack>
+                  );
+                })}
               </SimpleGrid>
             ) : (
               <Stack spacing={3} borderWidth="1px" borderStyle="dashed" borderRadius="lg" p={6} textAlign="left">
