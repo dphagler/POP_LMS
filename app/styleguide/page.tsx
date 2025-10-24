@@ -17,11 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import {
-  syncDocumentTheme,
-  type ThemeMode,
-  useThemeMode
-} from "@/components/layout/theme-provider";
+import { type ThemeMode, useThemeMode } from "@/components/layout/theme-provider";
 import { PageContainer } from "@/components/layout/page-container";
 
 type PaletteToken = {
@@ -222,7 +218,6 @@ export default function StyleguidePage() {
 
   const handleThemeSelect = (value: ThemeToggleValue) => {
     const nextMode: ThemeMode = value === "pop-dark" ? "dark" : "light";
-    syncDocumentTheme(nextMode, nextMode);
     setMode(nextMode);
   };
 

@@ -1,17 +1,14 @@
 import { forwardRef } from "react";
-import type { HTMLAttributes } from "react";
+import type { ReactNode } from "react";
+import { Container, type ContainerProps } from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
-
-export type PageContainerProps = HTMLAttributes<HTMLDivElement>;
+export type PageContainerProps = ContainerProps & { children?: ReactNode };
 
 export const PageContainer = forwardRef<HTMLDivElement, PageContainerProps>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("container mx-auto w-full max-w-[1200px] px-6", className)}
-      {...props}
-    />
+  ({ children, ...props }, ref) => (
+    <Container ref={ref} maxW="1200px" px={{ base: 6, md: 8 }} {...props}>
+      {children}
+    </Container>
   )
 );
 
