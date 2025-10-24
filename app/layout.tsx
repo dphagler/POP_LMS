@@ -39,7 +39,7 @@ export default function RootLayout({
       <body className={cn(sans.variable, heading.variable)}>
         <CacheProvider>
           <ChakraProvider theme={popTheme}>
-            <ColorModeScript initialColorMode={popTheme.config.initialColorMode} storageKey={popTheme.config.storageKey} />
+            <ColorModeScript initialColorMode={popTheme.config.initialColorMode} />
             <ThemeProvider>
               <Suspense fallback={null}>
                 <PostHogClient />
