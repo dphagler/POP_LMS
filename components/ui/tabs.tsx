@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef } from "react";
 import {
   Tab,
   TabList,
@@ -12,16 +12,14 @@ import {
   type TabsProps as ChakraTabsProps
 } from "@chakra-ui/react";
 
-export interface TabsProps extends Omit<ChakraTabsProps, "children"> {
-  children?: ReactNode;
-  colorScheme?: string;
-  variant?: string;
-}
+export type TabsProps = ChakraTabsProps;
 
 const Tabs = (props: TabsProps) => {
-  const { colorScheme, variant, ...rest } = props;
+  const { colorScheme = "primary", variant = "enclosed", children, ...rest } = props;
   return (
-    <ChakraTabs colorScheme={colorScheme ?? "primary"} variant={variant ?? "enclosed"} {...rest} />
+    <ChakraTabs colorScheme={colorScheme} variant={variant} {...rest}>
+      {children}
+    </ChakraTabs>
   );
 };
 Tabs.displayName = "Tabs";
