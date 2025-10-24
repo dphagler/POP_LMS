@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Input as ChakraInput, type InputProps as ChakraInputProps } from "@chakra-ui/react";
 
-export type InputProps = ChakraInputProps;
+export type InputProps = ChakraInputProps & { required?: boolean };
 
 const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   const {
@@ -13,6 +13,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     _hover,
     _focusVisible,
     _disabled,
+    required,
+    isRequired,
     ...rest
   } = props;
 
@@ -37,6 +39,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
           cursor: "not-allowed",
           backgroundColor: "bg.muted"
         }}
+      isRequired={isRequired ?? required}
       transition="box-shadow 0.2s ease, border-color 0.2s ease"
       {...rest}
     />
