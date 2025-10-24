@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, forwardRef } from "react";
+import { Children, forwardRef, isValidElement } from "react";
 import {
   Tab,
   TabList,
@@ -18,7 +18,9 @@ export type TabsProps = ChakraTabsProps;
 
 const Tabs = (props: TabsProps) => {
   const { colorScheme = "primary", variant = "enclosed", children, ...rest } = props;
-  const normalizedChildren = Children.toArray(children).filter(Boolean);
+  const normalizedChildren = Children.toArray(children).filter((child) =>
+    isValidElement(child)
+  );
   return (
     <ChakraTabs colorScheme={colorScheme} variant={variant} {...rest}>
       {normalizedChildren}
