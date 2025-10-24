@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
 
 import { useThemeMode, type ThemeMode } from "@/components/layout/theme-provider";
 import { Card } from "@/components/ui/card";
@@ -17,14 +17,14 @@ type ThemeOption = {
 const OPTIONS: ThemeOption[] = [
   {
     value: "light",
-    label: "Light",
-    description: "Bright interface for well-lit environments.",
+    label: "POP",
+    description: "Bright, airy palette tailored to the POP visual language.",
     icon: Sun,
   },
   {
     value: "dark",
-    label: "Dark",
-    description: "Dimmed colors for low-light viewing.",
+    label: "POP Dark",
+    description: "Moody contrast for comfortable viewing after hours.",
     icon: Moon,
   },
   {
@@ -35,13 +35,38 @@ const OPTIONS: ThemeOption[] = [
   },
 ];
 
+const TOKEN_SWATCHES = [
+  { name: "Primary", className: "bg-primary text-primary-content" },
+  { name: "Secondary", className: "bg-secondary text-secondary-content" },
+  { name: "Accent", className: "bg-accent text-accent-content" },
+  { name: "Neutral", className: "bg-neutral text-neutral-content" },
+  { name: "Info", className: "bg-info text-info-content" },
+  { name: "Success", className: "bg-success text-success-content" },
+  { name: "Warning", className: "bg-warning text-warning-content" },
+  { name: "Error", className: "bg-error text-error-content" },
+  { name: "Base-100", className: "border border-base-300 bg-base-100 text-base-content" },
+  { name: "Base-200", className: "border border-base-300 bg-base-200 text-base-content" },
+  { name: "Base-300", className: "border border-base-300 bg-base-300 text-base-content" },
+];
+
 export function AppearanceSettings() {
   const { mode, resolvedMode, setMode } = useThemeMode();
+
+  const activeThemeName = useMemo(() => {
+    if (mode === "system") {
+      return resolvedMode === "dark" ? "pop-dark" : "pop";
+    }
+    return mode === "dark" ? "pop-dark" : "pop";
+  }, [mode, resolvedMode]);
+
   const statusMessage = useMemo(() => {
     if (mode === "system") {
       return `Following your system preference. Currently ${resolvedMode} mode.`;
     }
-    return `Currently using ${mode} mode.`;
+    if (mode === "dark") {
+      return "POP Dark is active across the app.";
+    }
+    return "POP (light) is active across the app.";
   }, [mode, resolvedMode]);
 
   return (
@@ -64,11 +89,11 @@ export function AppearanceSettings() {
                   key={option.value}
                   htmlFor={`theme-${option.value}`}
                   className={cn(
-                    "card cursor-pointer border border-base-300 bg-base-100 transition hover:border-primary/60 hover:shadow-lg",
+                    "group card cursor-pointer border border-base-300 bg-base-100 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg",
                     isActive ? "border-primary shadow-lg" : "shadow-sm"
                   )}
                 >
-                  <div className="card-body gap-2">
+                  <div className="card-body gap-3">
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-sm font-semibold">
                         <Icon className="h-5 w-5" aria-hidden />
@@ -81,7 +106,7 @@ export function AppearanceSettings() {
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-xs text-muted-foreground">{option.description}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{option.description}</p>
                   </div>
                   <input
                     id={`theme-${option.value}`}
@@ -98,7 +123,33 @@ export function AppearanceSettings() {
           </div>
         </fieldset>
         <div className="alert alert-info" aria-live="polite">
-          <span>{statusMessage}</span>
+          <div className="flex items-start gap-3">
+            <Palette className="h-5 w-5 shrink-0" aria-hidden />
+            <div className="space-y-1 text-sm">
+              <p className="font-medium">{statusMessage}</p>
+              <p className="text-xs text-muted-foreground">Active theme: <code data-theme-active>{activeThemeName}</code></p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Theme tokens</h3>
+            <span className="badge badge-outline badge-sm">{activeThemeName}</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {TOKEN_SWATCHES.map((token) => (
+              <div
+                key={token.name}
+                className={cn(
+                  "flex min-h-[88px] flex-col justify-between rounded-2xl p-4 text-sm shadow-sm",
+                  token.className
+                )}
+              >
+                <span className="font-semibold">{token.name}</span>
+                <span className="text-xs opacity-80">{token.className}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </Card>

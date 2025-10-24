@@ -90,10 +90,11 @@ export function ChangePasswordForm({ action, initialState }: ChangePasswordFormP
         <div
           id={messageId}
           className={cn(
-            "alert", 
-            state.status === "error" ? "alert-error" : "alert-info"
+            "alert shadow-sm",
+            state.status === "error" ? "alert-error" : "alert-success"
           )}
-          role={state.status === "error" ? "alert" : undefined}
+          role={state.status === "error" ? "alert" : "status"}
+          aria-live={state.status === "error" ? "assertive" : "polite"}
         >
           <span>{state.message}</span>
         </div>
