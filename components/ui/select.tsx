@@ -1,20 +1,49 @@
-import * as React from "react";
+import { forwardRef } from "react";
+import { Select as ChakraSelect, type SelectProps as ChakraSelectProps } from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
+export type SelectProps = ChakraSelectProps;
 
-export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
+const Select = forwardRef<HTMLSelectElement, SelectProps>((props, ref) => {
+  const {
+    variant,
+    size,
+    borderRadius,
+    borderColor,
+    focusBorderColor,
+    iconColor,
+    _hover,
+    _focusVisible,
+    _disabled,
+    ...rest
+  } = props;
 
-const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, ...props }, ref) => (
-  <select
-    ref={ref}
-    className={cn(
-      "select select-bordered h-10 min-h-10 w-full shadow-sm",
-      "focus-visible:outline-none",
-      className
-    )}
-    {...props}
-  />
-));
+  return (
+    <ChakraSelect
+      ref={ref}
+      variant={variant ?? "outline"}
+      size={size ?? "md"}
+      borderRadius={borderRadius ?? "lg"}
+      borderColor={borderColor ?? "border.subtle"}
+      focusBorderColor={focusBorderColor ?? "primary.400"}
+      iconColor={iconColor ?? "fg.muted"}
+      _hover={_hover ?? { borderColor: "border.emphasis" }}
+      _focusVisible=
+        {_focusVisible ?? {
+          borderColor: "primary.400",
+          boxShadow: "0 0 0 1px var(--chakra-colors-primary-300)",
+          _dark: { boxShadow: "0 0 0 1px var(--chakra-colors-primary-400)" }
+        }}
+      _disabled=
+        {_disabled ?? {
+          opacity: 0.6,
+          cursor: "not-allowed",
+          backgroundColor: "bg.muted"
+        }}
+      transition="box-shadow 0.2s ease, border-color 0.2s ease"
+      {...rest}
+    />
+  );
+});
 Select.displayName = "Select";
 
 export { Select };

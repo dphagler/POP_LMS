@@ -1,69 +1,53 @@
-import * as React from "react";
+import { forwardRef } from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
+import {
+  Button as ChakraButton,
+  type ButtonProps as ChakraButtonProps
+} from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
+export type ButtonVariant = "solid" | "outline" | "ghost";
 
-const buttonVariants = cva(
-  "btn font-semibold normal-case tracking-tight transition-transform duration-200 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-60",
-  {
-    variants: {
-      variant: {
-        default: "btn-primary",
-        primary: "btn-primary",
-        secondary: "btn-secondary",
-        accent: "btn-accent",
-        outline: "btn-outline",
-        ghost: "btn-ghost",
-        destructive: "btn-error",
-        neutral: "btn-neutral",
-        error: "btn-error",
-      },
-      size: {
-        default: "h-10 min-h-10 px-5",
-        sm: "btn-sm px-4",
-        lg: "btn-lg px-6",
-        icon: "btn-square h-10 w-10 p-0",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "default",
-    },
-  }
-);
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends Omit<ChakraButtonProps, "variant"> {
+  variant?: ButtonVariant;
   asChild?: boolean;
-  isLoading?: boolean;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, variant, size, asChild = false, isLoading = false, disabled, ...props },
+    {
+      variant = "solid",
+      colorScheme = "primary",
+      borderRadius = "xl",
+      fontWeight = "semibold",
+      _focusVisible = {
+        boxShadow: "0 0 0 2px var(--chakra-colors-primary-200)",
+        _dark: { boxShadow: "0 0 0 2px var(--chakra-colors-primary-400)" }
+      },
+      _disabled = {
+        opacity: 0.6,
+        cursor: "not-allowed",
+        boxShadow: "none"
+      },
+      asChild = false,
+      ...props
+    },
     ref
-  ) => {
-    const Comp = asChild ? Slot : "button";
-    const resolvedDisabled = Boolean(disabled || isLoading);
-
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size }), isLoading && "loading", className)}
-        ref={ref as never}
-        aria-disabled={resolvedDisabled || undefined}
-        data-loading={isLoading || undefined}
-        {...(!asChild
-          ? {
-              disabled: resolvedDisabled,
-            }
-          : {})}
-        {...props}
-      />
-    );
-  }
+  ) => (
+    <ChakraButton
+      as={asChild ? Slot : undefined}
+      ref={ref}
+      variant={variant}
+      colorScheme={colorScheme}
+      borderRadius={borderRadius}
+      fontWeight={fontWeight}
+      _focusVisible={_focusVisible}
+      _disabled={_disabled}
+      transition="transform 0.2s ease, box-shadow 0.2s ease"
+      _active={{ transform: "translateY(0)" }}
+      {...props}
+    />
+  )
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+export { Button };

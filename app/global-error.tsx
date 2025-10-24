@@ -35,20 +35,11 @@ export default function GlobalError({
             out.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button
-              type="button"
-              onClick={reset}
-              variant="secondary"
-              className="border-secondary/40 bg-secondary/10 text-slate-200 hover:border-secondary/60 hover:bg-secondary/15"
-            >
+            <Button type="button" onClick={reset} colorScheme="secondary">
               Try again
             </Button>
-            <Button
-              variant="outline"
-              asChild
-              className="border-slate-200/30 text-slate-200 hover:border-slate-200/50 hover:bg-slate-200/10"
-            >
-              <Link href="/">Go home</Link>
+            <Button variant="outline" as={Link} href="/" colorScheme="secondary">
+              Go home
             </Button>
           </div>
           {error?.digest ? (

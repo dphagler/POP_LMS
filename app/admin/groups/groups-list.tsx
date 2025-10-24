@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useState } from "react";
 
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
             type="search"
             placeholder="Search groups"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
           />
         </div>
         <DataDensityToggle density={density} onDensityChange={setDensity} />
@@ -113,7 +113,7 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
 
               <form action={deleteGroup} className="mt-auto flex justify-end">
                 <input type="hidden" name="groupId" value={group.id} />
-                <Button type="submit" variant="destructive" size="sm" className="w-full sm:w-auto">
+                <Button type="submit" colorScheme="red" size="sm" className="w-full sm:w-auto">
                   Delete group
                 </Button>
               </form>

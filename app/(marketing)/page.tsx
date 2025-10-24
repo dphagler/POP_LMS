@@ -382,11 +382,11 @@ function HeroSection({ highlights }: HeroSectionProps) {
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-              <Button asChild className="btn-wide text-base font-semibold normal-case">
-                <Link href="/signin">Log in</Link>
+              <Button as={Link} href="/signin" size="lg" fontSize="lg">
+                Log in
               </Button>
-              <Button asChild variant="outline" className="btn-wide text-base font-semibold normal-case">
-                <Link href="/signup">Sign up</Link>
+              <Button as={Link} href="/signup" variant="outline" size="lg" fontSize="lg">
+                Sign up
               </Button>
             </div>
           </motion.div>

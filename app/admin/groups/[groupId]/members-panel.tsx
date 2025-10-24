@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Search, UserPlus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -387,7 +387,7 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                 id="member-search"
                 placeholder="Search by name or email"
                 value={query}
-                onChange={(event) => {
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   setQuery(event.target.value);
                   setSelectedSuggestion(null);
                 }}

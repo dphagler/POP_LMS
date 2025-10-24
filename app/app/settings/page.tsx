@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsPanels, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
@@ -35,27 +35,29 @@ export default async function SettingsPage() {
           </p>
         </div>
       </header>
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs w="full" defaultIndex={0}>
         <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger>Profile</TabsTrigger>
+          <TabsTrigger>Appearance</TabsTrigger>
+          <TabsTrigger>Account</TabsTrigger>
         </TabsList>
-        <TabsContent value="profile">
-          <ProfileSettingsForm
-            action={updateProfileAction}
-            initialState={INITIAL_STATE}
-            initialName={displayName}
-            initialEmail={email}
-            initialAvatar={avatar}
-          />
-        </TabsContent>
-        <TabsContent value="appearance">
-          <AppearanceSettings />
-        </TabsContent>
-        <TabsContent value="account">
-          <AccountSettings passwordAuthEnabled={passwordAuthEnabled} />
-        </TabsContent>
+        <TabsPanels>
+          <TabsContent>
+            <ProfileSettingsForm
+              action={updateProfileAction}
+              initialState={INITIAL_STATE}
+              initialName={displayName}
+              initialEmail={email}
+              initialAvatar={avatar}
+            />
+          </TabsContent>
+          <TabsContent>
+            <AppearanceSettings />
+          </TabsContent>
+          <TabsContent>
+            <AccountSettings passwordAuthEnabled={passwordAuthEnabled} />
+          </TabsContent>
+        </TabsPanels>
       </Tabs>
     </section>
   );
