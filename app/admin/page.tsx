@@ -33,7 +33,31 @@ export default async function AdminDashboard() {
   const { orgId } = session.user;
 
   if (!orgId) {
-    throw new Error("Organization not found for admin user");
+    return (
+      <Stack spacing={10} align="stretch">
+        <Card>
+          <CardHeader>
+            <Heading size="md">Organization required</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing={4} fontSize="sm" color="fg.muted">
+              <Alert status="error" borderRadius="lg">
+                <AlertIcon />
+                <AlertDescription>
+                  Your account doesn&apos;t have an organization associated with it, so the admin dashboard can&apos;t load
+                  any data yet.
+                </AlertDescription>
+              </Alert>
+              <Text>
+                Ask another administrator to assign you to an organization, then refresh this page. If you recently
+                received access, it may take a moment for your organization to sync—try signing out and back in if the
+                issue persists.
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Stack>
+    );
   }
 
   const missingSanityEnvVars = getMissingSanityEnvVars();
