@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, isValidElement } from "react";
+import { AnchorHTMLAttributes, forwardRef, isValidElement } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Button as ChakraButton,
@@ -9,7 +9,14 @@ import {
 
 export type ButtonVariant = "solid" | "outline" | "ghost" | "primary";
 
-export interface ButtonProps extends Omit<ChakraButtonProps, "variant"> {
+type AnchorExtras = Pick<
+  AnchorHTMLAttributes<HTMLAnchorElement>,
+  "download" | "rel" | "target" | "referrerPolicy"
+>;
+
+export interface ButtonProps
+  extends Omit<ChakraButtonProps, "variant">,
+    AnchorExtras {
   variant?: ButtonVariant;
   asChild?: boolean;
   href?: string;
