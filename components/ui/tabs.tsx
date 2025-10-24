@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { Children, forwardRef } from "react";
 import {
   Tab,
   TabList,
@@ -16,9 +16,10 @@ export type TabsProps = ChakraTabsProps;
 
 const Tabs = (props: TabsProps) => {
   const { colorScheme = "primary", variant = "enclosed", children, ...rest } = props;
+  const normalizedChildren = Children.toArray(children).filter(Boolean);
   return (
     <ChakraTabs colorScheme={colorScheme} variant={variant} {...rest}>
-      {children}
+      {normalizedChildren}
     </ChakraTabs>
   );
 };
