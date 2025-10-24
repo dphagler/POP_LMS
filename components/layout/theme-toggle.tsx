@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Check, Monitor, Moon, Sun } from "lucide-react";
+import {
+  Flex,
+  HStack,
+  Icon,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Text
+} from "@chakra-ui/react";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-import { syncDocumentTheme, type ThemeMode, useThemeMode } from "./theme-provider";
+import { type ThemeMode, useThemeMode } from "./theme-provider";
 
 const OPTIONS: Array<{ icon: typeof Sun; label: string; value: ThemeMode }> = [
   { value: "light", label: "Light", icon: Sun },
@@ -16,116 +24,48 @@ const OPTIONS: Array<{ icon: typeof Sun; label: string; value: ThemeMode }> = [
 
 export function ThemeModeToggle({ className }: { className?: string }) {
   const { mode, resolvedMode, setMode } = useThemeMode();
-  const [open, setOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const activeOption = useMemo(
+    () => OPTIONS.find((option) => option.value === mode) ?? OPTIONS[2],
+    [mode]
+  );
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  const activeOption = OPTIONS.find((option) => option.value === mode) ?? OPTIONS[2];
   const ActiveIcon = activeOption.icon;
-  const systemStatus =
-    mode === "system" && isMounted ? ` (currently ${resolvedMode} mode)` : "";
-
-  const handleSelect = (value: ThemeMode) => {
-    const resolved = getResolvedMode(value);
-    syncDocumentTheme(value, resolved);
-    setMode(value);
-    setOpen(false);
-  };
+  const systemStatus = mode === "system" ? ` (currently ${resolvedMode} mode)` : "";
 
   return (
-    <div className={cn("relative", className)} ref={menuRef}>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-haspopup="menu"
-        aria-expanded={open}
+    <Menu placement="bottom-end">
+      <MenuButton
+        as={IconButton}
+        icon={<Icon as={ActiveIcon} boxSize={5} aria-hidden />}
         aria-label={`Theme set to ${activeOption.label}${systemStatus}. Toggle theme menu.`}
         title={`Theme set to ${activeOption.label}${systemStatus}`}
-        onClick={() => setOpen((previous) => !previous)}
-        className="rounded-full transition-colors duration-500 ease-in-out"
-      >
-        <ActiveIcon className="h-5 w-5" aria-hidden />
-        <span className="sr-only" aria-live="polite">
-          Theme set to {activeOption.label}
-          {mode === "system" && isMounted ? ` (${resolvedMode} mode active)` : null}
-        </span>
-      </Button>
-      <div
-        role="menu"
-        aria-label="Select theme"
-        className={cn(
-          "absolute right-0 z-30 mt-2 w-48 origin-top-right rounded-2xl border border-base-300 bg-base-100/95 p-2 text-sm shadow-xl backdrop-blur",
-          open ? "block" : "hidden"
-        )}
-      >
+        variant="ghost"
+        borderRadius="full"
+        className={className}
+      />
+      <MenuList minW="12rem" py={2}>
         {OPTIONS.map((option) => {
-          const Icon = option.icon;
+          const IconComponent = option.icon;
           const isActive = option.value === mode;
           return (
-            <button
+            <MenuItem
               key={option.value}
-              type="button"
-              role="menuitemradio"
+              onClick={() => setMode(option.value)}
               aria-checked={isActive}
-              className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left transition-colors duration-200 ease-in-out",
-                "hover:bg-[color:var(--surface-hover)] focus-visible:outline-none",
-                isActive
-                  ? "bg-[color:var(--surface-muted-strong)] text-foreground shadow-inner"
-                  : "text-muted-foreground"
-              )}
-              onClick={() => handleSelect(option.value)}
+              role="menuitemradio"
             >
-              <span className="flex items-center gap-2">
-                <Icon className="h-4 w-4" aria-hidden />
-                {option.label}
-              </span>
-              {isActive ? <Check className="h-4 w-4" aria-hidden /> : null}
-            </button>
+              <Flex align="center" justify="space-between" w="full" gap={3}>
+                <HStack spacing={3}>
+                  <Icon as={IconComponent} boxSize={4} aria-hidden />
+                  <Text>{option.label}</Text>
+                </HStack>
+                {isActive ? <Icon as={Check} boxSize={4} aria-hidden /> : null}
+              </Flex>
+            </MenuItem>
           );
         })}
-      </div>
-    </div>
+      </MenuList>
+    </Menu>
   );
-}
-
-function getResolvedMode(mode: ThemeMode): "light" | "dark" {
-  if (mode === "system") {
-    if (typeof window !== "undefined") {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return "light";
-  }
-
-  return mode;
 }
