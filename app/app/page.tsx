@@ -25,7 +25,34 @@ import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
 import { logServerError } from "@/lib/server-logger";
 
-import type { Lesson as LessonModel, Progress as ProgressModel, UserRole } from "@prisma/client";
+import type {
+  Lesson as LessonModel,
+  Prisma,
+  Progress as ProgressModel,
+  UserRole
+} from "@prisma/client";
+
+const assignmentInclude = {
+  module: {
+    include: {
+      lessons: true,
+      course: true
+    }
+  },
+  course: {
+    include: {
+      modules: {
+        include: {
+          lessons: true
+        }
+      }
+    }
+  }
+} as const satisfies Prisma.AssignmentInclude;
+
+type AssignmentWithRelations = Prisma.AssignmentGetPayload<{
+  include: typeof assignmentInclude;
+}>;
 
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
@@ -137,7 +164,7 @@ async function renderLearnerDashboard() {
     );
   }
 
-  let assignments: Awaited<ReturnType<typeof prisma.assignment.findMany>> = [];
+  let assignments: AssignmentWithRelations[] = [];
   let badges: Awaited<ReturnType<typeof prisma.userBadge.findMany>> = [];
   let progresses: Awaited<ReturnType<typeof prisma.progress.findMany>> = [];
   let streak = 0;
@@ -151,23 +178,7 @@ async function renderLearnerDashboard() {
             some: { userId }
           }
         },
-        include: {
-          module: {
-            include: {
-              lessons: true,
-              course: true
-            }
-          },
-          course: {
-            include: {
-              modules: {
-                include: {
-                  lessons: true
-                }
-              }
-            }
-          }
-        }
+        include: assignmentInclude
       }),
       prisma.userBadge.findMany({
         where: { userId },
