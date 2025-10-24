@@ -71,7 +71,7 @@ export function AppearanceSettings() {
 
   return (
     <Card className="shadow-xl">
-      <div className="card-body space-y-6">
+      <div className="card-body space-y-6 p-6">
         <div className="space-y-1">
           <h2 className="text-balance">Theme</h2>
           <p className="text-sm text-muted-foreground">
@@ -89,11 +89,11 @@ export function AppearanceSettings() {
                   key={option.value}
                   htmlFor={`theme-${option.value}`}
                   className={cn(
-                    "group card cursor-pointer border border-base-300 bg-base-100 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg",
+                    "group card cursor-pointer rounded-2xl border border-base-200 bg-base-100 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg",
                     isActive ? "border-primary shadow-lg" : "shadow-sm"
                   )}
                 >
-                  <div className="card-body gap-3">
+                  <div className="card-body gap-3 p-5">
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-sm font-semibold">
                         <Icon className="h-5 w-5" aria-hidden />

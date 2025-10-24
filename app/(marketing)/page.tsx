@@ -203,13 +203,15 @@ export default function MarketingPage() {
       <header className="sticky top-0 z-40 border-b border-base-200/60 bg-base-100/90 backdrop-blur dark:border-base-800/60 dark:bg-base-950/70">
         <MaxContainer className="relative flex items-center gap-4 py-4">
           <div className="flex flex-1 items-center justify-start">
-            <Link
-              href="#hero"
-              className="btn btn-ghost px-2 text-lg font-semibold normal-case tracking-tight text-foreground"
-              onClick={handleNavItemClick}
+            <Button
+              asChild
+              variant="ghost"
+              className="px-2 text-lg font-semibold normal-case tracking-tight text-foreground"
             >
-              POP Initiative
-            </Link>
+              <Link href="#hero" onClick={handleNavItemClick}>
+                POP Initiative
+              </Link>
+            </Button>
           </div>
           <nav className="hidden flex-1 items-center justify-center lg:flex">
             <ul className="menu menu-horizontal gap-2 rounded-full bg-transparent p-0">
@@ -217,19 +219,19 @@ export default function MarketingPage() {
                 const isActive = activeSection === item.id;
                 return (
                   <li key={item.id}>
-                    <Link
-                      href={`#${item.id}`}
+                    <Button
+                      asChild
+                      variant="ghost"
                       className={cn(
-                        "btn btn-ghost text-sm font-semibold normal-case tracking-tight",
-                        "px-4 py-2 transition",
+                        "px-4 py-2 text-sm font-semibold normal-case tracking-tight transition",
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-foreground/80 hover:bg-base-200/60 hover:text-primary",
                       )}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      {item.label}
-                    </Link>
+                      <Link href={`#${item.id}`}>{item.label}</Link>
+                    </Button>
                   </li>
                 );
               })}
@@ -237,31 +239,34 @@ export default function MarketingPage() {
           </nav>
           <div className="flex flex-1 items-center justify-end gap-3">
             <div className="hidden md:flex items-center gap-3">
-              <Link
-                href="/signin"
-                className="btn btn-ghost px-5 py-2 text-sm font-semibold normal-case text-foreground"
+              <Button
+                asChild
+                variant="ghost"
+                className="px-5 py-2 text-sm font-semibold normal-case text-foreground"
               >
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                className="btn btn-primary px-6 py-2 text-sm font-semibold normal-case text-primary-content shadow-primary/30"
+                <Link href="/signin">Log in</Link>
+              </Button>
+              <Button
+                asChild
+                className="px-6 py-2 text-sm font-semibold normal-case text-primary-content shadow-primary/30"
               >
-                Sign up
-              </Link>
+                <Link href="/signup">Sign up</Link>
+              </Button>
             </div>
             <div className="relative flex items-center md:hidden">
-              <button
+              <Button
                 ref={mobileMenuButtonRef}
                 type="button"
-                className="btn btn-ghost px-3 py-2"
+                variant="ghost"
+                size="sm"
+                className="px-3"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-navigation"
                 aria-label="Toggle navigation menu"
                 onClick={handleMenuToggle}
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
-              </button>
+              </Button>
               {mobileMenuOpen ? (
                 <div
                   ref={mobileMenuRef}
@@ -290,20 +295,23 @@ export default function MarketingPage() {
                     })}
                   </nav>
                   <div className="flex flex-col gap-2 pt-2">
-                    <Link
-                      href="/signin"
-                      className="btn btn-ghost w-full px-4 py-3 text-base font-semibold normal-case"
-                      onClick={handleNavItemClick}
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="w-full px-4 py-3 text-base font-semibold normal-case"
                     >
-                      Log in
-                    </Link>
-                    <Link
-                      href="/signup"
-                      className="btn btn-primary w-full px-4 py-3 text-base font-semibold normal-case text-primary-content"
-                      onClick={handleNavItemClick}
+                      <Link href="/signin" onClick={handleNavItemClick}>
+                        Log in
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      className="w-full px-4 py-3 text-base font-semibold normal-case text-primary-content"
                     >
-                      Sign up
-                    </Link>
+                      <Link href="/signup" onClick={handleNavItemClick}>
+                        Sign up
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ) : null}
@@ -374,12 +382,12 @@ function HeroSection({ highlights }: HeroSectionProps) {
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-              <Link href="/signin" className="btn btn-primary btn-wide normal-case text-base font-semibold">
-                Log in
-              </Link>
-              <Link href="/signup" className="btn btn-outline btn-wide normal-case text-base font-semibold">
-                Sign up
-              </Link>
+              <Button asChild className="btn-wide text-base font-semibold normal-case">
+                <Link href="/signin">Log in</Link>
+              </Button>
+              <Button asChild variant="outline" className="btn-wide text-base font-semibold normal-case">
+                <Link href="/signup">Sign up</Link>
+              </Button>
             </div>
           </motion.div>
           <motion.div
@@ -572,14 +580,16 @@ function SignedOutToast({ message, onDismiss }: SignedOutToastProps) {
       className="pointer-events-auto fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-base-300/70 bg-base-100/95 px-4 py-2 text-sm font-medium text-foreground shadow-xl backdrop-blur"
     >
       <span>{message}</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={onDismiss}
-        className="btn btn-ghost btn-sm rounded-full px-3 text-xs font-semibold uppercase tracking-wide"
+        className="rounded-full px-3 text-xs font-semibold uppercase tracking-wide"
         aria-label="Dismiss notification"
       >
         Dismiss
-      </button>
+      </Button>
     </div>
   );
 }

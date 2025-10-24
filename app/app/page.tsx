@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
@@ -168,9 +169,9 @@ export default async function LearnerDashboard() {
         <section
           id="today"
           aria-labelledby="today-heading"
-          className="card border border-base-300 bg-base-100 shadow"
+          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm"
         >
-          <div className="card-body space-y-5">
+          <div className="card-body space-y-5 p-6">
             <header className="flex items-start gap-3">
               <span className="rounded-full bg-primary/10 p-2.5 text-primary" aria-hidden>
                 <Target className="h-5 w-5" />
@@ -199,13 +200,15 @@ export default async function LearnerDashboard() {
                             {formatLessonDuration(upNext.durationS)}
                           </p>
                         </div>
-                        <Link
-                          href={`/app/lesson/${upNext.id}`}
+                        <Button
+                          asChild
+                          size="sm"
                           aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
-                          className="btn btn-primary btn-sm"
                         >
-                          {upNextCta?.label ?? "Start"}
-                        </Link>
+                          <Link href={`/app/lesson/${upNext.id}`}>
+                            {upNextCta?.label ?? "Start"}
+                          </Link>
+                        </Button>
                       </div>
                       <div className="space-y-2">
                         <progress
@@ -234,9 +237,9 @@ export default async function LearnerDashboard() {
                         <div className="skeleton h-3 w-2/3" />
                       </div>
                       {isAdmin ? (
-                        <Link href="/admin/assign" className="btn btn-outline btn-sm w-fit">
-                          Assign a lesson
-                        </Link>
+                        <Button asChild size="sm" variant="outline" className="w-fit">
+                          <Link href="/admin/assign">Assign a lesson</Link>
+                        </Button>
                       ) : null}
                     </div>
                   </li>
@@ -251,9 +254,9 @@ export default async function LearnerDashboard() {
                       <div className="skeleton h-3 w-1/2" />
                     </div>
                     {isAdmin ? (
-                      <Link href="/admin/assign" className="btn btn-outline btn-sm w-fit">
-                        Assign a lesson
-                      </Link>
+                      <Button asChild size="sm" variant="outline" className="w-fit">
+                        <Link href="/admin/assign">Assign a lesson</Link>
+                      </Button>
                     ) : null}
                   </div>
                 </li>
@@ -282,9 +285,9 @@ export default async function LearnerDashboard() {
         <section
           id="up-next"
           aria-labelledby="up-next-heading"
-          className="card border border-base-300 bg-base-100 shadow"
+          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm"
         >
-          <div className="card-body space-y-5">
+          <div className="card-body space-y-5 p-6">
             <header className="flex items-start gap-3">
               <span className="rounded-full bg-secondary/10 p-2.5 text-secondary" aria-hidden>
                 <PlayCircle className="h-5 w-5" />
@@ -323,13 +326,14 @@ export default async function LearnerDashboard() {
                             {formatLessonDuration(lesson.durationS)}
                           </p>
                         </div>
-                        <Link
-                          href={`/app/lesson/${lesson.id}`}
+                        <Button
+                          asChild
+                          size="sm"
+                          variant={lessonCta.label === "Review" ? "outline" : "primary"}
                           aria-label={`${lessonCta.description}: ${lesson.title}`}
-                          className="btn btn-secondary btn-sm"
                         >
-                          {lessonCta.label}
-                        </Link>
+                          <Link href={`/app/lesson/${lesson.id}`}>{lessonCta.label}</Link>
+                        </Button>
                       </div>
                       <div className="space-y-2">
                         <progress
@@ -361,9 +365,9 @@ export default async function LearnerDashboard() {
                       <div className="skeleton h-3 w-3/4" />
                     </div>
                     {!hasAssignments && isAdmin ? (
-                      <Link href="/admin/assign" className="btn btn-outline btn-sm w-fit">
-                        Assign a lesson
-                      </Link>
+                      <Button asChild size="sm" variant="outline" className="w-fit">
+                        <Link href="/admin/assign">Assign a lesson</Link>
+                      </Button>
                     ) : null}
                   </div>
                 </li>
@@ -375,9 +379,9 @@ export default async function LearnerDashboard() {
         <section
           id="completed"
           aria-labelledby="completed-heading"
-          className="card border border-base-300 bg-base-100 shadow lg:col-span-2"
+          className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm lg:col-span-2"
         >
-          <div className="card-body space-y-6">
+          <div className="card-body space-y-6 p-6">
             <header className="flex items-start gap-3">
               <span className="rounded-full bg-success/10 p-2.5 text-success" aria-hidden>
                 <CheckCircle2 className="h-5 w-5" />
@@ -428,13 +432,9 @@ export default async function LearnerDashboard() {
                               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed lesson
                             </p>
                           </div>
-                          <Link
-                            href={`/app/lesson/${item.lesson.id}`}
-                            aria-label={`Review lesson: ${item.lesson.title}`}
-                            className="btn btn-success btn-sm"
-                          >
-                            Review
-                          </Link>
+                          <Button asChild size="sm" variant="outline" aria-label={`Review lesson: ${item.lesson.title}`}>
+                            <Link href={`/app/lesson/${item.lesson.id}`}>Review</Link>
+                          </Button>
                         </div>
                         <div className="space-y-2">
                           <progress
@@ -459,9 +459,9 @@ export default async function LearnerDashboard() {
                           <div className="skeleton h-3 w-2/3" />
                         </div>
                         {!hasAssignments && isAdmin ? (
-                          <Link href="/admin/assign" className="btn btn-outline btn-sm w-fit">
-                            Assign a lesson
-                          </Link>
+                          <Button asChild size="sm" variant="outline" className="w-fit">
+                            <Link href="/admin/assign">Assign a lesson</Link>
+                          </Button>
                         ) : null}
                       </div>
                     </li>

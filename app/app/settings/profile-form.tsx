@@ -166,7 +166,7 @@ export function ProfileSettingsForm({
   return (
     <>
       <Card className="shadow-xl">
-        <form action={formAction} className="card-body space-y-6">
+        <form action={formAction} className="card-body space-y-6 p-6">
           <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Avatar className="h-24 w-24">

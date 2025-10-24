@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getMissingSanityEnvVars } from "@/lib/sanity";
@@ -60,8 +61,8 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-10">
-      <section className="card border border-base-300 bg-base-100 shadow-xl">
-        <div className="card-body gap-6">
+      <section className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+        <div className="card-body gap-6 p-6">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-3">
               <h1 className="card-title text-2xl">Organization overview</h1>
@@ -70,12 +71,12 @@ export default async function AdminDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/admin/assign" className="btn btn-outline btn-sm">
-                Assign learning
-              </Link>
-              <Link href="/admin/groups" className="btn btn-outline btn-sm">
-                Manage groups
-              </Link>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/admin/assign">Assign learning</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/admin/groups">Manage groups</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -98,8 +99,8 @@ export default async function AdminDashboard() {
         </div>
       </section>
 
-      <section className="card border border-base-300 bg-base-100 shadow-xl">
-        <div className="card-body space-y-6">
+      <section className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+        <div className="card-body space-y-6 p-6">
           <div className="space-y-2">
             <h2 className="card-title text-xl">Sync from Sanity</h2>
             <p className="max-w-2xl text-sm text-base-content/70">
@@ -126,37 +127,37 @@ export default async function AdminDashboard() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-3">
-        <article className="card border border-base-300 bg-base-100 shadow-lg">
-          <div className="card-body space-y-3">
+        <article className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+          <div className="card-body space-y-3 p-6">
             <h3 className="card-title text-lg">Assignments</h3>
             <p className="text-sm text-base-content/70">
               Enroll learners into modules and courses with guided previews before you commit.
             </p>
-            <Link href="/admin/assign" className="btn btn-primary btn-sm w-fit">
-              Create assignment
-            </Link>
+            <Button asChild size="sm" className="w-fit">
+              <Link href="/admin/assign">Create assignment</Link>
+            </Button>
           </div>
         </article>
-        <article className="card border border-base-300 bg-base-100 shadow-lg">
-          <div className="card-body space-y-3">
+        <article className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+          <div className="card-body space-y-3 p-6">
             <h3 className="card-title text-lg">Analytics</h3>
             <p className="text-sm text-base-content/70">
               Track assignments, active learners, and completion rates across your organization.
             </p>
-            <Link href="/admin/analytics" className="btn btn-outline btn-sm w-fit">
-              View analytics snapshot
-            </Link>
+            <Button asChild size="sm" variant="outline" className="w-fit">
+              <Link href="/admin/analytics">View analytics snapshot</Link>
+            </Button>
           </div>
         </article>
-        <article className="card border border-base-300 bg-base-100 shadow-lg">
-          <div className="card-body space-y-3">
+        <article className="card rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+          <div className="card-body space-y-3 p-6">
             <h3 className="card-title text-lg">Groups</h3>
             <p className="text-sm text-base-content/70">
               Create cohorts, manage CSV roster uploads, and keep memberships in sync.
             </p>
-            <Link href="/admin/groups" className="btn btn-primary btn-sm w-fit">
-              Manage groups
-            </Link>
+            <Button asChild size="sm" className="w-fit">
+              <Link href="/admin/groups">Manage groups</Link>
+            </Button>
           </div>
         </article>
       </section>

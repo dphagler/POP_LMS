@@ -9,7 +9,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type 
     <input
       type={type}
       className={cn(
-        "input input-bordered w-full shadow-sm placeholder:text-muted-foreground",
+        "input input-bordered h-10 min-h-10 w-full shadow-sm placeholder:text-muted-foreground",
         "focus-visible:outline-none",
         "file:me-3 file:btn file:btn-sm file:btn-primary file:font-semibold",
         className
