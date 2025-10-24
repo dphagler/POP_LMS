@@ -5,7 +5,7 @@ import {
   type ButtonProps as ChakraButtonProps
 } from "@chakra-ui/react";
 
-export type ButtonVariant = "solid" | "outline" | "ghost";
+export type ButtonVariant = "solid" | "outline" | "ghost" | "primary";
 
 export interface ButtonProps extends Omit<ChakraButtonProps, "variant"> {
   variant?: ButtonVariant;
@@ -33,21 +33,26 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ...props
     },
     ref
-  ) => (
-    <ChakraButton
-      as={asChild ? Slot : undefined}
-      ref={ref}
-      variant={variant}
-      colorScheme={colorScheme}
-      borderRadius={borderRadius}
-      fontWeight={fontWeight}
-      _focusVisible={_focusVisible}
-      _disabled={_disabled}
-      transition="transform 0.2s ease, box-shadow 0.2s ease"
-      _active={{ transform: "translateY(0)" }}
-      {...props}
-    />
-  )
+  ) => {
+    const resolvedVariant: ChakraButtonProps["variant"] =
+      variant === "primary" ? "solid" : variant;
+
+    return (
+      <ChakraButton
+        as={asChild ? Slot : undefined}
+        ref={ref}
+        variant={resolvedVariant}
+        colorScheme={colorScheme}
+        borderRadius={borderRadius}
+        fontWeight={fontWeight}
+        _focusVisible={_focusVisible}
+        _disabled={_disabled}
+        transition="transform 0.2s ease, box-shadow 0.2s ease"
+        _active={{ transform: "translateY(0)" }}
+        {...props}
+      />
+    );
+  }
 );
 Button.displayName = "Button";
 
