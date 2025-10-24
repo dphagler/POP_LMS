@@ -22,10 +22,11 @@ export default async function NotFound() {
           <Button asChild size="lg">
             <Link href="/app">Go to dashboard</Link>
           </Button>
-        ) : null}
-        <Button asChild size="lg" variant="outline">
-          <Link href="/">Go to home</Link>
-        </Button>
+        ) : (
+          <Button asChild size="lg" variant="outline">
+            <Link href="/">Go home</Link>
+          </Button>
+        )}
       </div>
     </PageContainer>
   );

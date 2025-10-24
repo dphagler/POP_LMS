@@ -127,8 +127,6 @@ export async function updateProfileAction(
 
     revalidatePath("/app");
     revalidatePath("/settings");
-    revalidatePath("/app/settings");
-    revalidatePath("/app/profile");
 
     return {
       status: "success",
@@ -235,7 +233,6 @@ export async function changePasswordAction(
     });
 
     revalidatePath("/settings");
-    revalidatePath("/app/settings");
 
     return {
       status: "success",
