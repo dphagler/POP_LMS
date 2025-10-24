@@ -16,6 +16,9 @@ import {
 } from "@chakra-ui/react";
 import { CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
