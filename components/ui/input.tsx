@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef } from "react";
 import { Input as ChakraInput, type InputProps as ChakraInputProps } from "@chakra-ui/react";
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef, type ComponentProps } from "react";
 import {
   Table as ChakraTable,

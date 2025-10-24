@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef } from "react";
 import { Select as ChakraSelect, type SelectProps as ChakraSelectProps } from "@chakra-ui/react";
 
