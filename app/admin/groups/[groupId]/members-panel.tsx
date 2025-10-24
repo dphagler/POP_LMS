@@ -6,6 +6,7 @@ import { Loader2, Search, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
 import { cn } from "@/lib/utils";
 
 export type GroupMemberDisplay = {
@@ -467,22 +468,28 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
           {members.length === 0 ? (
             <p className="text-sm text-muted-foreground">No members yet. Add someone to get started.</p>
           ) : (
-            <div className="overflow-hidden rounded-box border border-base-300 bg-base-100 shadow">
-              <div className="max-h-80 overflow-x-auto overflow-y-auto">
-                <table className="table table-zebra">
-                  <thead className="sticky top-0 z-10 bg-base-100">
-                    <tr>
-                      <th>Learner</th>
-                      <th className="hidden sm:table-cell">Email</th>
-                      <th className="text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {members.map((member) => {
+            <TableContainer
+              borderRadius="xl"
+              borderWidth="1px"
+              bg="bg.surface"
+              shadow="md"
+              maxH="20rem"
+              overflowY="auto"
+            >
+              <Table size="sm" variant="striped">
+                <Thead position="sticky" top={0} zIndex="docked" bg="bg.surface">
+                  <Tr>
+                    <Th>Learner</Th>
+                    <Th display={{ base: "none", sm: "table-cell" }}>Email</Th>
+                    <Th textAlign="right">Actions</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {members.map((member) => {
                     const isRemoving = pendingRemovals.has(member.membershipId);
                     return (
-                      <tr key={member.membershipId}>
-                        <td>
+                      <Tr key={member.membershipId}>
+                        <Td>
                           <div className="flex flex-col">
                             <span className="font-medium">
                               {member.name?.trim() || member.email}
@@ -495,9 +502,16 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                               </span>
                             ) : null}
                           </div>
-                        </td>
-                        <td className="hidden font-mono text-sm text-base-content/80 sm:table-cell">{member.email}</td>
-                        <td className="text-right">
+                        </Td>
+                        <Td
+                          display={{ base: "none", sm: "table-cell" }}
+                          fontFamily="var(--font-mono)"
+                          fontSize="sm"
+                          color="fg.muted"
+                        >
+                          {member.email}
+                        </Td>
+                        <Td textAlign="right">
                           <Button
                             type="button"
                             variant="ghost"
@@ -507,14 +521,13 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                           >
                             Remove
                           </Button>
-                        </td>
-                      </tr>
+                        </Td>
+                      </Tr>
                     );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  })}
+                </Tbody>
+              </Table>
+            </TableContainer>
           )}
         </div>
       </CardContent>

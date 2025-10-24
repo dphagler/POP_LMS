@@ -1,6 +1,18 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr
+} from "@chakra-ui/react";
 import { assignToGroupsAction, type AssignToGroupsResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -388,26 +400,37 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                 </div>
 
                 {preview.newMembers.length > 0 ? (
-                  <div className="overflow-hidden rounded-box border border-base-200 bg-base-100 shadow">
-                    <div className="max-h-64 overflow-x-auto overflow-y-auto">
-                      <table className="table table-zebra">
-                        <thead className="sticky top-0 z-10 bg-base-100">
-                          <tr>
-                            <th className="text-xs uppercase tracking-wide text-base-content/70">Learner</th>
-                            <th className="text-xs uppercase tracking-wide text-base-content/70">Email</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {preview.newMembers.map((member) => (
-                            <tr key={member.id}>
-                              <td className="font-medium text-base-content">{member.name?.trim() || member.email}</td>
-                              <td className="font-mono text-sm text-base-content/80">{member.email}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <TableContainer
+                    borderRadius="xl"
+                    borderWidth="1px"
+                    bg="bg.surface"
+                    shadow="md"
+                    maxH="16rem"
+                    overflowY="auto"
+                  >
+                    <Table size={isCompact ? "sm" : "md"} variant="striped">
+                      <Thead position="sticky" top={0} zIndex="docked" bg="bg.surface">
+                        <Tr>
+                          <Th fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+                            Learner
+                          </Th>
+                          <Th fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+                            Email
+                          </Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {preview.newMembers.map((member) => (
+                          <Tr key={member.id}>
+                            <Td fontWeight="semibold">{member.name?.trim() || member.email}</Td>
+                            <Td fontFamily="mono" fontSize="sm" color="fg.muted">
+                              {member.email}
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </TableContainer>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     No new learners will be enrolled with the current selection.
@@ -416,20 +439,23 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
               </section>
 
               {error ? (
-                <div className="alert alert-error">
-                  <span>{error}</span>
-                </div>
+                <Alert status="error" borderRadius="lg">
+                  <AlertIcon />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               ) : null}
               {result ? (
-                <div className={cn("alert", result.enrollmentsCreated > 0 ? "alert-success" : "alert-info")}>
-                  {result.enrollmentsCreated > 0 ? (
-                    <span>
-                      Enrolled {result.enrollmentsCreated} learner{result.enrollmentsCreated === 1 ? "" : "s"}. {result.alreadyEnrolled} were already enrolled.
-                    </span>
-                  ) : (
-                    <span>Everything is already assigned—no new enrollments were needed.</span>
-                  )}
-                </div>
+                <Alert
+                  status={result.enrollmentsCreated > 0 ? "success" : "info"}
+                  borderRadius="lg"
+                >
+                  <AlertIcon />
+                  <AlertDescription>
+                    {result.enrollmentsCreated > 0
+                      ? `Enrolled ${result.enrollmentsCreated} learner${result.enrollmentsCreated === 1 ? "" : "s"}. ${result.alreadyEnrolled} were already enrolled.`
+                      : "Everything is already assigned—no new enrollments were needed."}
+                  </AlertDescription>
+                </Alert>
               ) : null}
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Box, Container, Flex, useColorModeValue } from "@chakra-ui/react";
+import { Box, Container, Flex, Grid, GridItem, useColorModeValue } from "@chakra-ui/react";
 
 type PageShellProps = {
   header: ReactNode;
@@ -35,23 +35,30 @@ export function PageShell({ header, sidebar, children }: PageShellProps) {
         py={{ base: 6, md: 8 }}
         flex="1"
       >
-        <Flex align="flex-start" gap={{ base: 6, lg: 8 }}>
+        <Grid
+          templateColumns={{ base: "1fr", lg: sidebar ? "280px 1fr" : "1fr" }}
+          gap={{ base: 6, lg: 8 }}
+          alignItems="start"
+        >
           {sidebar ? (
-            <Box
+            <GridItem
               as="aside"
               display={{ base: "none", lg: "block" }}
-              w="260px"
-              flexShrink={0}
               position="sticky"
               top="88px"
+              h="fit-content"
             >
               {sidebar}
-            </Box>
+            </GridItem>
           ) : null}
-          <Box as="main" flex="1" minW={0}>
+          <GridItem
+            as="main"
+            minW={0}
+            overflow="hidden"
+          >
             {children}
-          </Box>
-        </Flex>
+          </GridItem>
+        </Grid>
       </Container>
     </Flex>
   );
