@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@chakra-ui/next-js": "^2.4.4",
-    "@chakra-ui/react": "^3.2.2",
+    "@chakra-ui/react": "^2.8.5",
     "@auth/prisma-adapter": "^2.11.0",
     "@prisma/client": "^6.17.1",
     "@radix-ui/react-avatar": "^1.1.10",
