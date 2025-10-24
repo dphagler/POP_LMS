@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, isValidElement } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Button as ChakraButton,
@@ -18,6 +18,7 @@ export interface ButtonProps extends Omit<ChakraButtonProps, "variant"> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
+      children,
       variant = "solid",
       colorScheme = "primary",
       borderRadius = "xl",
@@ -39,6 +40,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedVariant: ChakraButtonProps["variant"] =
       variant === "primary" ? "solid" : variant;
 
+    const child = asChild
+      ? isValidElement(children)
+        ? children
+        : <span>{children}</span>
+      : children;
+
     return (
       <ChakraButton
         as={asChild ? Slot : undefined}
@@ -52,7 +59,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         transition="transform 0.2s ease, box-shadow 0.2s ease"
         _active={{ transform: "translateY(0)" }}
         {...props}
-      />
+      >
+        {child}
+      </ChakraButton>
     );
   }
 );

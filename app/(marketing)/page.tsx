@@ -12,6 +12,11 @@ import { PageFadeIn } from "@/components/layout/page-fade-in";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
 
+// NOTE: Tooltip/PopoverTrigger/MenuButton/AspectRatio must receive exactly one element child.
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const benefits = [
   {
     title: "Micro-learning videos",
