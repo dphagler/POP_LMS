@@ -9,6 +9,7 @@ import type { FocusEvent as ReactFocusEvent, ReactNode } from "react";
 
 import { signOutAction } from "@/app/actions/sign-out";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
 import { PageFadeIn } from "./page-fade-in";
@@ -324,20 +325,22 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
 
   return (
     <div className="relative" ref={containerRef}>
-      <button
+      <Button
         type="button"
         onClick={toggleMenu}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="user-menu"
-        className="btn btn-circle border border-base-300 bg-base-100/90 shadow-sm"
+        variant="ghost"
+        size="icon"
+        className="btn-circle border border-base-300 bg-base-100/90 shadow-sm"
         ref={triggerRef}
       >
         <Avatar className="h-10 w-10">
           <AvatarImage src={image ?? undefined} alt={name} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-      </button>
+      </Button>
       <ul
         id="user-menu"
         role="menu"
@@ -367,10 +370,12 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
           </Link>
         </li>
         <li>
-          <button
+          <Button
             type="button"
             role="menuitem"
-            className="btn btn-error btn-sm rounded-lg px-4 py-2 font-semibold text-base-100"
+            variant="destructive"
+            size="sm"
+            className="w-full justify-between rounded-lg px-4 py-2"
             onClick={handleSignOut}
             aria-busy={isPending}
             disabled={isPending}
@@ -379,7 +384,7 @@ function UserMenuAvatar({ image, initials, name }: UserMenuAvatarProps) {
               <span>Sign out</span>
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             </span>
-          </button>
+          </Button>
         </li>
       </ul>
     </div>

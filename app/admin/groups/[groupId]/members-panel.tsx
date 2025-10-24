@@ -467,17 +467,18 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
           {members.length === 0 ? (
             <p className="text-sm text-muted-foreground">No members yet. Add someone to get started.</p>
           ) : (
-            <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100 shadow">
-              <table className="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Learner</th>
-                    <th className="hidden sm:table-cell">Email</th>
-                    <th className="text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((member) => {
+            <div className="overflow-hidden rounded-box border border-base-300 bg-base-100 shadow">
+              <div className="max-h-80 overflow-x-auto overflow-y-auto">
+                <table className="table table-zebra">
+                  <thead className="sticky top-0 z-10 bg-base-100">
+                    <tr>
+                      <th>Learner</th>
+                      <th className="hidden sm:table-cell">Email</th>
+                      <th className="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.map((member) => {
                     const isRemoving = pendingRemovals.has(member.membershipId);
                     return (
                       <tr key={member.membershipId}>
@@ -509,9 +510,10 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

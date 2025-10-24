@@ -385,9 +385,9 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
 
                 {preview.newMembers.length > 0 ? (
                   <div className="overflow-hidden rounded-box border border-base-200 bg-base-100 shadow">
-                    <div className="max-h-64 overflow-y-auto">
+                    <div className="max-h-64 overflow-x-auto overflow-y-auto">
                       <table className="table table-zebra">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-base-100">
                           <tr>
                             <th className="text-xs uppercase tracking-wide text-base-content/70">Learner</th>
                             <th className="text-xs uppercase tracking-wide text-base-content/70">Email</th>

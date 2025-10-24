@@ -5,6 +5,7 @@ import type { ButtonProps } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -123,8 +124,8 @@ export default function StyleguidePage() {
           Card surfaces combine POP tokens with rounded corners and layered shadows.
         </p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="card border border-base-300 bg-base-100/95 shadow-md">
-            <div className="card-body gap-3">
+          <div className="card rounded-2xl border border-base-200 bg-base-100/95 shadow-md">
+            <div className="card-body gap-3 p-6">
               <span className="badge badge-accent badge-sm w-fit uppercase tracking-wide">Featured</span>
               <h3 className="card-title text-lg">Design systems 101</h3>
               <p className="text-sm text-muted-foreground">
@@ -138,8 +139,8 @@ export default function StyleguidePage() {
               </div>
             </div>
           </div>
-          <div className="card border border-dashed border-base-300 bg-base-200/70 shadow-inner">
-            <div className="card-body gap-3">
+          <div className="card rounded-2xl border border-dashed border-base-300 bg-base-200/70 shadow-inner">
+            <div className="card-body gap-3 p-6">
               <h3 className="card-title text-lg">Empty state</h3>
               <p className="text-sm text-muted-foreground">
                 Softer neutrals and dashed outlines provide gentle affordances for adding new content.
@@ -153,7 +154,7 @@ export default function StyleguidePage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
             <CardDescription>Variants inherit the pop palette.</CardDescription>
@@ -168,7 +169,7 @@ export default function StyleguidePage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Form inputs</CardTitle>
             <CardDescription>Rounded surfaces and soft shadows for form elements.</CardDescription>
@@ -183,17 +184,13 @@ export default function StyleguidePage() {
               <option value="progress">In progress</option>
               <option value="done">Done</option>
             </Select>
-            <textarea
-              className="textarea textarea-bordered w-full"
-              rows={3}
-              placeholder="Textarea"
-            />
+            <Textarea rows={3} placeholder="Textarea" />
           </CardContent>
         </Card>
       </section>
 
         <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card className="border border-base-300 bg-base-100/85">
+          <Card className="border border-base-200 bg-base-100/85">
             <CardHeader>
               <CardTitle>Tabs</CardTitle>
               <CardDescription>Triggers align with the pop theme tokens.</CardDescription>
@@ -224,7 +221,7 @@ export default function StyleguidePage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Badges</CardTitle>
             <CardDescription>Utility accents for quick status cues.</CardDescription>
@@ -240,7 +237,7 @@ export default function StyleguidePage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Feedback</CardTitle>
             <CardDescription>Alerts surface contextual messaging.</CardDescription>
@@ -265,7 +262,7 @@ export default function StyleguidePage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Progress</CardTitle>
             <CardDescription>Progress bars adapt to semantic colors.</CardDescription>
@@ -279,15 +276,15 @@ export default function StyleguidePage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Table</CardTitle>
             <CardDescription>Striped rows keep data legible in both themes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
+            <div className="max-h-80 overflow-x-auto overflow-y-auto">
+              <table className="table table-zebra">
+                <thead className="sticky top-0 z-10 bg-base-100">
                   <tr>
                     <th>Name</th>
                     <th>Status</th>
@@ -336,7 +333,7 @@ export default function StyleguidePage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-base-300 bg-base-100/85">
+        <Card className="border border-base-200 bg-base-100/85">
           <CardHeader>
             <CardTitle>Modal</CardTitle>
             <CardDescription>Dialogs inherit rounded corners and soft overlay.</CardDescription>

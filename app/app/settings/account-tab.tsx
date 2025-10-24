@@ -12,7 +12,7 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
 
   return (
     <Card className="shadow-xl">
-      <div className="card-body space-y-6">
+      <div className="card-body space-y-6 p-6">
         <header className="space-y-1">
           <h2 className="text-balance">Account security</h2>
           <p className="text-sm text-muted-foreground">
