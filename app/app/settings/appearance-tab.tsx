@@ -2,10 +2,19 @@
 
 import { useMemo } from "react";
 import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
+import {
+  Alert,
+  Badge,
+  Box,
+  HStack,
+  Icon,
+  SimpleGrid,
+  Stack,
+  Text,
+  useColorModeValue
+} from "@chakra-ui/react";
 
 import { useThemeMode, type ThemeMode } from "@/components/layout/theme-provider";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 type ThemeOption = {
   icon: typeof Sun;
@@ -36,21 +45,20 @@ const OPTIONS: ThemeOption[] = [
 ];
 
 const TOKEN_SWATCHES = [
-  { name: "Primary", className: "bg-primary text-primary-content" },
-  { name: "Secondary", className: "bg-secondary text-secondary-content" },
-  { name: "Accent", className: "bg-accent text-accent-content" },
-  { name: "Neutral", className: "bg-neutral text-neutral-content" },
-  { name: "Info", className: "bg-info text-info-content" },
-  { name: "Success", className: "bg-success text-success-content" },
-  { name: "Warning", className: "bg-warning text-warning-content" },
-  { name: "Error", className: "bg-error text-error-content" },
-  { name: "Base-100", className: "border border-base-300 bg-base-100 text-base-content" },
-  { name: "Base-200", className: "border border-base-300 bg-base-200 text-base-content" },
-  { name: "Base-300", className: "border border-base-300 bg-base-300 text-base-content" },
-];
+  { name: "Primary", token: "primary.500", bg: "primary.500", color: "white" },
+  { name: "Primary (muted)", token: "primary.100", bg: "primary.100", color: "gray.900" },
+  { name: "Secondary", token: "secondary.500", bg: "secondary.500", color: "white" },
+  { name: "Secondary (muted)", token: "secondary.100", bg: "secondary.100", color: "gray.900" },
+  { name: "Surface", token: "bg.surface", bg: "bg.surface", color: "fg.default", borderColor: "border.subtle" },
+  { name: "Muted surface", token: "bg.muted", bg: "bg.muted", color: "fg.default" },
+  { name: "Canvas", token: "bg.canvas", bg: "bg.canvas", color: "fg.default", borderColor: "border.subtle" }
+] as const;
 
 export function AppearanceSettings() {
   const { mode, resolvedMode, setMode } = useThemeMode();
+  const activeBorderColor = useColorModeValue("primary.200", "primary.400");
+  const activeBackground = useColorModeValue("primary.50", "primary.900");
+  const hoverBorderColor = useColorModeValue("primary.300", "primary.500");
 
   const activeThemeName = useMemo(() => {
     if (mode === "system") {
@@ -70,88 +78,120 @@ export function AppearanceSettings() {
   }, [mode, resolvedMode]);
 
   return (
-    <Card className="shadow-xl">
-      <div className="card-body space-y-6 p-6">
-        <div className="space-y-1">
-          <h2 className="text-balance">Theme</h2>
-          <p className="text-sm text-muted-foreground">
-            Choose how POP Initiative looks on this device. Your selection is saved in this browser.
-          </p>
-        </div>
-        <fieldset className="space-y-4">
-          <legend className="text-sm font-semibold text-foreground">Color mode</legend>
-          <div className="grid gap-4 md:grid-cols-3">
-            {OPTIONS.map((option) => {
-              const Icon = option.icon;
-              const isActive = option.value === mode;
-              return (
-                <label
-                  key={option.value}
-                  htmlFor={`theme-${option.value}`}
-                  className={cn(
-                    "group card cursor-pointer rounded-2xl border border-base-200 bg-base-100 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg",
-                    isActive ? "border-primary shadow-lg" : "shadow-sm"
-                  )}
-                >
-                  <div className="card-body gap-3 p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2 text-sm font-semibold">
-                        <Icon className="h-5 w-5" aria-hidden />
-                        {option.label}
-                      </span>
-                      {isActive ? (
-                        <span className="badge badge-primary badge-sm gap-1">
-                          <Check className="h-3 w-3" aria-hidden />
-                          Active
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{option.description}</p>
-                  </div>
-                  <input
-                    id={`theme-${option.value}`}
-                    type="radio"
-                    name="theme-mode"
-                    value={option.value}
-                    checked={isActive}
-                    onChange={() => setMode(option.value)}
-                    className="hidden"
-                  />
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <div className="alert alert-info" aria-live="polite">
-          <div className="flex items-start gap-3">
-            <Palette className="h-5 w-5 shrink-0" aria-hidden />
-            <div className="space-y-1 text-sm">
-              <p className="font-medium">{statusMessage}</p>
-              <p className="text-xs text-muted-foreground">Active theme: <code data-theme-active>{activeThemeName}</code></p>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Theme tokens</h3>
-            <span className="badge badge-outline badge-sm">{activeThemeName}</span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {TOKEN_SWATCHES.map((token) => (
-              <div
-                key={token.name}
-                className={cn(
-                  "flex min-h-[88px] flex-col justify-between rounded-2xl p-4 text-sm shadow-sm",
-                  token.className
-                )}
+    <Stack spacing={6}>
+      <Stack spacing={1}>
+        <Text fontSize="lg" fontWeight="semibold">
+          Theme
+        </Text>
+        <Text fontSize="sm" color="fg.muted">
+          Choose how POP Initiative looks on this device. Your selection is saved in this browser.
+        </Text>
+      </Stack>
+
+      <Stack spacing={4}>
+        <Text fontSize="sm" fontWeight="semibold">
+          Color mode
+        </Text>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+          {OPTIONS.map((option) => {
+            const LucideIcon = option.icon;
+            const isActive = option.value === mode;
+
+            return (
+              <Box
+                key={option.value}
+                as="label"
+                htmlFor={`theme-${option.value}`}
+                borderWidth="1px"
+                borderRadius="2xl"
+                borderColor={isActive ? activeBorderColor : "border.subtle"}
+                boxShadow={isActive ? "md" : "sm"}
+                bg={isActive ? activeBackground : "bg.surface"}
+                transition="all 0.2s ease"
+                cursor="pointer"
+                _hover={{ borderColor: hoverBorderColor, boxShadow: "md", transform: "translateY(-2px)" }}
+                position="relative"
+                overflow="hidden"
               >
-                <span className="font-semibold">{token.name}</span>
-                <span className="text-xs opacity-80">{token.className}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
+                <input
+                  id={`theme-${option.value}`}
+                  type="radio"
+                  name="theme-mode"
+                  value={option.value}
+                  checked={isActive}
+                  onChange={() => setMode(option.value)}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <Stack spacing={3} p={5}>
+                  <HStack justify="space-between" align="center">
+                    <HStack spacing={2}>
+                      <Icon as={LucideIcon} boxSize={5} aria-hidden />
+                      <Text fontWeight="semibold">{option.label}</Text>
+                    </HStack>
+                    {isActive ? (
+                      <Badge colorScheme="primary" borderRadius="full" px={2} py={1} fontSize="xs">
+                        <HStack spacing={1}>
+                          <Icon as={Check} boxSize={3} aria-hidden />
+                          <Text as="span">Active</Text>
+                        </HStack>
+                      </Badge>
+                    ) : null}
+                  </HStack>
+                  <Text fontSize="sm" color="fg.muted" lineHeight="tall">
+                    {option.description}
+                  </Text>
+                </Stack>
+              </Box>
+            );
+          })}
+        </SimpleGrid>
+      </Stack>
+
+      <Alert status="info" borderRadius="lg" variant="subtle" role="status">
+        <HStack align="flex-start" spacing={3}>
+          <Icon as={Palette} boxSize={5} aria-hidden />
+          <Stack spacing={1} fontSize="sm">
+            <Text fontWeight="medium">{statusMessage}</Text>
+            <Text color="fg.muted">
+              Active theme: <Text as="span" fontFamily="mono">{activeThemeName}</Text>
+            </Text>
+          </Stack>
+        </HStack>
+      </Alert>
+
+      <Stack spacing={3}>
+        <HStack justify="space-between" align="center">
+          <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+            Theme tokens
+          </Text>
+          <Badge variant="subtle" borderRadius="full" colorScheme="primary" px={3} py={1} fontSize="xs">
+            {activeThemeName}
+          </Badge>
+        </HStack>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={3}>
+          {TOKEN_SWATCHES.map((token) => (
+            <Box
+              key={token.name}
+              borderRadius="2xl"
+              p={4}
+              minH="88px"
+              bg={token.bg}
+              color={token.color}
+              borderWidth={token.borderColor ? "1px" : undefined}
+              borderColor={token.borderColor}
+              boxShadow="sm"
+              display="flex"
+              flexDirection="column"
+              justifyContent="space-between"
+            >
+              <Text fontWeight="semibold">{token.name}</Text>
+              <Text fontSize="xs" opacity={0.8} fontFamily="mono">
+                {token.token}
+              </Text>
+            </Box>
+          ))}
+        </SimpleGrid>
+      </Stack>
+    </Stack>
   );
 }

@@ -1,16 +1,36 @@
 "use client";
 
-import { ChangeEvent, useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import {
+  ChangeEvent,
+  useActionState,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Avatar,
+  Box,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  Heading,
+  HStack,
+  Stack,
+  Text,
+  useToast
+} from "@chakra-ui/react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 import { type UpdateProfileFormState } from "./actions";
-import { SettingsToast, type SettingsToastMessage } from "./settings-toast";
 
 type ProfileSettingsFormProps = {
   action: (
@@ -35,14 +55,10 @@ export function ProfileSettingsForm({
   const [savedAvatar, setSavedAvatar] = useState<string | null>(initialAvatar);
   const [preview, setPreview] = useState<string | null>(initialAvatar);
   const [removeAvatar, setRemoveAvatar] = useState(false);
-  const [toast, setToast] = useState<SettingsToastMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const avatarInputId = useId();
-  const avatarDescriptionId = useId();
-  const displayNameHelpId = useId();
-  const successMessageId = useId();
-  const errorMessageId = useId();
+  const toast = useToast();
 
   useEffect(() => {
     setDisplayName(initialName);
@@ -60,11 +76,6 @@ export function ProfileSettingsForm({
     }
 
     if (state.status === "success") {
-      setToast({
-        variant: "success",
-        title: "Profile updated",
-        description: state.message ?? "Your changes have been saved.",
-      });
       if (typeof state.name === "string") {
         setDisplayName(state.name);
       }
@@ -82,14 +93,20 @@ export function ProfileSettingsForm({
       }
     }
 
-    if (state.status === "error") {
-      setToast({
-        variant: "error",
-        title: "Update failed",
-        description: state.message ?? "We couldn’t save your changes. Please try again.",
-      });
-    }
-  }, [state, initialState]);
+    const isSuccess = state.status === "success";
+    toast({
+      status: isSuccess ? "success" : "error",
+      title: isSuccess ? "Profile updated" : "Update failed",
+      description:
+        state.message ??
+        (isSuccess
+          ? "Your profile has been updated."
+          : "We couldn’t update your profile. Please try again."),
+      duration: 5000,
+      isClosable: true,
+      position: "top-right"
+    });
+  }, [state, toast]);
 
   useEffect(() => {
     return () => {
@@ -142,77 +159,74 @@ export function ProfileSettingsForm({
     }
   };
 
+  const fieldErrors = state.status === "error" ? state.fieldErrors ?? {} : {};
+  const displayNameError = fieldErrors.displayName;
+  const avatarError = fieldErrors.avatar;
   const successMessage =
     state.status === "success"
       ? state.message ?? "Your profile has been updated."
       : null;
-  const errorMessage =
-    state.status === "error"
+  const generalError =
+    state.status === "error" && !displayNameError && !avatarError
       ? state.message ?? "We couldn’t update your profile. Please try again."
       : null;
 
-  const statusIds: string[] = [];
-  if (successMessage) {
-    statusIds.push(successMessageId);
-  }
-  if (errorMessage) {
-    statusIds.push(errorMessageId);
-  }
-
-  const avatarDescribedBy = [avatarDescriptionId, ...statusIds].join(" ") || undefined;
-  const displayNameDescribedBy = [displayNameHelpId, ...statusIds].join(" ") || undefined;
-  const hasError = Boolean(errorMessage);
-
   return (
-    <>
-      <Card className="shadow-xl">
-        <form action={formAction} className="card-body space-y-6 p-6">
-          <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Avatar className="h-24 w-24">
-              {preview ? <AvatarImage src={preview} alt="Avatar preview" /> : null}
-              <AvatarFallback>{avatarInitials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-3">
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Profile photo</h3>
-                <p id={avatarDescriptionId} className="text-sm text-muted-foreground">
-                  Use a square image (recommended 240px or larger). PNG or JPG files up to 4 MB are supported.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label htmlFor={avatarInputId} className="sr-only">
-                  Upload profile photo
-                </label>
-                <Input
-                  ref={fileInputRef}
-                  id={avatarInputId}
-                  name="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  disabled={pending}
-                  className="min-w-[220px]"
-                  aria-describedby={avatarDescribedBy}
-                  aria-invalid={hasError || undefined}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemoveAvatar}
-                  disabled={pending || (!preview && !savedAvatar)}
-                >
-                  Remove
-                </Button>
-              </div>
-            </div>
-          </div>
+    <form action={formAction} noValidate>
+      <input type="hidden" name="removeAvatar" value={removeAvatar ? "true" : "false"} />
+      <Stack spacing={8}>
+        <Stack spacing={1}>
+          <Heading size="md">Profile details</Heading>
+          <Text fontSize="sm" color="fg.muted">
+            Update your name and photo so classmates recognize you.
+          </Text>
+        </Stack>
 
-          <div className="form-control w-full">
-            <label htmlFor="displayName" className="label">
-              <span className="label-text font-semibold">Display name</span>
-            </label>
+        <Stack spacing={6}>
+          <Stack direction={{ base: "column", md: "row" }} spacing={6} align={{ base: "flex-start", md: "center" }}>
+            <Avatar
+              name={displayName}
+              src={preview ?? undefined}
+              size="xl"
+              bg="primary.500"
+              color="white"
+            >
+              {avatarInitials}
+            </Avatar>
+            <FormControl isInvalid={Boolean(avatarError)} isDisabled={pending} flex="1">
+              <FormLabel htmlFor={avatarInputId}>Profile photo</FormLabel>
+              <Stack spacing={3} align={{ base: "stretch", sm: "flex-start" }}>
+                <HStack spacing={3} w="full" flexWrap="wrap" align={{ base: "stretch", sm: "center" }}>
+                  <Input
+                    ref={fileInputRef}
+                    id={avatarInputId}
+                    name="avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={pending}
+                    maxW={{ base: "full", sm: "xs" }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveAvatar}
+                    isDisabled={pending || (!preview && !savedAvatar)}
+                  >
+                    Remove photo
+                  </Button>
+                </HStack>
+                <FormHelperText>
+                  Use a square image (240px or larger). PNG or JPG files up to 4 MB are supported.
+                </FormHelperText>
+                {avatarError ? <FormErrorMessage>{avatarError}</FormErrorMessage> : null}
+              </Stack>
+            </FormControl>
+          </Stack>
+
+          <FormControl isRequired isInvalid={Boolean(displayNameError)} isDisabled={pending}>
+            <FormLabel htmlFor="displayName">Display name</FormLabel>
             <Input
               id="displayName"
               name="displayName"
@@ -222,60 +236,44 @@ export function ProfileSettingsForm({
               autoComplete="name"
               required
               disabled={pending}
-              aria-describedby={displayNameDescribedBy}
-              aria-invalid={hasError || undefined}
             />
-            <label className="label" htmlFor="displayName">
-              <span id={displayNameHelpId} className="label-text-alt text-xs text-muted-foreground">
-                This name will appear on certificates and progress reports.
-              </span>
-            </label>
-          </div>
+            <FormHelperText>This name will appear on certificates and progress reports.</FormHelperText>
+            {displayNameError ? <FormErrorMessage>{displayNameError}</FormErrorMessage> : null}
+          </FormControl>
 
-          <div className="form-control">
-            <span className="label-text font-semibold">Email</span>
-            <span className="label-text-alt text-sm text-muted-foreground" aria-live="polite">
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold">Email</Text>
+            <Text fontSize="sm" color="fg.muted">
               {initialEmail}
-            </span>
-          </div>
+            </Text>
+          </Box>
+        </Stack>
 
-          <div className="space-y-3">
-            {successMessage ? (
-              <div
-                id={successMessageId}
-                className={cn("alert alert-success shadow-sm", pending ? "opacity-70" : "")}
-                aria-live="polite"
-                role="status"
-              >
-                <span>{successMessage}</span>
-              </div>
-            ) : null}
-            {errorMessage ? (
-              <div
-                id={errorMessageId}
-                className="alert alert-error shadow-sm"
-                aria-live="assertive"
-                role="alert"
-              >
-                <span>{errorMessage}</span>
-              </div>
-            ) : null}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-              <Button type="submit" disabled={pending} className="sm:w-auto">
-                {pending ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Saving…
-                  </span>
-                ) : (
-                  "Save changes"
-                )}
-              </Button>
-            </div>
-          </div>
-        </form>
-      </Card>
-      <SettingsToast toast={toast} onDismiss={() => setToast(null)} />
-    </>
+        <Stack spacing={4}>
+          {successMessage ? (
+            <Alert status="success" borderRadius="lg" variant="subtle">
+              <AlertIcon />
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          ) : null}
+          {generalError ? (
+            <Alert status="error" borderRadius="lg" variant="subtle">
+              <AlertIcon />
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <Flex justify="flex-end">
+            <Button
+              type="submit"
+              colorScheme="primary"
+              isLoading={pending}
+              loadingText="Saving..."
+            >
+              Save changes
+            </Button>
+          </Flex>
+        </Stack>
+      </Stack>
+    </form>
   );
 }

@@ -14,6 +14,7 @@ export type UpdateProfileFormState = {
   message?: string;
   name?: string | null;
   image?: string | null;
+  fieldErrors?: Partial<Record<"displayName" | "avatar", string>>;
 };
 
 const displayNameSchema = z
@@ -34,7 +35,8 @@ export async function updateProfileAction(
   if (typeof rawName !== "string") {
     return {
       status: "error",
-      message: "Enter your display name before saving."
+      message: "Enter your display name before saving.",
+      fieldErrors: { displayName: "Enter your display name before saving." }
     } satisfies UpdateProfileFormState;
   }
 
@@ -43,7 +45,10 @@ export async function updateProfileAction(
     const issue = parsedName.error.issues.at(0);
     return {
       status: "error",
-      message: issue?.message ?? "Enter a valid display name."
+      message: issue?.message ?? "Enter a valid display name.",
+      fieldErrors: {
+        displayName: issue?.message ?? "Enter a valid display name."
+      }
     } satisfies UpdateProfileFormState;
   }
 
@@ -58,14 +63,20 @@ export async function updateProfileAction(
     if (!avatarFile.type.startsWith("image/")) {
       return {
         status: "error",
-        message: "Upload a valid image file for your avatar."
+        message: "Upload a valid image file for your avatar.",
+        fieldErrors: {
+          avatar: "Upload a valid image file for your avatar."
+        }
       } satisfies UpdateProfileFormState;
     }
 
     if (avatarFile.size > MAX_AVATAR_SIZE) {
       return {
         status: "error",
-        message: "Choose an image smaller than 4 MB."
+        message: "Choose an image smaller than 4 MB.",
+        fieldErrors: {
+          avatar: "Choose an image smaller than 4 MB."
+        }
       } satisfies UpdateProfileFormState;
     }
 
@@ -145,6 +156,9 @@ export async function updateProfileAction(
 export type ChangePasswordFormState = {
   status: "idle" | "success" | "error";
   message?: string;
+  fieldErrors?: Partial<
+    Record<"currentPassword" | "newPassword" | "confirmPassword", string>
+  >;
 };
 
 const changePasswordSchema = z.object({
@@ -176,9 +190,17 @@ export async function changePasswordAction(
 
   if (!fields.success) {
     const issue = fields.error.issues.at(0);
+    const field = issue?.path?.[0];
+
+    const fieldErrors =
+      typeof field === "string"
+        ? { [field]: issue?.message ?? "Check this field." }
+        : undefined;
+
     return {
       status: "error",
-      message: issue?.message ?? "Check the password fields and try again."
+      message: issue?.message ?? "Check the password fields and try again.",
+      fieldErrors
     } satisfies ChangePasswordFormState;
   }
 
@@ -187,14 +209,20 @@ export async function changePasswordAction(
   if (newPassword !== confirmPassword) {
     return {
       status: "error",
-      message: "New password and confirmation do not match."
+      message: "New password and confirmation do not match.",
+      fieldErrors: {
+        confirmPassword: "New password and confirmation do not match."
+      }
     } satisfies ChangePasswordFormState;
   }
 
   if (currentPassword === newPassword) {
     return {
       status: "error",
-      message: "Choose a new password that’s different from your current one."
+      message: "Choose a new password that’s different from your current one.",
+      fieldErrors: {
+        newPassword: "Choose a new password that’s different from your current one."
+      }
     } satisfies ChangePasswordFormState;
   }
 
@@ -215,7 +243,10 @@ export async function changePasswordAction(
     if (!currentMatches) {
       return {
         status: "error",
-        message: "Your current password is incorrect."
+        message: "Your current password is incorrect.",
+        fieldErrors: {
+          currentPassword: "Your current password is incorrect."
+        }
       } satisfies ChangePasswordFormState;
     }
 
