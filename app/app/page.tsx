@@ -69,7 +69,33 @@ export default async function LearnerDashboard() {
   const { id: userId, orgId } = session.user;
 
   if (!orgId) {
-    throw new Error("Organization not found for learner");
+    return (
+      <Stack spacing={10} align="flex-start">
+        <Stack spacing={3} align="flex-start">
+          <Heading size="lg">Your learning</Heading>
+          <Text color="fg.muted" fontSize="sm">
+            We couldn&apos;t load your assignments because your account isn&apos;t linked to an organization yet.
+          </Text>
+        </Stack>
+
+        <Card w="full" maxW="lg">
+          <CardHeader>
+            <Heading size="md">Organization required</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing={4} fontSize="sm" color="fg.muted">
+              <Text>
+                Ask your administrator to add you to an organization so you can access lessons and track your
+                progress. Once you&apos;ve been added, refresh this page to continue.
+              </Text>
+              <Button as={Link} href="/settings" variant="outline" size="sm" alignSelf="flex-start">
+                Review account settings
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Stack>
+    );
   }
 
   const [assignments, badges, progresses] = await Promise.all([
