@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Badge,
   Button,
@@ -19,12 +20,55 @@ import { CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { requireUser } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
 import { logServerError } from "@/lib/server-logger";
 
-import type { Lesson as LessonModel, Progress as ProgressModel } from "@prisma/client";
+import type {
+  Lesson as LessonModel,
+  Prisma,
+  Progress as ProgressModel,
+  UserRole
+} from "@prisma/client";
+
+const assignmentInclude = {
+  module: {
+    include: {
+      lessons: true,
+      course: true
+    }
+  },
+  course: {
+    include: {
+      modules: {
+        include: {
+          lessons: true
+        }
+      }
+    }
+  }
+} as const satisfies Prisma.AssignmentInclude;
+
+type AssignmentWithRelations = Prisma.AssignmentGetPayload<{
+  include: typeof assignmentInclude;
+}>;
+
+const progressInclude = {
+  lesson: true
+} as const satisfies Prisma.ProgressInclude;
+
+type ProgressWithLesson = Prisma.ProgressGetPayload<{
+  include: typeof progressInclude;
+}>;
+
+const userBadgeInclude = {
+  badge: true
+} as const satisfies Prisma.UserBadgeInclude;
+
+type UserBadgeWithBadge = Prisma.UserBadgeGetPayload<{
+  include: typeof userBadgeInclude;
+}>;
 
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
@@ -78,32 +122,57 @@ export default async function LearnerDashboard() {
 }
 
 async function renderLearnerDashboard() {
-  const session = await requireUser();
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect(`/signin?callbackUrl=${encodeURIComponent("/app")}`);
+  }
+
   const { id: userId, orgId } = session.user;
+  const role = (session.user.role ?? "LEARNER") as UserRole;
 
   if (!orgId) {
+    const isAdmin = role === "ADMIN";
+
     return (
       <Stack spacing={10} align="flex-start">
         <Stack spacing={3} align="flex-start">
           <Heading size="lg">Your learning</Heading>
           <Text color="fg.muted" fontSize="sm">
-            We couldn&apos;t load your assignments because your account isn&apos;t linked to an organization yet.
+            Your account isn&apos;t linked to an organization yet, so assignments can&apos;t be loaded.
           </Text>
         </Stack>
 
         <Card w="full" maxW="lg">
           <CardHeader>
-            <Heading size="md">Organization required</Heading>
+            <Heading size="md">Waiting for organization access</Heading>
           </CardHeader>
           <CardBody>
             <Stack spacing={4} fontSize="sm" color="fg.muted">
               <Text>
-                Ask your administrator to add you to an organization so you can access lessons and track your
-                progress. Once you&apos;ve been added, refresh this page to continue.
+                Once your organization connects your account, refresh this page to see assignments, progress, and streaks.
               </Text>
-              <Button as={Link} href="/settings" variant="outline" size="sm" alignSelf="flex-start">
-                Review account settings
-              </Button>
+              {isAdmin ? (
+                <Button as={Link} href="/admin" variant="outline" size="sm" alignSelf="flex-start">
+                  Open admin workspace
+                </Button>
+              ) : (
+                <Text>
+                  Need a hand? Reach out to {" "}
+                  <Button
+                    as={Link}
+                    href="mailto:support@poplms.dev"
+                    variant="link"
+                    colorScheme="primary"
+                    p={0}
+                    height="auto"
+                    fontWeight="semibold"
+                  >
+                    support@poplms.dev
+                  </Button>
+                  {" "}for assistance.
+                </Text>
+              )}
             </Stack>
           </CardBody>
         </Card>
@@ -111,41 +180,63 @@ async function renderLearnerDashboard() {
     );
   }
 
-  const [assignments, badges, progresses] = await Promise.all([
-    prisma.assignment.findMany({
-      where: {
-        orgId,
-        enrollments: {
-          some: { userId }
-        }
-      },
-      include: {
-        module: {
-          include: {
-            lessons: true,
-            course: true
+  let assignments: AssignmentWithRelations[] = [];
+  let badges: UserBadgeWithBadge[] = [];
+  let progresses: ProgressWithLesson[] = [];
+  let streak = 0;
+
+  try {
+    [assignments, badges, progresses] = await Promise.all([
+      prisma.assignment.findMany({
+        where: {
+          orgId,
+          enrollments: {
+            some: { userId }
           }
         },
-        course: {
-          include: {
-            modules: {
-              include: {
-                lessons: true
-              }
-            }
-          }
-        }
-      }
-    }),
-    prisma.userBadge.findMany({
-      where: { userId },
-      include: { badge: true }
-    }),
-    prisma.progress.findMany({
-      where: { userId },
-      include: { lesson: true }
-    })
-  ]);
+        include: assignmentInclude
+      }),
+      prisma.userBadge.findMany({
+        where: { userId },
+        include: userBadgeInclude
+      }),
+      prisma.progress.findMany({
+        where: { userId },
+        include: progressInclude
+      })
+    ]);
+
+    streak = await computeStreak(userId);
+  } catch (err) {
+    logServerError("app/page:db", err, { userId, orgId });
+
+    return (
+      <Stack spacing={10} align="flex-start">
+        <Stack spacing={3} align="flex-start">
+          <Heading size="lg">Your learning</Heading>
+          <Text color="fg.muted" fontSize="sm">
+            We hit a snag loading your assignments. Try again in a moment.
+          </Text>
+        </Stack>
+
+        <Card w="full" maxW="lg">
+          <CardHeader>
+            <Heading size="md">Assignments temporarily unavailable</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing={4} fontSize="sm" color="fg.muted">
+              <Text>
+                Our team has been notified. If the issue persists, refresh the page or contact support.
+              </Text>
+              <Button as={Link} href="mailto:support@poplms.dev" variant="outline" size="sm" alignSelf="flex-start">
+                Email support
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Stack>
+    );
+  }
 
   const lessonMap = new Map<string, LessonModel>();
 
@@ -166,9 +257,10 @@ async function renderLearnerDashboard() {
   const lessons = Array.from(lessonMap.values());
   const lessonIds = new Set(lessons.map((lesson) => lesson.id));
   const relevantProgresses = progresses.filter((item) => lessonIds.has(item.lessonId));
-  const progressesWithLessons = relevantProgresses.filter((item) => item.lesson);
+  const progressesWithLessons = relevantProgresses.filter(
+    (item): item is ProgressWithLesson & { lesson: LessonModel } => Boolean(item.lesson)
+  );
 
-  const streak = await computeStreak(userId);
   const progressByLesson = new Map(relevantProgresses.map((item) => [item.lessonId, item]));
   const prioritizedLessons = [...lessons].sort((a, b) => {
     const progressA = progressByLesson.get(a.id);
@@ -200,7 +292,7 @@ async function renderLearnerDashboard() {
     .filter((item) => item.isComplete)
     .sort((a, b) => (a.lesson?.title ?? "").localeCompare(b.lesson?.title ?? ""))
     .slice(0, 6);
-  const isAdmin = session.user.role === "ADMIN";
+  const isAdmin = role === "ADMIN";
   const allLessonsComplete = totalLessons > 0 && completion === totalLessons;
   const upNextProgress = upNext ? progressByLesson.get(upNext.id) : undefined;
   const upNextCta = upNext ? getLessonCta(upNextProgress) : null;
