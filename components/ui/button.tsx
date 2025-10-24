@@ -10,6 +10,7 @@ export type ButtonVariant = "solid" | "outline" | "ghost";
 export interface ButtonProps extends Omit<ChakraButtonProps, "variant"> {
   variant?: ButtonVariant;
   asChild?: boolean;
+  href?: string;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
