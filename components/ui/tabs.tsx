@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, Fragment, forwardRef, isValidElement } from "react";
+import { forwardRef } from "react";
 import {
   Tab,
   TabList,
@@ -16,21 +16,14 @@ import {
 
 export type TabsProps = ChakraTabsProps;
 
-const Tabs = (props: TabsProps) => {
+const Tabs = forwardRef<HTMLDivElement, TabsProps>((props, ref) => {
   const { colorScheme = "primary", variant = "enclosed", children, ...rest } = props;
-  const normalizedChildren = Children.toArray(children).filter((child) =>
-    isValidElement(child)
-  );
-  const content =
-    normalizedChildren.length === 1 ? normalizedChildren[0] : (
-      <Fragment>{normalizedChildren}</Fragment>
-    );
   return (
-    <ChakraTabs colorScheme={colorScheme} variant={variant} {...rest}>
-      {content}
+    <ChakraTabs ref={ref} colorScheme={colorScheme} variant={variant} {...rest}>
+      {children}
     </ChakraTabs>
   );
-};
+});
 Tabs.displayName = "Tabs";
 
 const TabsList = forwardRef<HTMLDivElement, ChakraTabListProps>((props, ref) => {
