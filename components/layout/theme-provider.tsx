@@ -181,23 +181,173 @@ export function syncDocumentTheme(mode: ThemeMode, resolved: "light" | "dark") {
   }
 }
 
+const defaultPrimaryByTheme: Record<string, string | null> = {};
+const defaultPrimaryContentByTheme: Record<string, string | null> = {};
+
 function applyThemeTokens(theme: Record<string, string>) {
   if (typeof document === "undefined") return;
-  const rootStyle = document.documentElement.style;
+  const root = document.documentElement;
+  const rootStyle = root.style;
 
   Object.entries(theme).forEach(([token, value]) => {
     rootStyle.setProperty(`--${token}`, value);
   });
 
-  const primary = theme["color-primary"];
-  if (primary) {
-    rootStyle.setProperty("--p", primary);
+  if (typeof window === "undefined") return;
+
+  const computedAfter = window.getComputedStyle(root);
+  const candidatePrimary = cleanupColor(
+    theme["color-primary"] ?? computedAfter.getPropertyValue("--color-primary")
+  );
+  const candidatePrimaryContent = cleanupColor(
+    theme["color-primary-content"] ??
+      computedAfter.getPropertyValue("--color-primary-content")
+  );
+  const themeKey = root.getAttribute("data-theme") ?? "default";
+
+  if (
+    candidatePrimary &&
+    candidatePrimaryContent &&
+    hasSufficientContrast(candidatePrimary, candidatePrimaryContent)
+  ) {
+    rootStyle.setProperty("--p", candidatePrimary);
+    rootStyle.setProperty("--pc", candidatePrimaryContent);
+    return;
   }
 
-  const primaryContent = theme["color-primary-content"];
-  if (primaryContent) {
-    rootStyle.setProperty("--pc", primaryContent);
+  const inlinePrimary = rootStyle.getPropertyValue("--color-primary");
+  const inlinePrimaryContent = rootStyle.getPropertyValue("--color-primary-content");
+  const [fallbackPrimary, fallbackPrimaryContent] = resolveFallbackPrimary(
+    themeKey,
+    rootStyle,
+    inlinePrimary,
+    inlinePrimaryContent
+  );
+
+  if (fallbackPrimary) {
+    rootStyle.setProperty("--p", fallbackPrimary);
+  } else {
+    rootStyle.removeProperty("--p");
   }
+
+  if (fallbackPrimaryContent) {
+    rootStyle.setProperty("--pc", fallbackPrimaryContent);
+  } else {
+    rootStyle.removeProperty("--pc");
+  }
+}
+
+function resolveFallbackPrimary(
+  themeKey: string,
+  rootStyle: CSSStyleDeclaration,
+  inlinePrimary: string,
+  inlinePrimaryContent: string
+): [string | null, string | null] {
+  if (typeof window === "undefined") {
+    return [cleanupColor(defaultPrimaryByTheme[themeKey] ?? null), cleanupColor(defaultPrimaryContentByTheme[themeKey] ?? null)];
+  }
+
+  if (!(themeKey in defaultPrimaryByTheme) || !(themeKey in defaultPrimaryContentByTheme)) {
+    rootStyle.removeProperty("--color-primary");
+    rootStyle.removeProperty("--color-primary-content");
+
+    const ownerNode = rootStyle.ownerNode as Element | null;
+    const fallbackElement = ownerNode ?? document.documentElement;
+    const computed = window.getComputedStyle(fallbackElement);
+    defaultPrimaryByTheme[themeKey] = cleanupColor(computed.getPropertyValue("--color-primary"));
+    defaultPrimaryContentByTheme[themeKey] = cleanupColor(
+      computed.getPropertyValue("--color-primary-content")
+    );
+
+    const restoredPrimary = cleanupColor(inlinePrimary);
+    if (restoredPrimary) {
+      rootStyle.setProperty("--color-primary", restoredPrimary);
+    } else {
+      rootStyle.removeProperty("--color-primary");
+    }
+
+    const restoredPrimaryContent = cleanupColor(inlinePrimaryContent);
+    if (restoredPrimaryContent) {
+      rootStyle.setProperty("--color-primary-content", restoredPrimaryContent);
+    } else {
+      rootStyle.removeProperty("--color-primary-content");
+    }
+  }
+
+  return [
+    cleanupColor(defaultPrimaryByTheme[themeKey] ?? null),
+    cleanupColor(defaultPrimaryContentByTheme[themeKey] ?? null)
+  ];
+}
+
+function hasSufficientContrast(colorA: string, colorB: string) {
+  const ratio = getContrastRatio(colorA, colorB);
+  return typeof ratio === "number" && ratio >= 4.5;
+}
+
+function getContrastRatio(colorA: string, colorB: string) {
+  const rgbA = parseColor(colorA);
+  const rgbB = parseColor(colorB);
+
+  if (!rgbA || !rgbB) return null;
+
+  const luminanceA = relativeLuminance(rgbA);
+  const luminanceB = relativeLuminance(rgbB);
+  const [lighter, darker] = luminanceA > luminanceB
+    ? [luminanceA, luminanceB]
+    : [luminanceB, luminanceA];
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+type RGB = [number, number, number];
+
+function parseColor(input: string): RGB | null {
+  const value = cleanupColor(input);
+  if (!value) return null;
+
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) {
+    const hex = value.slice(1);
+    const normalized = hex.length === 3
+      ? hex
+          .split("")
+          .map((ch) => ch + ch)
+          .join("")
+      : hex;
+    const int = parseInt(normalized, 16);
+    return [
+      (int >> 16) & 0xff,
+      (int >> 8) & 0xff,
+      int & 0xff
+    ];
+  }
+
+  const rgbMatch = value.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbMatch) {
+    const [r, g, b] = rgbMatch[1]
+      .split(",")
+      .slice(0, 3)
+      .map((component) => Number.parseFloat(component.trim()));
+    if ([r, g, b].every((channel) => Number.isFinite(channel))) {
+      return [r, g, b];
+    }
+  }
+
+  return null;
+}
+
+function relativeLuminance([r, g, b]: RGB) {
+  const toLinear = (channel: number) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+
+  const [lr, lg, lb] = [toLinear(r), toLinear(g), toLinear(b)];
+  return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+}
+
+function cleanupColor(value?: string | null) {
+  return value?.trim() || null;
 }
 
 function parseThemeMode(value: string | null): ThemeMode | null {
