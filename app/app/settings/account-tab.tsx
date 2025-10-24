@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 import { ChangePasswordForm } from "./change-password-form";
 import { changePasswordAction, type ChangePasswordFormState } from "./actions";
@@ -20,23 +20,19 @@ export function AccountSettings({ passwordAuthEnabled }: AccountSettingsProps) {
           </p>
         </header>
         {passwordAuthEnabled ? (
-          <Card className="bg-base-100 shadow-lg">
-            <CardHeader className="space-y-1 pb-0">
-              <CardTitle>Change password</CardTitle>
-              <CardDescription>
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">Change password</h3>
+              <p className="text-sm text-muted-foreground">
                 Update your password to keep your account secure.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <ChangePasswordForm action={changePasswordAction} initialState={initialPasswordState} />
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <ChangePasswordForm action={changePasswordAction} initialState={initialPasswordState} />
+          </section>
         ) : (
-          <Card className="border border-dashed border-base-300 bg-base-100/70">
-            <CardContent className="py-6 text-sm text-muted-foreground">
-              Your organization uses single sign-on—no password needed.
-            </CardContent>
-          </Card>
+          <div className="alert alert-info">
+            <span>Your organization uses single sign-on—no password needed.</span>
+          </div>
         )}
       </div>
     </Card>

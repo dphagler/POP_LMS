@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import { type UpdateProfileFormState } from "./actions";
 import { SettingsToast, type SettingsToastMessage } from "./settings-toast";
@@ -141,17 +142,26 @@ export function ProfileSettingsForm({
     }
   };
 
+  const successMessage =
+    state.status === "success"
+      ? state.message ?? "Your profile has been updated."
+      : null;
+  const errorMessage =
+    state.status === "error"
+      ? state.message ?? "We couldn’t update your profile. Please try again."
+      : null;
+
   const statusIds: string[] = [];
-  if (state.status === "success") {
+  if (successMessage) {
     statusIds.push(successMessageId);
   }
-  if (state.status === "error") {
+  if (errorMessage) {
     statusIds.push(errorMessageId);
   }
 
   const avatarDescribedBy = [avatarDescriptionId, ...statusIds].join(" ") || undefined;
   const displayNameDescribedBy = [displayNameHelpId, ...statusIds].join(" ") || undefined;
-  const hasError = state.status === "error";
+  const hasError = Boolean(errorMessage);
 
   return (
     <>
@@ -229,23 +239,39 @@ export function ProfileSettingsForm({
             </span>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <div id={successMessageId} aria-live="polite" className="sr-only">
-              {state.status === "success" ? state.message : null}
+          <div className="space-y-3">
+            {successMessage ? (
+              <div
+                id={successMessageId}
+                className={cn("alert alert-success shadow-sm", pending ? "opacity-70" : "")}
+                aria-live="polite"
+                role="status"
+              >
+                <span>{successMessage}</span>
+              </div>
+            ) : null}
+            {errorMessage ? (
+              <div
+                id={errorMessageId}
+                className="alert alert-error shadow-sm"
+                aria-live="assertive"
+                role="alert"
+              >
+                <span>{errorMessage}</span>
+              </div>
+            ) : null}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Button type="submit" disabled={pending} className="sm:w-auto">
+                {pending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Saving…
+                  </span>
+                ) : (
+                  "Save changes"
+                )}
+              </Button>
             </div>
-            <div id={errorMessageId} aria-live="assertive" className="sr-only">
-              {state.status === "error" ? state.message : null}
-            </div>
-            <Button type="submit" disabled={pending} className="sm:w-auto">
-              {pending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Saving…
-                </span>
-              ) : (
-                "Save changes"
-              )}
-            </Button>
           </div>
         </form>
       </Card>
