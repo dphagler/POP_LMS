@@ -201,13 +201,12 @@ export default async function LearnerDashboard() {
                           </p>
                         </div>
                         <Button
-                          asChild
+                          as={Link}
+                          href={`/app/lesson/${upNext.id}`}
                           size="sm"
                           aria-label={`${upNextCta?.description ?? "Open lesson"}: ${upNext.title}`}
                         >
-                          <Link href={`/app/lesson/${upNext.id}`}>
-                            {upNextCta?.label ?? "Start"}
-                          </Link>
+                          {upNextCta?.label ?? "Start"}
                         </Button>
                       </div>
                       <div className="space-y-2">
@@ -237,8 +236,14 @@ export default async function LearnerDashboard() {
                         <div className="skeleton h-3 w-2/3" />
                       </div>
                       {isAdmin ? (
-                        <Button asChild size="sm" variant="outline" className="w-fit">
-                          <Link href="/admin/assign">Assign a lesson</Link>
+                        <Button
+                          as={Link}
+                          href="/admin/assign"
+                          size="sm"
+                          variant="outline"
+                          className="w-fit"
+                        >
+                          Assign a lesson
                         </Button>
                       ) : null}
                     </div>
@@ -254,8 +259,14 @@ export default async function LearnerDashboard() {
                       <div className="skeleton h-3 w-1/2" />
                     </div>
                     {isAdmin ? (
-                      <Button asChild size="sm" variant="outline" className="w-fit">
-                        <Link href="/admin/assign">Assign a lesson</Link>
+                      <Button
+                        as={Link}
+                        href="/admin/assign"
+                        size="sm"
+                        variant="outline"
+                        className="w-fit"
+                      >
+                        Assign a lesson
                       </Button>
                     ) : null}
                   </div>
@@ -327,12 +338,13 @@ export default async function LearnerDashboard() {
                           </p>
                         </div>
                         <Button
-                          asChild
+                          as={Link}
+                          href={`/app/lesson/${lesson.id}`}
                           size="sm"
                           variant={lessonCta.label === "Review" ? "outline" : "primary"}
                           aria-label={`${lessonCta.description}: ${lesson.title}`}
                         >
-                          <Link href={`/app/lesson/${lesson.id}`}>{lessonCta.label}</Link>
+                          {lessonCta.label}
                         </Button>
                       </div>
                       <div className="space-y-2">
@@ -365,8 +377,14 @@ export default async function LearnerDashboard() {
                       <div className="skeleton h-3 w-3/4" />
                     </div>
                     {!hasAssignments && isAdmin ? (
-                      <Button asChild size="sm" variant="outline" className="w-fit">
-                        <Link href="/admin/assign">Assign a lesson</Link>
+                      <Button
+                        as={Link}
+                        href="/admin/assign"
+                        size="sm"
+                        variant="outline"
+                        className="w-fit"
+                      >
+                        Assign a lesson
                       </Button>
                     ) : null}
                   </div>
@@ -432,8 +450,14 @@ export default async function LearnerDashboard() {
                               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed lesson
                             </p>
                           </div>
-                          <Button asChild size="sm" variant="outline" aria-label={`Review lesson: ${item.lesson.title}`}>
-                            <Link href={`/app/lesson/${item.lesson.id}`}>Review</Link>
+                          <Button
+                            as={Link}
+                            href={`/app/lesson/${item.lesson.id}`}
+                            size="sm"
+                            variant="outline"
+                            aria-label={`Review lesson: ${item.lesson.title}`}
+                          >
+                            Review
                           </Button>
                         </div>
                         <div className="space-y-2">
@@ -459,8 +483,14 @@ export default async function LearnerDashboard() {
                           <div className="skeleton h-3 w-2/3" />
                         </div>
                         {!hasAssignments && isAdmin ? (
-                          <Button asChild size="sm" variant="outline" className="w-fit">
-                            <Link href="/admin/assign">Assign a lesson</Link>
+                          <Button
+                            as={Link}
+                            href="/admin/assign"
+                            size="sm"
+                            variant="outline"
+                            className="w-fit"
+                          >
+                            Assign a lesson
                           </Button>
                         ) : null}
                       </div>

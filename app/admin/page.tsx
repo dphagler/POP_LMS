@@ -71,11 +71,11 @@ export default async function AdminDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button asChild size="sm" variant="outline">
-                <Link href="/admin/assign">Assign learning</Link>
+              <Button as={Link} href="/admin/assign" size="sm" variant="outline">
+                Assign learning
               </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/admin/groups">Manage groups</Link>
+              <Button as={Link} href="/admin/groups" size="sm" variant="outline">
+                Manage groups
               </Button>
             </div>
           </div>
@@ -133,8 +133,8 @@ export default async function AdminDashboard() {
             <p className="text-sm text-base-content/70">
               Enroll learners into modules and courses with guided previews before you commit.
             </p>
-            <Button asChild size="sm" className="w-fit">
-              <Link href="/admin/assign">Create assignment</Link>
+            <Button as={Link} href="/admin/assign" size="sm" className="w-fit">
+              Create assignment
             </Button>
           </div>
         </article>
@@ -144,8 +144,8 @@ export default async function AdminDashboard() {
             <p className="text-sm text-base-content/70">
               Track assignments, active learners, and completion rates across your organization.
             </p>
-            <Button asChild size="sm" variant="outline" className="w-fit">
-              <Link href="/admin/analytics">View analytics snapshot</Link>
+            <Button as={Link} href="/admin/analytics" size="sm" variant="outline" className="w-fit">
+              View analytics snapshot
             </Button>
           </div>
         </article>
@@ -155,8 +155,8 @@ export default async function AdminDashboard() {
             <p className="text-sm text-base-content/70">
               Create cohorts, manage CSV roster uploads, and keep memberships in sync.
             </p>
-            <Button asChild size="sm" className="w-fit">
-              <Link href="/admin/groups">Manage groups</Link>
+            <Button as={Link} href="/admin/groups" size="sm" className="w-fit">
+              Manage groups
             </Button>
           </div>
         </article>

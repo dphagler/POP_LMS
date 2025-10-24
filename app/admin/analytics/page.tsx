@@ -74,10 +74,8 @@ export default async function AdminAnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-        <Button asChild variant="outline" className="shrink-0">
-          <a href="/admin/analytics/export" download>
-            Download CSV
-          </a>
+        <Button as="a" href="/admin/analytics/export" download variant="outline" className="shrink-0">
+          Download CSV
         </Button>
       </div>
       <Card>
@@ -139,8 +137,8 @@ export default async function AdminAnalyticsPage() {
               <p className="max-w-md text-sm text-muted-foreground">
                 Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
               </p>
-              <Button asChild>
-                <Link href="/admin/assign">Create assignment</Link>
+              <Button as={Link} href="/admin/assign">
+                Create assignment
               </Button>
             </div>
           )}

@@ -83,8 +83,14 @@ export default function GroupsList({ groups, renameGroup, deleteGroup, importMem
                     {group._count.members} member{group._count.members === 1 ? "" : "s"}
                   </p>
                 </div>
-                <Button asChild variant="outline" size="sm" className="h-8 w-full shrink-0 sm:w-auto">
-                  <Link href={`/admin/groups/${group.id}`}>Manage members</Link>
+                <Button
+                  as={Link}
+                  href={`/admin/groups/${group.id}`}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full shrink-0 sm:w-auto"
+                >
+                  Manage members
                 </Button>
               </div>
             </CardHeader>
