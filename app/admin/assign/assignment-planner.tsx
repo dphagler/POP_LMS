@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { assignToGroupsAction, type AssignToGroupsResult } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
 import { cn } from "@/lib/utils";
@@ -54,10 +54,6 @@ type PreviewSummary = {
   newMembers: GroupMember[];
   existingMembers: GroupMember[];
 };
-
-function formatMemberLabel(member: GroupMember) {
-  return member.name ? `${member.name} (${member.email})` : member.email;
-}
 
 export default function AssignmentPlanner({ courses, groups, assignments }: AssignmentPlannerProps) {
   const [mode, setMode] = useState<AssignmentMode>("course");
@@ -162,8 +158,15 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
     );
   };
 
-  const handleAssign = () => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isPending) {
+      return;
+    }
+
     if ((mode === "module" && !selectedModule) || (mode === "course" && !selectedCourseId)) {
+      setError("Select content to assign");
       return;
     }
 
@@ -182,31 +185,46 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
       return;
     }
 
+    if (selectedGroupIds.length === 0 || preview.newMembers.length === 0) {
+      setError("Choose at least one group with learners to enroll");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const response = await assignToGroupsAction(payload);
         setResult(response);
       } catch (assignmentError) {
-        setError(assignmentError instanceof Error ? assignmentError.message : "Unable to assign. Please try again.");
+        setError(
+          assignmentError instanceof Error
+            ? assignmentError.message
+            : "Unable to assign. Please try again."
+        );
       }
     });
   };
 
   const isCompact = density === "compact";
-  const groupListClasses = cn("grid", isCompact ? "gap-2" : "gap-3", groups.length > 1 ? "sm:grid-cols-2" : "");
-  const memberListSpacing = isCompact ? "space-y-1.5" : "space-y-2";
+  const groupListClasses = cn(
+    "grid",
+    isCompact ? "gap-2" : "gap-3",
+    groups.length > 1 ? "sm:grid-cols-2" : "",
+    groups.length > 2 ? "xl:grid-cols-3" : ""
+  );
+  const hasGroups = groups.length > 0;
+  const assignButtonLabel = isPending ? "Assigning…" : "Assign to groups";
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-4 pb-4">
+    <Card className="overflow-hidden border border-base-300">
+      <form onSubmit={handleSubmit} className="flex h-full flex-col">
+        <CardHeader className="gap-4 border-b border-base-200 pb-6">
           <div className="space-y-1">
-            <CardTitle>Choose what to assign</CardTitle>
-            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
-              Select a course or module, then pick the groups that should receive it.
+            <CardTitle>Assignment planner</CardTitle>
+            <CardDescription className="max-w-2xl text-base-content/70">
+              Pick the scope, choose your groups, and review the enrollment preview before assigning.
             </CardDescription>
           </div>
-          <fieldset className="space-y-2">
+          <fieldset className="space-y-3">
             <legend className="text-sm font-medium text-foreground">Assignment scope</legend>
             <div className="flex flex-wrap gap-2">
               <ScopeToggleButton
@@ -224,173 +242,208 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
             </div>
           </fieldset>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {mode === "course" ? (
-            <div className="form-control w-full">
-              <label htmlFor="course-select" className="label">
-                <span className="label-text font-semibold">Course</span>
-              </label>
-              <Select
-                id="course-select"
-                value={selectedCourseId}
-                onChange={(event) => setSelectedCourseId(event.target.value)}
-              >
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          ) : (
-            <div className="form-control w-full">
-              <label htmlFor="module-select" className="label">
-                <span className="label-text font-semibold">Module</span>
-              </label>
-              <Select
-                id="module-select"
-                value={selectedModuleId}
-                onChange={(event) => setSelectedModuleId(event.target.value)}
-              >
-                {moduleOptions.map((module) => (
-                  <option key={module.id} value={module.id}>
-                    {module.courseTitle} — {module.title}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle>Select groups</CardTitle>
-            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
-              Members from the selected groups will be enrolled if they are not already assigned.
-            </CardDescription>
-          </div>
-          {groups.length > 0 ? (
-            <DataDensityToggle
-              density={density}
-              onDensityChange={setDensity}
-              className="sm:mt-1"
-            />
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {groups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No groups available. Create a group first to assign content.</p>
-          ) : (
-            <div className={groupListClasses}>
-              {groups.map((group) => {
-                const checkboxId = `group-${group.id}`;
-                return (
-                  <label
-                    key={group.id}
-                    htmlFor={checkboxId}
-                    className={cn(
-                      "card cursor-pointer border border-base-200 bg-base-100 transition hover:border-primary/40 hover:shadow-lg",
-                      isCompact ? "p-3" : "p-4"
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        id={checkboxId}
-                        type="checkbox"
-                        className="checkbox checkbox-primary mt-1"
-                        checked={selectedGroupIds.includes(group.id)}
-                        onChange={() => handleGroupToggle(group.id)}
-                      />
-                      <span className="space-y-1">
-                        <span className="block font-semibold text-base-content">{group.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {group.members.length} member{group.members.length === 1 ? "" : "s"}
-                        </span>
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle>Preview enrollment</CardTitle>
-          <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
-            Double-check who will gain access before assigning.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1 text-sm">
-            <p>
-              <span className="font-medium">Assignment:</span> {assignmentLabel || "Select a course or module"}
-            </p>
-            <p>
-              <span className="font-medium">Selected groups:</span> {preview.selectedGroups.length}
-            </p>
-            <p>
-              <span className="font-medium">Learners to enroll:</span> {preview.newMembers.length}
-            </p>
-            {preview.existingMembers.length > 0 ? (
-              <p className="text-muted-foreground">
-                {preview.existingMembers.length} already enrolled learner{preview.existingMembers.length === 1 ? "" : "s"} will be skipped automatically.
-              </p>
-            ) : null}
-          </div>
-
-          {preview.newMembers.length > 0 ? (
-            <div className="space-y-4">
-              <p className="text-sm font-medium">Learners gaining access</p>
-              <div className="max-h-64 overflow-y-auto rounded-box border border-base-200 bg-base-100 p-3 shadow-inner">
-                <ul className={cn("flex flex-col", memberListSpacing)}>
-                  {preview.newMembers.map((member) => (
-                    <li
-                      key={member.id}
-                      className={cn(
-                        "rounded-box bg-base-200 px-3 text-sm",
-                        isCompact ? "py-1.5" : "py-2"
-                      )}
+        <CardContent className="flex-1 space-y-8">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div className="space-y-6">
+              <section className="space-y-4 rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {mode === "course" ? "Select a course" : "Select a module"}
+                </h3>
+                {mode === "course" ? (
+                  <div className="form-control w-full">
+                    <label htmlFor="course-select" className="label">
+                      <span className="label-text font-semibold">Course</span>
+                    </label>
+                    <Select
+                      id="course-select"
+                      value={selectedCourseId}
+                      onChange={(event) => setSelectedCourseId(event.target.value)}
                     >
-                      {formatMemberLabel(member)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No new learners to enroll based on the current selection.</p>
-          )}
+                      {courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.title}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="form-control w-full">
+                    <label htmlFor="module-select" className="label">
+                      <span className="label-text font-semibold">Module</span>
+                    </label>
+                    <Select
+                      id="module-select"
+                      value={selectedModuleId}
+                      onChange={(event) => setSelectedModuleId(event.target.value)}
+                    >
+                      {moduleOptions.map((module) => (
+                        <option key={module.id} value={module.id}>
+                          {module.courseTitle} — {module.title}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </section>
 
-          {error ? (
-            <div className="alert alert-error">
-              <span>{error}</span>
-            </div>
-          ) : null}
-          {result ? (
-            <div className={cn("alert", result.enrollmentsCreated > 0 ? "alert-success" : "alert-info")}> 
-              {result.enrollmentsCreated > 0 ? (
-                <span>
-                  Enrolled {result.enrollmentsCreated} learner{result.enrollmentsCreated === 1 ? "" : "s"}. {result.alreadyEnrolled} were already enrolled.
-                </span>
-              ) : (
-                <span>Everything is already assigned—no new enrollments were needed.</span>
-              )}
-            </div>
-          ) : null}
+              <section className="space-y-4 rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-foreground">Select groups</h3>
+                    <p className="text-xs text-base-content/70">
+                      Members from selected groups are enrolled unless they already have access.
+                    </p>
+                  </div>
+                  {hasGroups ? (
+                    <DataDensityToggle density={density} onDensityChange={setDensity} className="sm:mt-0" />
+                  ) : null}
+                </div>
 
-          <div className="flex justify-end">
-            <Button type="button" onClick={handleAssign} disabled={!canAssign}>
-              {isPending ? "Assigning..." : "Assign to groups"}
+                {hasGroups ? (
+                  <div className={groupListClasses}>
+                    {groups.map((group) => {
+                      const checkboxId = `group-${group.id}`;
+                      return (
+                        <label
+                          key={group.id}
+                          htmlFor={checkboxId}
+                          className={cn(
+                            "card cursor-pointer border border-base-200 bg-base-100 transition hover:border-primary/40 hover:shadow-lg",
+                            isCompact ? "p-3" : "p-4"
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              id={checkboxId}
+                              type="checkbox"
+                              className="checkbox checkbox-primary mt-1"
+                              checked={selectedGroupIds.includes(group.id)}
+                              onChange={() => handleGroupToggle(group.id)}
+                            />
+                            <span className="space-y-1">
+                              <span className="block font-semibold text-base-content">{group.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {group.members.length} member{group.members.length === 1 ? "" : "s"}
+                              </span>
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No groups available. Create a group first to assign content.
+                  </p>
+                )}
+              </section>
+            </div>
+
+            <div className="space-y-5">
+              <section className="space-y-4 rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-foreground">Assignment summary</h3>
+                <dl className="grid gap-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-base-content/70">Assignment</dt>
+                    <dd className="text-right font-medium text-base-content">
+                      {assignmentLabel || "Select a course or module"}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-base-content/70">Selected groups</dt>
+                    <dd className="text-right font-medium text-base-content">
+                      {preview.selectedGroups.length}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-base-content/70">Learners to enroll</dt>
+                    <dd className="text-right font-medium text-base-content">
+                      {preview.newMembers.length}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-base-content/70">Already enrolled</dt>
+                    <dd className="text-right font-medium text-base-content">
+                      {preview.existingMembers.length}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="space-y-4 rounded-box border border-base-300 bg-base-100/80 p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Learners gaining access ({preview.newMembers.length})
+                  </h3>
+                  {preview.existingMembers.length > 0 ? (
+                    <p className="text-xs text-base-content/60">
+                      {preview.existingMembers.length} already enrolled learner
+                      {preview.existingMembers.length === 1 ? "" : "s"} will be skipped.
+                    </p>
+                  ) : null}
+                </div>
+
+                {preview.newMembers.length > 0 ? (
+                  <div className="overflow-hidden rounded-box border border-base-200 bg-base-100 shadow">
+                    <div className="max-h-64 overflow-y-auto">
+                      <table className="table table-zebra">
+                        <thead>
+                          <tr>
+                            <th className="text-xs uppercase tracking-wide text-base-content/70">Learner</th>
+                            <th className="text-xs uppercase tracking-wide text-base-content/70">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.newMembers.map((member) => (
+                            <tr key={member.id}>
+                              <td className="font-medium text-base-content">{member.name?.trim() || member.email}</td>
+                              <td className="font-mono text-sm text-base-content/80">{member.email}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No new learners will be enrolled with the current selection.
+                  </p>
+                )}
+              </section>
+
+              {error ? (
+                <div className="alert alert-error">
+                  <span>{error}</span>
+                </div>
+              ) : null}
+              {result ? (
+                <div className={cn("alert", result.enrollmentsCreated > 0 ? "alert-success" : "alert-info")}>
+                  {result.enrollmentsCreated > 0 ? (
+                    <span>
+                      Enrolled {result.enrollmentsCreated} learner{result.enrollmentsCreated === 1 ? "" : "s"}. {result.alreadyEnrolled} were already enrolled.
+                    </span>
+                  ) : (
+                    <span>Everything is already assigned—no new enrollments were needed.</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="mt-auto w-full border-t border-base-200 bg-base-100/80 backdrop-blur supports-[backdrop-filter]:bg-base-100/60">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-base-content/70">
+              {preview.newMembers.length > 0
+                ? `${preview.newMembers.length} learner${preview.newMembers.length === 1 ? "" : "s"} ready to enroll.`
+                : "No new learners selected yet."}
+            </p>
+            <Button type="submit" disabled={!canAssign} aria-disabled={!canAssign}>
+              {assignButtonLabel}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
 

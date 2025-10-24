@@ -65,7 +65,7 @@ export default function ImportMembersForm({ groupId, action, compact = false }: 
             aria-describedby={describedBy}
             aria-invalid={state.formError ? true : undefined}
           />
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto" size="sm">
             {isPending ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
