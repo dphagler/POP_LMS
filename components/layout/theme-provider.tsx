@@ -219,6 +219,7 @@ function applyThemeTokens(theme: Record<string, string>) {
   const inlinePrimaryContent = rootStyle.getPropertyValue("--color-primary-content");
   const [fallbackPrimary, fallbackPrimaryContent] = resolveFallbackPrimary(
     themeKey,
+    root,
     rootStyle,
     inlinePrimary,
     inlinePrimaryContent
@@ -239,6 +240,7 @@ function applyThemeTokens(theme: Record<string, string>) {
 
 function resolveFallbackPrimary(
   themeKey: string,
+  rootElement: HTMLElement,
   rootStyle: CSSStyleDeclaration,
   inlinePrimary: string,
   inlinePrimaryContent: string
@@ -251,9 +253,7 @@ function resolveFallbackPrimary(
     rootStyle.removeProperty("--color-primary");
     rootStyle.removeProperty("--color-primary-content");
 
-    const ownerNode = rootStyle.ownerNode as Element | null;
-    const fallbackElement = ownerNode ?? document.documentElement;
-    const computed = window.getComputedStyle(fallbackElement);
+    const computed = window.getComputedStyle(rootElement);
     defaultPrimaryByTheme[themeKey] = cleanupColor(computed.getPropertyValue("--color-primary"));
     defaultPrimaryContentByTheme[themeKey] = cleanupColor(
       computed.getPropertyValue("--color-primary-content")
