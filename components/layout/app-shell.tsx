@@ -97,7 +97,12 @@ export function AppShell({
   return (
     <PageShell
       header={
-        <Header orgName={orgName} pageTitle={pageTitle} displayName={userName ?? "Learner"} />
+        <Header
+          orgName={orgName}
+          pageTitle={pageTitle}
+          displayName={userName ?? "Learner"}
+          userImage={userImage}
+        />
       }
       sidebar={sidebar}
     >
@@ -111,9 +116,10 @@ type HeaderProps = {
   displayName: string;
   orgName: string;
   pageTitle?: string;
+  userImage?: string | null;
 };
 
-function Header({ displayName, orgName, pageTitle }: HeaderProps) {
+function Header({ displayName, orgName, pageTitle, userImage }: HeaderProps) {
   const mutedColor = useColorModeValue("fg.muted", "fg.muted");
 
   return (
