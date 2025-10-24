@@ -5,10 +5,7 @@ import { Suspense } from "react";
 import type { ReactNode } from "react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
-import { CacheProvider } from "@chakra-ui/next-js";
-import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
-import { popTheme } from "@/lib/ui/theme";
-import { ThemeProvider } from "@/components/layout/theme-provider";
+import { Providers } from "@/components/layout/providers";
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -37,17 +34,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(sans.variable, heading.variable)}>
-        <CacheProvider>
-          <ChakraProvider theme={popTheme}>
-            <ColorModeScript initialColorMode={popTheme.config.initialColorMode} />
-            <ThemeProvider>
-              <Suspense fallback={null}>
-                <PostHogClient />
-              </Suspense>
-              {children}
-            </ThemeProvider>
-          </ChakraProvider>
-        </CacheProvider>
+        <Providers>
+          <Suspense fallback={null}>
+            <PostHogClient />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   );
