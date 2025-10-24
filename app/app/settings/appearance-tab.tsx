@@ -23,6 +23,14 @@ type ThemeOption = {
   value: ThemeMode;
 };
 
+type TokenSwatch = {
+  name: string;
+  token: string;
+  bg: string;
+  color: string;
+  borderColor?: string;
+};
+
 const OPTIONS: ThemeOption[] = [
   {
     value: "light",
@@ -52,7 +60,7 @@ const TOKEN_SWATCHES = [
   { name: "Surface", token: "bg.surface", bg: "bg.surface", color: "fg.default", borderColor: "border.subtle" },
   { name: "Muted surface", token: "bg.muted", bg: "bg.muted", color: "fg.default" },
   { name: "Canvas", token: "bg.canvas", bg: "bg.canvas", color: "fg.default", borderColor: "border.subtle" }
-] as const;
+] satisfies readonly TokenSwatch[];
 
 export function AppearanceSettings() {
   const { mode, resolvedMode, setMode } = useThemeMode();
