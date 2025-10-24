@@ -62,6 +62,14 @@ type ProgressWithLesson = Prisma.ProgressGetPayload<{
   include: typeof progressInclude;
 }>;
 
+const userBadgeInclude = {
+  badge: true
+} as const satisfies Prisma.UserBadgeInclude;
+
+type UserBadgeWithBadge = Prisma.UserBadgeGetPayload<{
+  include: typeof userBadgeInclude;
+}>;
+
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
     return { label: "Review", description: "Review lesson" } as const;
@@ -173,7 +181,7 @@ async function renderLearnerDashboard() {
   }
 
   let assignments: AssignmentWithRelations[] = [];
-  let badges: Awaited<ReturnType<typeof prisma.userBadge.findMany>> = [];
+  let badges: UserBadgeWithBadge[] = [];
   let progresses: ProgressWithLesson[] = [];
   let streak = 0;
 
@@ -190,7 +198,7 @@ async function renderLearnerDashboard() {
       }),
       prisma.userBadge.findMany({
         where: { userId },
-        include: { badge: true }
+        include: userBadgeInclude
       }),
       prisma.progress.findMany({
         where: { userId },
