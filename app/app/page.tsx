@@ -54,6 +54,14 @@ type AssignmentWithRelations = Prisma.AssignmentGetPayload<{
   include: typeof assignmentInclude;
 }>;
 
+const progressInclude = {
+  lesson: true
+} as const satisfies Prisma.ProgressInclude;
+
+type ProgressWithLesson = Prisma.ProgressGetPayload<{
+  include: typeof progressInclude;
+}>;
+
 function getLessonCta(progress: ProgressModel | undefined) {
   if (progress?.isComplete) {
     return { label: "Review", description: "Review lesson" } as const;
@@ -166,7 +174,7 @@ async function renderLearnerDashboard() {
 
   let assignments: AssignmentWithRelations[] = [];
   let badges: Awaited<ReturnType<typeof prisma.userBadge.findMany>> = [];
-  let progresses: Awaited<ReturnType<typeof prisma.progress.findMany>> = [];
+  let progresses: ProgressWithLesson[] = [];
   let streak = 0;
 
   try {
@@ -186,7 +194,7 @@ async function renderLearnerDashboard() {
       }),
       prisma.progress.findMany({
         where: { userId },
-        include: { lesson: true }
+        include: progressInclude
       })
     ]);
 
@@ -241,7 +249,9 @@ async function renderLearnerDashboard() {
   const lessons = Array.from(lessonMap.values());
   const lessonIds = new Set(lessons.map((lesson) => lesson.id));
   const relevantProgresses = progresses.filter((item) => lessonIds.has(item.lessonId));
-  const progressesWithLessons = relevantProgresses.filter((item) => item.lesson);
+  const progressesWithLessons = relevantProgresses.filter(
+    (item): item is ProgressWithLesson & { lesson: LessonModel } => Boolean(item.lesson)
+  );
 
   const progressByLesson = new Map(relevantProgresses.map((item) => [item.lessonId, item]));
   const prioritizedLessons = [...lessons].sort((a, b) => {
