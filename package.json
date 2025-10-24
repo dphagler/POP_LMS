@@ -21,7 +21,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
-    "@chakra-ui/next-js": "^3.1.2",
+    "@chakra-ui/next-js": "^2.4.4",
     "@chakra-ui/react": "^3.2.2",
     "@auth/prisma-adapter": "^2.11.0",
     "@prisma/client": "^6.17.1",
