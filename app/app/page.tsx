@@ -19,6 +19,7 @@ import { CheckCircle2, Clock, PlayCircle, Target } from "lucide-react";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
+import { logServerError } from "@/lib/server-logger";
 
 import type { Lesson as LessonModel, Progress as ProgressModel } from "@prisma/client";
 
@@ -65,6 +66,15 @@ function formatLessonDuration(durationS: number) {
 }
 
 export default async function LearnerDashboard() {
+  try {
+    return await renderLearnerDashboard();
+  } catch (err) {
+    logServerError("app/page", err);
+    throw err;
+  }
+}
+
+async function renderLearnerDashboard() {
   const session = await requireUser();
   const { id: userId, orgId } = session.user;
 
