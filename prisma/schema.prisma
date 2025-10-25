@@ -166,6 +166,10 @@ model Progress {
   watchedSeconds  Int       @default(0)
   lastHeartbeatAt DateTime?
   isComplete      Boolean   @default(false)
+  segments        Json?
+  thresholdPct    Decimal   @default(0.95)
+
+  @@unique([userId, lessonId])
 }
 
 model Quiz {
@@ -225,11 +229,11 @@ model Assessment {
 }
 
 model ChatTurn {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   assessmentId String
   role         ChatRole
-  content      String     @db.Text
-  createdAt    DateTime   @default(now())
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
 
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
