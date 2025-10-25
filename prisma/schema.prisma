@@ -225,6 +225,8 @@ model Assessment {
   // back-relations
   chatTurns ChatTurn[]
 
+  @@index([userId])
+  @@index([lessonId])
   @@unique([userId, lessonId, type])
 }
 
