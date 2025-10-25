@@ -76,14 +76,16 @@ async function resolveAssessmentDuplicates() {
   }
 }
 
-function mergeSegments(records: Array<{ segments: Prisma.JsonValue | null }>): Prisma.JsonValue | null {
-  const aggregated: Array<unknown> = [];
+function isJsonArray(value: Prisma.JsonValue): value is Prisma.JsonArray {
+  return Array.isArray(value);
+}
+
+function mergeSegments(records: Array<{ segments: Prisma.JsonValue | null }>): Prisma.JsonArray | null {
+  const aggregated: Prisma.JsonArray = [];
   for (const record of records) {
     if (!record.segments) continue;
-    if (Array.isArray(record.segments)) {
-      for (const segment of record.segments) {
-        aggregated.push(segment);
-      }
+    if (isJsonArray(record.segments)) {
+      aggregated.push(...record.segments);
     } else {
       aggregated.push(record.segments);
     }
@@ -130,6 +132,8 @@ async function resolveProgressDuplicates() {
     const keptRecord = records.find((record) => record.id === keepId)!;
     const mergedWatchedSeconds = Math.max(...records.map((record) => record.watchedSeconds));
     const mergedSegments = mergeSegments(records);
+    const mergedSegmentsInput =
+      mergedSegments === null ? Prisma.JsonNull : (mergedSegments as Prisma.InputJsonValue);
     const mergedLastHeartbeatAt = records
       .map((record) => record.lastHeartbeatAt)
       .filter((value): value is Date => value != null)
@@ -145,7 +149,7 @@ async function resolveProgressDuplicates() {
         where: { id: keepId },
         data: {
           watchedSeconds: mergedWatchedSeconds,
-          segments: mergedSegments,
+          segments: mergedSegmentsInput,
           lastHeartbeatAt: mergedLastHeartbeatAt,
           isComplete: mergedIsComplete
         }
