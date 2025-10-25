@@ -123,8 +123,8 @@ function findHeaderIndex(headers: string[], candidates: string[]) {
   return -1;
 }
 
-function parseCsvBuffer(buffer: Buffer): ParsedCsvRow[] {
-  const text = buffer.toString("utf-8").replace(/^\ufeff/, "");
+function parseCsvBuffer(buffer: Buffer | Uint8Array): ParsedCsvRow[] {
+  const text = Buffer.from(buffer).toString("utf-8").replace(/^\ufeff/, "");
   const rawLines = text.split(/\r?\n/);
 
   let headerIndex = -1;
