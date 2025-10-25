@@ -123,7 +123,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 p-4 sm:p-6">
-              <YouTubeLessonPlayer lessonId={lesson.id} youtubeId={lesson.youtubeId} duration={lesson.durationS} />
+              <YouTubeLessonPlayer lessonId={lesson.id} streamId={lesson.streamId} duration={lesson.durationS} />
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-base-content">Watching progress</span>

@@ -24,7 +24,7 @@ type HeartbeatPayload = {
 
 interface YouTubeLessonPlayerProps {
   lessonId: string;
-  youtubeId: string;
+  streamId: string;
   duration: number;
 }
 
@@ -51,7 +51,7 @@ declare global {
   }
 }
 
-export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLessonPlayerProps) {
+export function YouTubeLessonPlayer({ lessonId, streamId, duration }: YouTubeLessonPlayerProps) {
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -110,7 +110,7 @@ export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLe
               event: "lesson.heartbeat_failed",
               properties: {
                 lessonId,
-                youtubeId
+                streamId
               }
             });
             break;
@@ -205,7 +205,7 @@ export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLe
     function createPlayer() {
       if (!containerRef.current) return;
       playerRef.current = new window.YT!.Player(containerRef.current, {
-        videoId: youtubeId,
+        videoId: streamId,
         playerVars: {
           rel: 0,
           modestbranding: 1
@@ -258,7 +258,7 @@ export function YouTubeLessonPlayer({ lessonId, youtubeId, duration }: YouTubeLe
       void flushQueue();
       playerRef.current?.destroy();
     };
-  }, [lessonId, youtubeId, duration]);
+  }, [lessonId, streamId, duration]);
 
   return <div ref={containerRef} className="aspect-video w-full" />;
 }
