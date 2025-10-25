@@ -12,10 +12,10 @@ function formatStatus(status: ImportStatus) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
   const { logger, requestId } = createRequestLogger(request, { route: "admin.import_results" });
-  const jobId = params?.jobId;
+  const { jobId } = await context.params;
 
   if (!jobId) {
     return NextResponse.json({ error: "Import job ID is required.", requestId }, { status: 400 });
