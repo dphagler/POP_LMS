@@ -39,6 +39,12 @@ enum AssessmentType {
   CHAT @map("chat")
 }
 
+enum ChatRole {
+  USER      @map("user")
+  ASSISTANT @map("assistant")
+  SYSTEM    @map("system")
+}
+
 // ------------- Models -------------
 model Organization {
   id        String   @id @default(cuid())
@@ -212,7 +218,22 @@ model Assessment {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
+  // back-relations
+  chatTurns ChatTurn[]
+
   @@unique([userId, lessonId, type])
+}
+
+model ChatTurn {
+  id           String     @id @default(cuid())
+  assessmentId String
+  role         ChatRole
+  content      String     @db.Text
+  createdAt    DateTime   @default(now())
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
 }
 
 model Reflection {
