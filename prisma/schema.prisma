@@ -34,6 +34,11 @@ enum QuestionType {
   MCQ
 }
 
+enum AssessmentType {
+  QUIZ @map("quiz")
+  CHAT @map("chat")
+}
+
 // ------------- Models -------------
 model Organization {
   id        String   @id @default(cuid())
@@ -64,6 +69,7 @@ model User {
   accounts         Account[]
   sessions         Session[]
   progresses       Progress[]
+  assessments      Assessment[]
   quizResponses    QuizResponse[]
   reflections      ReflectionResponse[]
   badges           UserBadge[]
@@ -111,7 +117,8 @@ model Lesson {
   reflection Reflection?
 
   // back-relations
-  progresses Progress[]
+  progresses  Progress[]
+  assessments Assessment[]
 }
 
 model Assignment {
@@ -188,6 +195,24 @@ model QuizResponse {
   answer    String
   isCorrect Boolean
   createdAt DateTime @default(now())
+}
+
+model Assessment {
+  id             String         @id @default(cuid())
+  userId         String
+  lessonId       String
+  type           AssessmentType
+  startedAt      DateTime       @default(now())
+  completedAt    DateTime?
+  isPassed       Boolean        @default(false)
+  score          Int?
+  diagnosticJson Json?
+  raw            Json?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, type])
 }
 
 model Reflection {
