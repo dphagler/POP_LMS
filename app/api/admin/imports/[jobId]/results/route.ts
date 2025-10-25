@@ -6,17 +6,14 @@ import type { CsvImportResults } from "@/lib/imports";
 import { createRequestLogger, serializeError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = {
-  params: {
-    jobId: string;
-  };
-};
-
 function formatStatus(status: ImportStatus) {
   return status;
 }
 
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(
+  request: Request,
+  { params }: { params: { jobId: string } }
+) {
   const { logger, requestId } = createRequestLogger(request, { route: "admin.import_results" });
   const jobId = params?.jobId;
 
