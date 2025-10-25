@@ -1,8 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { prisma } from "./prisma";
-import { resolveOrgByEmailDomain } from "./org";
-
-const DEFAULT_ORG_NAME = "POP Initiative";
+import { DEFAULT_ORG_NAME, resolveOrgByEmailDomain } from "./org";
 
 type UserProfile = {
   name?: string | null;
