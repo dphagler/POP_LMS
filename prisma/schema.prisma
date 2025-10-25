@@ -45,6 +45,12 @@ enum ChatRole {
   SYSTEM    @map("system")
 }
 
+enum UserCertificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ------------- Models -------------
 model Organization {
   id        String   @id @default(cuid())
@@ -53,11 +59,14 @@ model Organization {
   createdAt DateTime @default(now())
 
   // back-relations
-  users       User[]
-  courses     Course[]
-  groups      OrgGroup[]
-  assignments Assignment[]
-  memberships OrgMembership[]
+  users          User[]
+  courses        Course[]
+  groups         OrgGroup[]
+  assignments    Assignment[]
+  memberships    OrgMembership[]
+  certifications Certification[]
+  domains        OrgDomain[]
+  auditLogs      AuditLog[]
 }
 
 model User {
@@ -72,16 +81,19 @@ model User {
   createdAt    DateTime     @default(now())
 
   // back-relations
-  accounts         Account[]
-  sessions         Session[]
-  progresses       Progress[]
-  assessments      Assessment[]
-  quizResponses    QuizResponse[]
-  reflections      ReflectionResponse[]
-  badges           UserBadge[]
-  enrollments      Enrollment[]
-  groupMemberships GroupMember[]
-  orgMemberships   OrgMembership[]
+  accounts               Account[]
+  sessions               Session[]
+  progresses             Progress[]
+  assessments            Assessment[]
+  quizResponses          QuizResponse[]
+  reflections            ReflectionResponse[]
+  badges                 UserBadge[]
+  enrollments            Enrollment[]
+  groupMemberships       GroupMember[]
+  orgMemberships         OrgMembership[]
+  certificationRequests  UserCertification[]
+  approvedCertifications UserCertification[]  @relation("CertificationApprover")
+  auditLogs              AuditLog[]
 }
 
 model Course {
@@ -155,6 +167,8 @@ model Enrollment {
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   status EnrollmentStatus @default(ACTIVE)
+
+  @@unique([assignmentId, userId])
 }
 
 model Progress {
@@ -225,9 +239,9 @@ model Assessment {
   // back-relations
   chatTurns ChatTurn[]
 
+  @@unique([userId, lessonId, type])
   @@index([userId])
   @@index([lessonId])
-  @@unique([userId, lessonId, type])
 }
 
 model ChatTurn {
@@ -333,6 +347,68 @@ model GroupMember {
   user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+}
+
+model Certification {
+  id           String        @id @default(cuid())
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name         String
+  code         String
+  criteriaJson Json
+  createdAt    DateTime      @default(now())
+
+  // back-relations
+  userCertifications UserCertification[]
+
+  @@unique([orgId, code])
+}
+
+model UserCertification {
+  id              String                  @id @default(cuid())
+  userId          String
+  certificationId String
+  status          UserCertificationStatus @default(PENDING)
+  requestedAt     DateTime                @default(now())
+  approvedAt      DateTime?
+  approvedBy      String?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  approver      User?         @relation("CertificationApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@unique([userId, certificationId])
+  @@index([userId])
+  @@index([certificationId])
+}
+
+model OrgDomain {
+  id         String    @id @default(cuid())
+  orgId      String
+  domain     String
+  verifiedAt DateTime?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, domain])
+  @@index([domain])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  actor User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
+  @@index([entity, entityId])
 }
 
 model Account {
