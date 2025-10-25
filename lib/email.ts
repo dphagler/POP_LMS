@@ -1,3 +1,5 @@
+import { ImportStatus } from "@prisma/client";
+
 import { renderSignInEmailHtml, renderSignInEmailText } from "./email-templates/sign-in-magic-link";
 import { env } from "./env";
 import { createLogger } from "./logger";
@@ -68,6 +70,95 @@ export async function sendSignInEmail({ email, url, host, subject, expiresInMinu
   await sendResendEmail({
     from: fromAddress,
     to: [email],
+    subject,
+    html,
+    text
+  });
+}
+
+type SendImportResultsEmailOptions = {
+  to: string[];
+  orgName: string;
+  resultsUrl: string;
+  status: ImportStatus;
+  processedCount: number;
+  successCount: number;
+  errorCount: number;
+  fileName: string;
+};
+
+function describeStatus(status: ImportStatus) {
+  switch (status) {
+    case ImportStatus.succeeded:
+      return "completed successfully";
+    case ImportStatus.failed:
+      return "failed";
+    case ImportStatus.cancelled:
+      return "was cancelled";
+    case ImportStatus.running:
+      return "is still running";
+    case ImportStatus.queued:
+    default:
+      return "is queued";
+  }
+}
+
+export async function sendImportResultsEmail({
+  to,
+  orgName,
+  resultsUrl,
+  status,
+  processedCount,
+  successCount,
+  errorCount,
+  fileName
+}: SendImportResultsEmailOptions) {
+  const uniqueRecipients = Array.from(new Set(to.map((email) => email.trim()).filter((email) => email.length > 0)));
+
+  if (uniqueRecipients.length === 0) {
+    logger.info({
+      event: "email.import_results.skipped",
+      message: "No recipients provided; skipping import results email."
+    });
+    return;
+  }
+
+  const fromAddress = env.AUTH_EMAIL_FROM ?? "POP LMS <team@resend.dev>";
+  const statusDescription = describeStatus(status);
+  const subject = `${orgName} CSV import ${statusDescription}`;
+
+  const html = `
+    <p>Hello,</p>
+    <p>Your CSV import for <strong>${orgName}</strong> ${statusDescription}.</p>
+    <p><strong>File:</strong> ${fileName}</p>
+    <ul>
+      <li>Processed rows: ${processedCount}</li>
+      <li>Successful rows: ${successCount}</li>
+      <li>Rows with errors: ${errorCount}</li>
+    </ul>
+    <p><a href="${resultsUrl}">View the full results report</a> for detailed row-by-row information.</p>
+    <p>Thanks,<br/>The POP LMS Team</p>
+  `;
+
+  const text = [
+    "Hello,",
+    "",
+    `Your CSV import for ${orgName} ${statusDescription}.`,
+    `File: ${fileName}`,
+    "",
+    `Processed rows: ${processedCount}`,
+    `Successful rows: ${successCount}`,
+    `Rows with errors: ${errorCount}`,
+    "",
+    `View the full results report: ${resultsUrl}`,
+    "",
+    "Thanks,",
+    "The POP LMS Team"
+  ].join("\n");
+
+  await sendResendEmail({
+    from: fromAddress,
+    to: uniqueRecipients,
     subject,
     html,
     text
