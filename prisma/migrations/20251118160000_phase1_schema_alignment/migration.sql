@@ -1,11 +1,11 @@
 -- Phase 1: enum updates and structural changes
 
--- 1. Normalize enrollment status enum values
-CREATE TYPE "EnrollmentStatus_new" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'WITHDRAWN');
+ALTER TYPE "EnrollmentStatus" RENAME TO "EnrollmentStatus_old";
+CREATE TYPE "EnrollmentStatus" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'WITHDRAWN');
 ALTER TABLE "Enrollment"
   ALTER COLUMN "status" DROP DEFAULT;
 ALTER TABLE "Enrollment"
-  ALTER COLUMN "status" TYPE "EnrollmentStatus_new"
+  ALTER COLUMN "status" TYPE "EnrollmentStatus"
   USING (
     CASE
       WHEN "status"::text = 'ARCHIVED' THEN 'WITHDRAWN'
@@ -15,9 +15,8 @@ ALTER TABLE "Enrollment"
       WHEN "status"::text = 'WITHDRAWN' THEN 'WITHDRAWN'
       ELSE 'ACTIVE'
     END
-  )::"EnrollmentStatus_new";
-DROP TYPE "EnrollmentStatus";
-ALTER TYPE "EnrollmentStatus_new" RENAME TO "EnrollmentStatus";
+  )::"EnrollmentStatus";
+DROP TYPE "EnrollmentStatus_old";
 ALTER TABLE "Enrollment"
   ALTER COLUMN "status" SET DEFAULT 'ACTIVE'::"EnrollmentStatus";
 
