@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "./prisma";
 
-const DEFAULT_ORG_NAME = "POP Initiative";
+export const DEFAULT_ORG_NAME = "POP Initiative";
 
 type AddOrgDomainInput = {
   orgId: string;
@@ -115,9 +115,32 @@ export async function removeOrgDomain({ orgId, id }: RemoveOrgDomainInput) {
   return { ok: true as const };
 }
 
-export async function resolveOrgByEmailDomain(email: string, client: PrismaClient = prisma) {
-  const domainPart = email.split("@").pop();
-  const normalizedDomain = domainPart ? normalizeDomain(domainPart) : "";
+export async function getOrCreateDefaultOrg(client: PrismaClient = prisma) {
+  const existing = await client.organization.findFirst({
+    where: { name: DEFAULT_ORG_NAME },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const created = await client.organization.create({
+    data: { name: DEFAULT_ORG_NAME },
+    select: { id: true },
+  });
+
+  return created;
+}
+
+export async function resolveOrgByEmailDomain(
+  emailOrDomain: string,
+  client: PrismaClient = prisma
+) {
+  const candidate = emailOrDomain.includes("@")
+    ? emailOrDomain.split("@").pop()
+    : emailOrDomain;
+  const normalizedDomain = candidate ? normalizeDomain(candidate) : "";
 
   if (!normalizedDomain) {
     return null;

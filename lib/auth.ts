@@ -4,11 +4,13 @@ import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import EmailProvider from "next-auth/providers/email";
 import Google from "next-auth/providers/google";
-import { UserRole } from "@prisma/client";
+import { MembershipSource, OrgRole, UserRole } from "@prisma/client";
 import { buildAuthAdapter } from "./auth-adapter";
+import { getOrCreateDefaultOrg, resolveOrgByEmailDomain } from "./org";
 import { env } from "./env";
 import { sendSignInEmail } from "./email";
 import { enforceRateLimit } from "./rate-limit";
+import { prisma } from "./prisma";
 
 const adapter = buildAuthAdapter();
 
@@ -19,6 +21,7 @@ type AdapterUserWithOrg = {
   id?: string | null;
   orgId?: string | null;
   role?: UserRole | null;
+  email?: string | null;
 };
 
 type AppToken = JWT & {
@@ -33,6 +36,60 @@ type AppSession = Session & {
     role: UserRole;
   };
 };
+
+const ORG_ROLE_RANK: Record<OrgRole, number> = {
+  [OrgRole.LEARNER]: 0,
+  [OrgRole.INSTRUCTOR]: 1,
+  [OrgRole.ADMIN]: 2,
+  [OrgRole.OWNER]: 3,
+};
+
+const USER_ROLE_RANK: Record<UserRole, number> = {
+  [UserRole.LEARNER]: 0,
+  [UserRole.INSTRUCTOR]: 1,
+  [UserRole.ADMIN]: 2,
+};
+
+function mapOrgRoleToUserRole(role: OrgRole): UserRole {
+  switch (role) {
+    case OrgRole.ADMIN:
+    case OrgRole.OWNER:
+      return UserRole.ADMIN;
+    case OrgRole.INSTRUCTOR:
+      return UserRole.INSTRUCTOR;
+    case OrgRole.LEARNER:
+    default:
+      return UserRole.LEARNER;
+  }
+}
+
+async function logSsoResolution({
+  domain,
+  outcome,
+  orgId,
+  entityId,
+}: {
+  domain: string | null;
+  outcome: string;
+  orgId?: string | null;
+  entityId: string;
+}) {
+  const resolvedOrgId =
+    orgId ?? (await getOrCreateDefaultOrg(prisma)).id;
+
+  await prisma.auditLog.create({
+    data: {
+      orgId: resolvedOrgId,
+      action: "audit.auth.sso.resolve",
+      entity: "AuthSession",
+      entityId,
+      meta: {
+        domain,
+        outcome,
+      },
+    },
+  });
+}
 
 export const authConfig = {
   adapter,
@@ -97,6 +154,187 @@ export const authConfig = {
   ],
   trustHost: true,
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (!account || account.provider !== "google") {
+        return true;
+      }
+
+      const adapterUser = user as AdapterUserWithOrg;
+      const rawEmail =
+        adapterUser.email ??
+        (typeof profile?.email === "string" ? profile.email : null) ??
+        null;
+
+      const email = rawEmail?.trim().toLowerCase() ?? null;
+      const domain = email?.split("@").pop() ?? null;
+
+      if (!email || !adapterUser.id) {
+        await logSsoResolution({
+          domain,
+          outcome: "none",
+          orgId: adapterUser.orgId ?? null,
+          entityId: adapterUser.id ?? email ?? account.providerAccountId,
+        });
+        return true;
+      }
+
+      let resolvedOrgId: string | null = null;
+      let inviteRole: OrgRole | null = null;
+      let outcome: "domain" | "invite" | "ambiguous" | "none" = "none";
+
+      if (domain) {
+        const resolution = await resolveOrgByEmailDomain(domain, prisma);
+
+        if (resolution === "ambiguous") {
+          await logSsoResolution({
+            domain,
+            outcome: "ambiguous",
+            orgId: adapterUser.orgId ?? null,
+            entityId: adapterUser.id,
+          });
+          throw new Error("Select your organization");
+        }
+
+        if (resolution) {
+          resolvedOrgId = resolution;
+          outcome = "domain";
+        }
+      }
+
+      if (!resolvedOrgId) {
+        const now = new Date();
+        const invites = await prisma.orgInvite.findMany({
+          where: {
+            email,
+            consumedAt: null,
+            expiresAt: { gt: now },
+          },
+          select: {
+            orgId: true,
+            role: true,
+          },
+        });
+
+        const inviteRolesByOrg = new Map<string, OrgRole>();
+        for (const invite of invites) {
+          const current = inviteRolesByOrg.get(invite.orgId);
+          if (!current || ORG_ROLE_RANK[invite.role] > ORG_ROLE_RANK[current]) {
+            inviteRolesByOrg.set(invite.orgId, invite.role);
+          }
+        }
+
+        if (inviteRolesByOrg.size > 1) {
+          await logSsoResolution({
+            domain,
+            outcome: "ambiguous",
+            orgId: adapterUser.orgId ?? null,
+            entityId: adapterUser.id,
+          });
+          throw new Error("Select your organization");
+        }
+
+        if (inviteRolesByOrg.size === 1) {
+          const [orgId, role] = inviteRolesByOrg.entries().next().value as [
+            string,
+            OrgRole,
+          ];
+          resolvedOrgId = orgId;
+          inviteRole = role;
+          outcome = "invite";
+        }
+      }
+
+      const targetOrgId = resolvedOrgId ?? adapterUser.orgId ?? null;
+
+      if (targetOrgId) {
+        const updatedRole = await prisma.$transaction(async (tx) => {
+          const existingUser = await tx.user.findUnique({
+            where: { id: adapterUser.id! },
+            select: {
+              id: true,
+              orgId: true,
+              role: true,
+            },
+          });
+
+          if (!existingUser) {
+            return adapterUser.role ?? UserRole.LEARNER;
+          }
+
+          const desiredOrgRole = inviteRole ?? OrgRole.LEARNER;
+          const desiredUserRole = mapOrgRoleToUserRole(desiredOrgRole);
+          const targetUserRole =
+            USER_ROLE_RANK[desiredUserRole] > USER_ROLE_RANK[existingUser.role]
+              ? desiredUserRole
+              : existingUser.role;
+
+          const userUpdate: Partial<{ orgId: string; role: UserRole }> = {};
+
+          if (existingUser.orgId !== targetOrgId) {
+            userUpdate.orgId = targetOrgId;
+          }
+
+          if (targetUserRole !== existingUser.role) {
+            userUpdate.role = targetUserRole;
+          }
+
+          if (Object.keys(userUpdate).length > 0) {
+            const updated = await tx.user.update({
+              where: { id: existingUser.id },
+              data: userUpdate,
+              select: { role: true },
+            });
+            existingUser.role = updated.role;
+          }
+
+          const membership = await tx.orgMembership.findUnique({
+            where: {
+              userId_orgId: {
+                userId: existingUser.id,
+                orgId: targetOrgId,
+              },
+            },
+            select: {
+              id: true,
+              role: true,
+            },
+          });
+
+          if (!membership) {
+            await tx.orgMembership.create({
+              data: {
+                userId: existingUser.id,
+                orgId: targetOrgId,
+                role: inviteRole ?? OrgRole.LEARNER,
+                source: inviteRole ? MembershipSource.invite : MembershipSource.sso,
+              },
+            });
+          } else if (
+            inviteRole &&
+            ORG_ROLE_RANK[inviteRole] > ORG_ROLE_RANK[membership.role]
+          ) {
+            await tx.orgMembership.update({
+              where: { id: membership.id },
+              data: { role: inviteRole },
+            });
+          }
+
+          return existingUser.role;
+        });
+
+        adapterUser.orgId = targetOrgId;
+        adapterUser.role = updatedRole;
+      }
+
+      await logSsoResolution({
+        domain,
+        outcome,
+        orgId: adapterUser.orgId ?? targetOrgId,
+        entityId: adapterUser.id,
+      });
+
+      return true;
+    },
     async jwt({ token, user, trigger, session }) {
       const appToken = token as AppToken;
       // On first sign-in, `user` is defined (comes from DB via PrismaAdapter).
