@@ -1,11 +1,11 @@
 -- DropIndex
-DROP INDEX "public"."AssignmentGroup_assignmentId_idx";
+DROP INDEX IF EXISTS "public"."AssignmentGroup_assignmentId_idx";
 
 -- DropIndex
-DROP INDEX "public"."AssignmentGroup_groupId_idx";
+DROP INDEX IF EXISTS "public"."AssignmentGroup_groupId_idx";
 
 -- DropIndex
-DROP INDEX "public"."OrgMembership_orgId_idx";
+DROP INDEX IF EXISTS "public"."OrgMembership_orgId_idx";
 
 -- DropIndex
-DROP INDEX "public"."OrgMembership_userId_idx";
+DROP INDEX IF EXISTS "public"."OrgMembership_userId_idx";
