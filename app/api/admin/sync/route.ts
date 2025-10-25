@@ -300,7 +300,7 @@ export async function POST(request: Request) {
           const lessonData = {
             moduleId,
             title: lessonTitle,
-            youtubeId: lessonDoc?.youtubeId ?? "",
+            streamId: lessonDoc?.streamId ?? lessonDoc?.youtubeId ?? "",
             durationS:
               typeof lessonDoc?.durationS === "number" && Number.isFinite(lessonDoc.durationS)
                 ? lessonDoc.durationS

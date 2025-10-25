@@ -19,15 +19,18 @@ enum UserRole {
 
 enum EnrollmentStatus {
   ACTIVE
+  PAUSED
   COMPLETED
-  ARCHIVED
+  WITHDRAWN
 }
 
-enum OrgMembershipRole {
+enum OrgRole {
   OWNER
   ADMIN
   INSTRUCTOR
   LEARNER
+
+  @@map("OrgMembershipRole")
 }
 
 enum QuestionType {
@@ -35,20 +38,33 @@ enum QuestionType {
 }
 
 enum AssessmentType {
-  QUIZ @map("quiz")
-  CHAT @map("chat")
+  quiz
+  chat
+
+  @@map("AssessmentType")
 }
 
 enum ChatRole {
-  USER      @map("user")
-  ASSISTANT @map("assistant")
-  SYSTEM    @map("system")
+  user
+  assistant
+  system
+
+  @@map("ChatRole")
 }
 
-enum UserCertificationStatus {
+enum UserCertStatus {
   PENDING
   APPROVED
   REJECTED
+
+  @@map("UserCertificationStatus")
+}
+
+enum MembershipSource {
+  manual
+  csv
+  invite
+  sso
 }
 
 // ------------- Models -------------
@@ -122,13 +138,15 @@ model Module {
 }
 
 model Lesson {
-  id                String  @id @default(cuid())
+  id                String   @id @default(cuid())
   moduleId          String
-  module            Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module            Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title             String
-  youtubeId         String
+  streamId          String
   durationS         Int
-  requiresFullWatch Boolean @default(true)
+  requiresFullWatch Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // one-to-ones
   quiz       Quiz?
@@ -151,7 +169,9 @@ model Assignment {
   module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
 
   createdBy String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // back-relations
   enrollments Enrollment[]
@@ -159,14 +179,15 @@ model Assignment {
 }
 
 model Enrollment {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-
-  status EnrollmentStatus @default(ACTIVE)
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  status       EnrollmentStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
 
   @@unique([assignmentId, userId])
 }
@@ -182,6 +203,8 @@ model Progress {
   isComplete      Boolean   @default(false)
   segments        Json?
   thresholdPct    Decimal   @default(0.95)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@unique([userId, lessonId])
 }
@@ -232,6 +255,7 @@ model Assessment {
   score          Int?
   diagnosticJson Json?
   raw            Json?
+  updatedAt      DateTime       @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
@@ -303,10 +327,13 @@ model UserBadge {
 }
 
 model OrgGroup {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  name  String
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
 
   // back-relations
   members          GroupMember[]
@@ -314,11 +341,13 @@ model OrgGroup {
 }
 
 model OrgMembership {
-  id        String            @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
   orgId     String
-  role      OrgMembershipRole @default(LEARNER)
-  createdAt DateTime          @default(now())
+  role      OrgRole          @default(LEARNER)
+  source    MembershipSource @default(manual)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -365,13 +394,14 @@ model Certification {
 }
 
 model UserCertification {
-  id              String                  @id @default(cuid())
+  id              String         @id @default(cuid())
   userId          String
   certificationId String
-  status          UserCertificationStatus @default(PENDING)
-  requestedAt     DateTime                @default(now())
+  status          UserCertStatus @default(PENDING)
+  requestedAt     DateTime       @default(now())
   approvedAt      DateTime?
   approvedBy      String?
+  updatedAt       DateTime       @updatedAt
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
@@ -398,11 +428,13 @@ model AuditLog {
   id        String   @id @default(cuid())
   orgId     String
   actorId   String?
+  actorRole String?
   action    String
   entity    String
   entityId  String
   meta      Json?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   actor User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
