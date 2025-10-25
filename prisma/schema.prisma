@@ -67,6 +67,21 @@ enum MembershipSource {
   sso
 }
 
+enum ImportSource {
+  csv
+  scorm
+  xapi
+  lrs
+}
+
+enum ImportStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
 // ------------- Models -------------
 model Organization {
   id        String   @id @default(cuid())
@@ -84,6 +99,7 @@ model Organization {
   domains        OrgDomain[]
   auditLogs      AuditLog[]
   invites        OrgInvite[]
+  importJobs     ImportJob[]
 }
 
 model User {
@@ -414,6 +430,27 @@ model GroupMember {
   user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+}
+
+model ImportJob {
+  id             String        @id @default(cuid())
+  orgId          String
+  source         ImportSource
+  fileName       String
+  fileData       Bytes?
+  status         ImportStatus  @default(queued)
+  processedCount Int            @default(0)
+  successCount   Int            @default(0)
+  errorCount     Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  completedAt    DateTime?
+  lastError      String?
+  resultsJson    Json?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model Certification {
