@@ -272,6 +272,33 @@ CREATE TABLE "GroupMember" (
 );
 
 -- CreateTable
+CREATE TABLE "OrgInvite" (
+    "id" TEXT NOT NULL,
+    "orgId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" "OrgMembershipRole" NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "invitedById" TEXT,
+    "acceptedById" TEXT,
+    "acceptedAt" TIMESTAMP(3),
+    "consumedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrgInvite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrgInviteGroup" (
+    "id" TEXT NOT NULL,
+    "inviteId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
+
+    CONSTRAINT "OrgInviteGroup_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Certification" (
     "id" TEXT NOT NULL,
     "orgId" TEXT,
@@ -399,6 +426,12 @@ CREATE UNIQUE INDEX "AssignmentGroup_assignmentId_groupId_key" ON "AssignmentGro
 CREATE UNIQUE INDEX "GroupMember_groupId_userId_key" ON "GroupMember"("groupId", "userId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "OrgInvite_tokenHash_key" ON "OrgInvite"("tokenHash");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrgInviteGroup_inviteId_groupId_key" ON "OrgInviteGroup"("inviteId", "groupId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Certification_orgId_code_key" ON "Certification"("orgId", "code");
 
 -- CreateIndex
@@ -421,6 +454,12 @@ CREATE INDEX "AuditLog_orgId_idx" ON "AuditLog"("orgId");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_entity_entityId_idx" ON "AuditLog"("entity", "entityId");
+
+-- CreateIndex
+CREATE INDEX "OrgInvite_orgId_email_idx" ON "OrgInvite"("orgId", "email");
+
+-- CreateIndex
+CREATE INDEX "OrgInvite_orgId_consumedAt_idx" ON "OrgInvite"("orgId", "consumedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
@@ -523,6 +562,21 @@ ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_groupId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrgInvite" ADD CONSTRAINT "OrgInvite_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrgInvite" ADD CONSTRAINT "OrgInvite_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrgInvite" ADD CONSTRAINT "OrgInvite_acceptedById_fkey" FOREIGN KEY ("acceptedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrgInviteGroup" ADD CONSTRAINT "OrgInviteGroup_inviteId_fkey" FOREIGN KEY ("inviteId") REFERENCES "OrgInvite"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrgInviteGroup" ADD CONSTRAINT "OrgInviteGroup_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Certification" ADD CONSTRAINT "Certification_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
