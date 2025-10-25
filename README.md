@@ -1,15 +1,29 @@
 # POP LMS Starter
 
-Production-ready learning management starter built with Next.js 15, NextAuth.js v5, Prisma, Tailwind CSS, Sanity, and Vercel Postgres.
+Production-ready learning management starter built with Next.js 15, NextAuth.js v5, Prisma, Chakra UI, Sanity, and Vercel Postgres.
 
 ## Features
 
-- ✅ Next.js App Router with TypeScript, Tailwind CSS, and shadcn/ui primitives
+- ✅ Next.js App Router with TypeScript, Chakra UI, and reusable learner/admin primitives
 - ✅ NextAuth.js (Google + optional magic links) with the Prisma adapter and Vercel Postgres
 - ✅ YouTube heartbeat tracking API that conservatively marks lesson completion
 - ✅ Sanity CMS schemas plus on-demand sync endpoint
 - ✅ Optional integrations for Upstash Redis (leaderboards), Resend (email), and PostHog analytics
 - ✅ Minimal learner and admin workspaces with streak badge support
+
+## Tech stack
+
+- [Next.js App Router](https://nextjs.org/docs/app) with TypeScript and server components
+- [Chakra UI](https://chakra-ui.com/) for the component system, themed via [`lib/ui/theme.ts`](./lib/ui/theme.ts)
+- Tailwind CSS utilities for layout spacing only (no DaisyUI plugins)
+- Prisma ORM backed by Vercel Postgres
+- Sanity CMS for course content management
+
+## Styling
+
+- ChakraProvider is configured once in the root layout to supply the POP theme and color tokens
+- Chakra components replace previous shadcn/daisyUI primitives; DaisyUI is no longer installed
+- Tailwind remains available for layout utilities and legacy classnames, with custom CSS in `app/globals.css` covering any remaining structural helpers
 
 ## Getting started
 

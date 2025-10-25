@@ -14,7 +14,7 @@ export default function SettingsLoading() {
           ))}
         </div>
         <div className="space-y-4">
-          <div className="space-y-6 rounded-box border border-base-300 bg-base-100 p-6 shadow-lg">
+          <div className="space-y-6 rounded-3xl border border-base-300 bg-base-100 p-6 shadow-lg">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Skeleton className="h-20 w-20 rounded-full" />
               <div className="flex-1 space-y-3">
@@ -43,14 +43,14 @@ export default function SettingsLoading() {
             </div>
           </div>
 
-          <div className="rounded-box border border-base-300 bg-base-100 p-6 shadow-lg">
+          <div className="rounded-3xl border border-base-300 bg-base-100 p-6 shadow-lg">
             <div className="space-y-3">
               <Skeleton className="h-5 w-36" />
               <Skeleton className="h-4 w-56" />
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               {[0, 1, 2].map((item) => (
-                <div key={item} className="space-y-3 rounded-box border border-dashed border-base-300 bg-base-200/60 p-4">
+                <div key={item} className="space-y-3 rounded-3xl border border-dashed border-base-300 bg-base-200/60 p-4">
                   <Skeleton className="h-4 w-20" />
                   <Skeleton className="h-4 w-full" />
                 </div>

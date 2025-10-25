@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import { captureError } from "@/lib/client-error-reporting";
 import { cn } from "@/lib/utils";
 
 export type GroupMemberDisplay = {
@@ -146,7 +147,7 @@ export default function MembersPanel({ groupId, groupName, initialMembers }: Mem
         );
       } catch (error) {
         if (!isAbortError(error)) {
-          console.error("Failed to search users", error);
+          captureError(error, { event: "group_member_search_failed" });
           setSuggestions([]);
         }
       } finally {

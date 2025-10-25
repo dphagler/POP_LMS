@@ -260,11 +260,11 @@ const ACTION_DEFINITIONS = [
   { key: "skipped", label: "Skipped" }
 ] as const satisfies ReadonlyArray<{ key: keyof SyncSummarySection; label: string }>;
 
-const ACTION_STYLES: Record<keyof SyncSummarySection, string> = {
-  created: "badge-success",
-  updated: "badge-info",
-  deleted: "badge-error",
-  skipped: "badge-warning"
+const ACTION_STYLES: Record<keyof SyncSummarySection, { colorScheme: string }> = {
+  created: { colorScheme: "green" },
+  updated: { colorScheme: "blue" },
+  deleted: { colorScheme: "red" },
+  skipped: { colorScheme: "yellow" }
 };
 
 function SyncReport({ summary }: { summary: SyncSummary }) {
@@ -439,9 +439,20 @@ type StatusBadgeProps = {
 };
 
 function StatusBadge({ action, count }: StatusBadgeProps) {
+  const { colorScheme } = ACTION_STYLES[action];
+  const definition = ACTION_DEFINITIONS.find((item) => item.key === action);
+
   return (
-    <Badge className={cn(ACTION_STYLES[action], "text-xs", count === 0 && "opacity-60")}>
-      {ACTION_DEFINITIONS.find((definition) => definition.key === action)?.label}: {count}
+    <Badge
+      tone="outline"
+      colorScheme={colorScheme}
+      variant="subtle"
+      fontSize="xs"
+      px={3}
+      py={1}
+      opacity={count === 0 ? 0.6 : 1}
+    >
+      {definition?.label}: {count}
     </Badge>
   );
 }

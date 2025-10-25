@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";

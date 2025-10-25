@@ -1,32 +1,49 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+"use client";
 
-import { cn } from "@/lib/utils";
+import { forwardRef } from "react";
+import { Badge as ChakraBadge, type BadgeProps as ChakraBadgeProps } from "@chakra-ui/react";
 
-const badgeVariants = cva(
-  "badge",
-  {
-    variants: {
-      variant: {
-        default: "badge-primary",
-        secondary: "badge-secondary",
-        accent: "badge-accent",
-        destructive: "badge-error",
-        outline: "badge-outline"
-      }
-    },
-    defaultVariants: {
-      variant: "default"
-    }
-  }
-);
+type BadgeVariant = "default" | "secondary" | "accent" | "destructive" | "outline";
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+export type BadgeProps = ChakraBadgeProps & {
+  tone?: BadgeVariant;
+};
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
-}
+const variantMap: Record<BadgeVariant, { colorScheme: string; variant: ChakraBadgeProps["variant"] }> = {
+  default: { colorScheme: "primary", variant: "subtle" },
+  secondary: { colorScheme: "secondary", variant: "subtle" },
+  accent: { colorScheme: "accent", variant: "subtle" },
+  destructive: { colorScheme: "red", variant: "subtle" },
+  outline: { colorScheme: "gray", variant: "outline" }
+};
 
-export { Badge, badgeVariants };
+export const Badge = forwardRef<HTMLSpanElement, BadgeProps>((props, ref) => {
+  const {
+    tone = "default",
+    borderRadius = "full",
+    fontWeight = "semibold",
+    textTransform = "uppercase",
+    letterSpacing = "0.08em",
+    variant,
+    colorScheme,
+    ...rest
+  } = props;
+  const fallback = variantMap[tone];
+
+  return (
+    <ChakraBadge
+      ref={ref}
+      colorScheme={colorScheme ?? fallback.colorScheme}
+      variant={variant ?? fallback.variant}
+      borderRadius={borderRadius}
+      fontWeight={fontWeight}
+      textTransform={textTransform}
+      letterSpacing={letterSpacing}
+      {...rest}
+    />
+  );
+});
+
+Badge.displayName = "Badge";
+
+export type { BadgeVariant };
