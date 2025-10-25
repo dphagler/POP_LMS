@@ -2,10 +2,19 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Box,
+  Radio,
+  Stack,
+  Text,
+  useColorModeValue
+} from "@chakra-ui/react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsPanels, TabsTrigger } from "@/components/ui/tabs";
 import { captureError } from "@/lib/client-error-reporting";
-import { cn } from "@/lib/utils";
 
 type QuizOption = {
   key: string;
@@ -271,47 +280,90 @@ export function LessonQuizCard({
 
   const tabs = useMemo(() => [{ id: "quiz", label: "Quiz", questions }], [questions]);
 
+  const neutralBorder = useColorModeValue("gray.200", "gray.700");
+  const neutralBg = useColorModeValue("white", "gray.800");
+  const successBorder = useColorModeValue("green.200", "green.600");
+  const successBg = useColorModeValue("green.50", "green.900");
+  const errorBorder = useColorModeValue("red.200", "red.600");
+  const errorBg = useColorModeValue("red.50", "red.900");
+  const warningBorder = useColorModeValue("yellow.200", "yellow.600");
+  const warningBg = useColorModeValue("yellow.50", "yellow.900");
+  const optionSelectedBg = useColorModeValue("primary.50", "primary.900");
+  const optionHoverBorder = useColorModeValue("primary.200", "primary.500");
+
   if (questions.length === 0) {
-    return <p className="text-sm text-muted-foreground">Quiz questions will appear here once configured.</p>;
+    return (
+      <Text fontSize="sm" color="fg.muted">
+        Quiz questions will appear here once configured.
+      </Text>
+    );
   }
 
   return (
-    <div className="relative space-y-6 p-6">
-      {completionToastVisible && (
-        <div className="toast toast-top toast-end">
-          <div className="alert alert-success shadow-lg">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span className="text-sm font-semibold">Lesson complete! Ready for what&apos;s next?</span>
+    <Box position="relative" display="flex" flexDirection="column" gap={6} p={6}>
+      {completionToastVisible ? (
+        <Box position="fixed" top={6} right={6} zIndex={1400}>
+          <Alert
+            status="success"
+            variant="solid"
+            borderRadius="xl"
+            boxShadow="xl"
+            alignItems="center"
+            gap={4}
+            minW="18rem"
+          >
+            <AlertIcon />
+            <AlertDescription display="flex" alignItems="center" gap={3} flexWrap="wrap">
+              <Text fontWeight="semibold">Lesson complete! Ready for what&apos;s next?</Text>
               <Button type="button" size="sm" onClick={() => router.push("/app")}>
                 Continue
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDescription>
+          </Alert>
+        </Box>
+      ) : null}
 
-      {!watchRequirementMet && !hasResults && (
-        <div className="rounded-box border border-dashed border-warning/60 bg-warning/10 p-4 text-sm text-warning">
-          Keep watching the lesson video to unlock this quiz.
-        </div>
-      )}
-
-      {message && (
-        <div
-          className={cn(
-            "rounded-box border p-4 text-sm",
-            messageType === "success"
-              ? "border-success/60 bg-success/10 text-success"
-              : "border-error/60 bg-error/10 text-error"
-          )}
+      {!watchRequirementMet && !hasResults ? (
+        <Alert
+          status="warning"
+          variant="subtle"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={warningBorder}
+          background={warningBg}
         >
-          {message}
-        </div>
-      )}
+          <AlertIcon />
+          <AlertDescription>Keep watching the lesson video to unlock this quiz.</AlertDescription>
+        </Alert>
+      ) : null}
 
-      {error && (
-        <div className="rounded-box border border-error/60 bg-error/10 p-4 text-sm text-error">{error}</div>
-      )}
+      {message ? (
+        <Alert
+          status={messageType === "success" ? "success" : "error"}
+          variant="subtle"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={messageType === "success" ? successBorder : errorBorder}
+          background={messageType === "success" ? successBg : errorBg}
+        >
+          <AlertIcon />
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {error ? (
+        <Alert
+          status="error"
+          variant="subtle"
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={errorBorder}
+          background={errorBg}
+        >
+          <AlertIcon />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <Tabs
         index={Math.max(0, tabs.findIndex((tab) => tab.id === activeTab))}
@@ -322,72 +374,89 @@ export function LessonQuizCard({
         }}
         w="full"
       >
-        {tabs.length > 1 && (
+        {tabs.length > 1 ? (
           <TabsList>
             {tabs.map((tab) => (
               <TabsTrigger key={tab.id}>{tab.label}</TabsTrigger>
             ))}
           </TabsList>
-        )}
+        ) : null}
 
         <TabsPanels>
           {tabs.map((tab) => (
-            <TabsContent key={tab.id} className="space-y-4">
+            <TabsContent key={tab.id} display="flex" flexDirection="column" gap={4}>
               {tab.questions.map((question) => {
                 const state = responses.get(question.id);
                 const isCorrect = state?.isCorrect === true;
                 const isIncorrect = state?.isCorrect === false;
                 const selectedKey = state?.selectedKey;
 
+                const cardBorder = isCorrect ? successBorder : isIncorrect ? errorBorder : neutralBorder;
+                const cardBackground = isCorrect ? successBg : isIncorrect ? errorBg : neutralBg;
+
                 return (
-                  <div
+                  <Box
                     key={question.id}
-                    className={cn(
-                      "rounded-box border border-base-300 bg-base-100/95 p-4 shadow-sm transition",
-                      isCorrect && "border-success/60 bg-success/10",
-                      isIncorrect && "border-error/60 bg-error/10"
-                    )}
+                    borderWidth="1px"
+                    borderRadius="2xl"
+                    borderColor={cardBorder}
+                    background={cardBackground}
+                    boxShadow="sm"
+                    p={4}
+                    transition="all 0.2s ease"
                   >
-                    <p className="text-sm font-semibold text-base-content">{question.prompt}</p>
-                    <div className="mt-4 space-y-2">
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.default">
+                      {question.prompt}
+                    </Text>
+                    <Stack mt={4} spacing={2}>
                       {question.options.map((option) => {
                         const isSelected = selectedKey === option.key;
                         const disabled = hasResults || !watchRequirementMet || isPending;
                         return (
-                          <label
+                          <Radio
                             key={option.key}
-                            className={cn(
-                              "flex cursor-pointer items-center gap-3 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm transition",
-                              disabled ? "cursor-not-allowed opacity-60" : "hover:border-primary/50",
-                              isSelected && "border-primary bg-primary/10 text-primary"
-                            )}
+                            name={question.id}
+                            value={option.key}
+                            isChecked={isSelected}
+                            isDisabled={disabled}
+                            onChange={() => handleSelect(question, option.key)}
+                            colorScheme="primary"
+                            borderWidth="1px"
+                            borderRadius="xl"
+                            borderColor={isSelected ? "primary.400" : neutralBorder}
+                            background={isSelected ? optionSelectedBg : neutralBg}
+                            px={3}
+                            py={2}
+                            width="full"
+                            alignItems="center"
+                            _hover={disabled ? undefined : { borderColor: optionHoverBorder }}
+                            _focusVisible={{ boxShadow: "0 0 0 2px var(--chakra-colors-primary-200)" }}
+                            _checked={{ borderColor: "primary.400", background: optionSelectedBg }}
+                            _disabled={{ opacity: 0.6, cursor: "not-allowed" }}
                           >
-                            <input
-                              type="radio"
-                              name={question.id}
-                              value={option.key}
-                              checked={isSelected}
-                              disabled={disabled}
-                              onChange={() => handleSelect(question, option.key)}
-                              className="radio radio-primary"
-                            />
-                            <span>{option.label}</span>
-                          </label>
+                            <Text fontSize="sm">{option.label}</Text>
+                          </Radio>
                         );
                       })}
-                    </div>
+                    </Stack>
 
-                    {isCorrect && <p className="mt-4 text-sm font-medium text-success">Correct!</p>}
+                    {isCorrect ? (
+                      <Text mt={4} fontSize="sm" fontWeight="medium" color="green.600">
+                        Correct!
+                      </Text>
+                    ) : null}
 
-                    {isIncorrect && (
-                      <div className="mt-4 space-y-1 text-sm">
-                        <p className="font-medium text-error">Not quite.</p>
-                        {state?.correctLabel && (
-                          <p className="text-muted-foreground">Correct answer: {state.correctLabel}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    {isIncorrect ? (
+                      <Stack mt={4} spacing={1} fontSize="sm">
+                        <Text fontWeight="medium" color="red.600">
+                          Not quite.
+                        </Text>
+                        {state?.correctLabel ? (
+                          <Text color="fg.muted">Correct answer: {state.correctLabel}</Text>
+                        ) : null}
+                      </Stack>
+                    ) : null}
+                  </Box>
                 );
               })}
             </TabsContent>
@@ -395,7 +464,7 @@ export function LessonQuizCard({
         </TabsPanels>
       </Tabs>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <Stack direction={{ base: "column", sm: "row" }} spacing={2} align="center">
         <Button
           type="button"
           onClick={handleSubmit}
@@ -403,12 +472,12 @@ export function LessonQuizCard({
         >
           Submit
         </Button>
-        {hasResults && (
+        {hasResults ? (
           <Button type="button" variant="ghost" onClick={handleReset} disabled={isPending}>
             Retake
           </Button>
-        )}
-      </div>
-    </div>
+        ) : null}
+      </Stack>
+    </Box>
   );
 }

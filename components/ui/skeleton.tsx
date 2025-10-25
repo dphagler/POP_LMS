@@ -1,7 +1,22 @@
-import * as React from "react";
+"use client";
 
-import { cn } from "@/lib/utils";
+import { forwardRef } from "react";
+import { Skeleton as ChakraSkeleton, type SkeletonProps as ChakraSkeletonProps } from "@chakra-ui/react";
 
-export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("animate-pulse rounded-md bg-muted", className)} {...props} />;
-}
+export type SkeletonProps = ChakraSkeletonProps;
+
+export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>((props, ref) => {
+  const { borderRadius = "xl", startColor = "gray.100", endColor = "gray.200", ...rest } = props;
+
+  return (
+    <ChakraSkeleton
+      ref={ref}
+      borderRadius={borderRadius}
+      startColor={startColor}
+      endColor={endColor}
+      {...rest}
+    />
+  );
+});
+
+Skeleton.displayName = "Skeleton";

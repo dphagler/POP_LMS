@@ -1,7 +1,8 @@
 "use client";
 
+import { Box, ButtonGroup, useColorModeValue } from "@chakra-ui/react";
+
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 export type DataDensity = "comfortable" | "compact";
 
@@ -17,31 +18,47 @@ const OPTIONS: Array<{ label: string; value: DataDensity }> = [
 ];
 
 export function DataDensityToggle({ density, onDensityChange, className }: DataDensityToggleProps) {
+  const background = useColorModeValue("gray.100", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+
   return (
-    <div className={cn("join rounded-btn bg-base-200 p-1", className)}>
-      {OPTIONS.map((option) => {
-        const isActive = density === option.value;
-        return (
-          <Button
-            key={option.value}
-            type="button"
-            size="sm"
-            variant={isActive ? "primary" : "ghost"}
-            aria-pressed={isActive}
-            onClick={() => {
-              if (!isActive) {
-                onDensityChange(option.value);
-              }
-            }}
-            className={cn(
-              "join-item h-8 min-h-[2rem] rounded-btn px-3 text-xs font-semibold",
-              isActive ? "text-primary-content" : "text-muted-foreground"
-            )}
-          >
-            {option.label}
-          </Button>
-        );
-      })}
-    </div>
+    <Box className={className}>
+      <ButtonGroup
+        isAttached
+        size="sm"
+        borderRadius="full"
+        bg={background}
+        borderWidth="1px"
+        borderColor={borderColor}
+        p={1}
+        gap={1}
+      >
+        {OPTIONS.map((option) => {
+          const isActive = density === option.value;
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              size="sm"
+              variant={isActive ? "solid" : "ghost"}
+              colorScheme={isActive ? "primary" : "gray"}
+              borderRadius="full"
+              fontSize="xs"
+              fontWeight="semibold"
+              px={3}
+              minH="2rem"
+              aria-pressed={isActive}
+              onClick={() => {
+                if (!isActive) {
+                  onDensityChange(option.value);
+                }
+              }}
+            >
+              {option.label}
+            </Button>
+          );
+        })}
+      </ButtonGroup>
+    </Box>
   );
 }

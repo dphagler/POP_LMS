@@ -64,7 +64,6 @@
     "prisma": "^6.17.1",
     "tailwindcss": "^4.1.15",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "daisyui": "^4.0.0"
+    "typescript": "^5.9.3"
   }
 }

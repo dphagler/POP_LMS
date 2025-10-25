@@ -1,28 +1,31 @@
 "use client";
 
-import * as React from "react";
+import { forwardRef } from "react";
+import { Progress as ChakraProgress, type ProgressProps as ChakraProgressProps } from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
+export type ProgressProps = ChakraProgressProps;
 
-interface ProgressProps extends Omit<React.ComponentPropsWithoutRef<"progress">, "value"> {
-  value?: number;
-}
+export const Progress = forwardRef<HTMLDivElement, ProgressProps>((props, ref) => {
+  const {
+    value = 0,
+    colorScheme = "primary",
+    borderRadius = "full",
+    height = 2,
+    ...rest
+  } = props;
 
-const Progress = React.forwardRef<HTMLProgressElement, ProgressProps>(
-  ({ className, value = 0, ...props }, ref) => {
-    const clamped = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+  const clamped = Math.max(0, Math.min(100, Number.isFinite(value) ? Number(value) : 0));
 
-    return (
-      <progress
-        ref={ref}
-        className={cn("progress progress-primary w-full", className)}
-        value={clamped}
-        max={100}
-        {...props}
-      />
-    );
-  }
-);
+  return (
+    <ChakraProgress
+      ref={ref}
+      value={clamped}
+      colorScheme={colorScheme}
+      borderRadius={borderRadius}
+      height={height}
+      {...rest}
+    />
+  );
+});
+
 Progress.displayName = "Progress";
-
-export { Progress };

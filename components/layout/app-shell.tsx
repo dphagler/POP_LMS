@@ -24,6 +24,7 @@ import { Loader2 } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/sign-out";
 import { SIGN_OUT_TOAST_STORAGE_KEY } from "@/lib/storage-keys";
+import { captureError } from "@/lib/client-error-reporting";
 
 import { ThemeModeToggle } from "./theme-toggle";
 import { PageFadeIn } from "./page-fade-in";
@@ -238,7 +239,7 @@ function UserMenu({ image, name }: UserMenuProps) {
         router.push("/");
         router.refresh();
       } catch (error) {
-        console.error("Failed to sign out", error);
+        captureError(error, { event: "sign_out_failed" });
       }
     });
   };
