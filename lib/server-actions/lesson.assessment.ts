@@ -212,7 +212,7 @@ const evaluateResponses = (
       throw new Error('Missing answer for question');
     }
 
-    const isValidOption = question.options.some((option) => option.key === answer);
+    const isValidOption = question.options.some((option) => option != null && option.key === answer);
     if (!isValidOption) {
       throw new Error('Invalid answer choice');
     }
