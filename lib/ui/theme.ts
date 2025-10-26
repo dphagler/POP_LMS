@@ -76,10 +76,14 @@ const semanticTokens = {
     "bg.canvas": { _light: "gray.50", _dark: "gray.900" },
     "bg.surface": { _light: "white", _dark: "gray.800" },
     "bg.muted": { _light: "gray.100", _dark: "gray.700" },
+    "surface.elevated": { _light: "white", _dark: "gray.800" },
     "fg.default": { _light: "gray.900", _dark: "gray.100" },
     "fg.muted": { _light: "gray.600", _dark: "gray.300" },
     "border.subtle": { _light: "gray.200", _dark: "gray.700" },
     "border.emphasis": { _light: "gray.300", _dark: "gray.600" },
+    "brand.primary": { _light: "primary.500", _dark: "primary.300" },
+    "brand.secondary": { _light: "secondary.500", _dark: "secondary.300" },
+    "brand.accent": { _light: "primary.400", _dark: "secondary.200" },
     "accent.primary": { _light: "primary.500", _dark: "primary.300" },
     "accent.secondary": { _light: "secondary.500", _dark: "secondary.300" }
   }
@@ -122,6 +126,75 @@ const components = {
         fontSize: ["1.125rem", "1.25rem"],
         lineHeight: ["1.5rem", "1.75rem"],
         letterSpacing: "-0.01em"
+      }
+    }
+  },
+  Button: {
+    baseStyle: {
+      fontWeight: 600,
+      borderRadius: "md"
+    },
+    sizes: {
+      sm: {
+        h: "44px",
+        minH: "44px",
+        px: 4,
+        fontSize: "sm"
+      },
+      md: {
+        h: "48px",
+        minH: "48px",
+        px: 5,
+        fontSize: "md"
+      },
+      lg: {
+        h: "56px",
+        minH: "56px",
+        px: 6,
+        fontSize: "lg"
+      }
+    }
+  },
+  Card: {
+    baseStyle: {
+      container: {
+        bg: "surface.elevated",
+        color: "fg.default"
+      }
+    }
+  },
+  Modal: {
+    baseStyle: {
+      dialog: {
+        bg: "surface.elevated",
+        color: "fg.default"
+      }
+    }
+  },
+  Drawer: {
+    baseStyle: {
+      dialog: {
+        bg: "surface.elevated",
+        color: "fg.default",
+        h: { base: "100vh", md: "auto" },
+        maxH: { base: "100vh", md: "calc(100vh - 4rem)" },
+        borderRadius: { base: "0", md: "xl" },
+        m: { base: 0, md: 6 }
+      },
+      dialogContainer: {
+        alignItems: { base: "stretch", md: "center" }
+      }
+    }
+  },
+  Progress: {
+    variants: {
+      lesson: {
+        track: {
+          bg: "bg.muted"
+        },
+        filledTrack: {
+          bg: "brand.primary"
+        }
       }
     }
   }
