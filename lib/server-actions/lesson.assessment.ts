@@ -299,6 +299,19 @@ export const submitQuiz = async ({
   );
   const diagnostic = buildDiagnostic(objectives, score, normalizedThreshold);
 
+  const diagnosticJsonPayload = diagnostic.map(({ objectiveId, level, score }) => {
+    const entry: Prisma.JsonObject = {
+      objectiveId,
+      level,
+    };
+
+    if (typeof score === 'number' && Number.isFinite(score)) {
+      entry.score = score;
+    }
+
+    return entry;
+  });
+
   const scorePercent = toPercentage(score);
   const passed = score >= normalizedThreshold;
 
@@ -354,7 +367,7 @@ export const submitQuiz = async ({
           completedAt: new Date(),
           isPassed: passed,
           score: scorePercent,
-          diagnosticJson: diagnostic,
+          diagnosticJson: diagnosticJsonPayload,
           raw: {
             answers: results.map((result) => [result.questionId, result.answer]),
             threshold: normalizedThreshold,
