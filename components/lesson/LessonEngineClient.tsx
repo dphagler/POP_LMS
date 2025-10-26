@@ -13,6 +13,7 @@ import {
 import { Box, useToast } from "@chakra-ui/react";
 
 import { captureError } from "@/lib/client-error-reporting";
+import { useLessonAnalytics } from "@/lib/analytics/useLessonAnalytics";
 import type {
   DiagnosticResult,
   LessonObjective,
@@ -140,8 +141,27 @@ export function LessonEngineClient({
   const [isCompletingAugmentation, setIsCompletingAugmentation] =
     useState(false);
 
+  const lessonIsDone = isDone(state);
+
+  const {
+    trackAssessmentStart,
+    trackAssessmentSubmit,
+    trackAssessmentResult,
+    trackAugmentationStart,
+    trackAugmentationComplete,
+  } = useLessonAnalytics({
+    lessonId: lessonRuntime.id,
+    isDone: lessonIsDone,
+  });
+
+  const pendingAugmentationCount = useMemo(
+    () => augmentations.filter((item) => !item.completedAt).length,
+    [augmentations],
+  );
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestSegmentsRef = useRef<Segment[] | null>(null);
+  const augmentationStartTrackedRef = useRef(false);
 
   const showErrorToast = useCallback(
     (description: string) => {
@@ -230,9 +250,24 @@ export function LessonEngineClient({
     }
   }, []);
 
+  useEffect(() => {
+    const hasPending = pendingAugmentationCount > 0;
+
+    if (hasPending && !augmentationStartTrackedRef.current) {
+      augmentationStartTrackedRef.current = true;
+      trackAugmentationStart({ count: pendingAugmentationCount });
+      return;
+    }
+
+    if (!hasPending) {
+      augmentationStartTrackedRef.current = false;
+    }
+  }, [pendingAugmentationCount, trackAugmentationStart]);
+
   const onAssessmentStart = useCallback(() => {
+    trackAssessmentStart({ type: lessonRuntime.assessmentType });
     setState((previous) => (previous === "VIEWING" ? "ASSESSING" : previous));
-  }, []);
+  }, [lessonRuntime.assessmentType, trackAssessmentStart]);
 
   const handleAssessmentResult = useCallback(
     (
@@ -260,6 +295,7 @@ export function LessonEngineClient({
 
   const onQuizSubmit = useCallback<LessonEngineActions["onQuizSubmit"]>(
     async (answers) => {
+      trackAssessmentSubmit({ kind: "quiz" });
       setIsSubmittingAssessment(true);
       try {
         const result = await submitAssessment(lessonRuntime.id, {
@@ -268,6 +304,12 @@ export function LessonEngineClient({
         });
 
         if (result.kind === "quiz") {
+          const scorePercent = Math.round(result.score * 100);
+          trackAssessmentResult({
+            kind: "quiz",
+            score: scorePercent,
+            scoreRaw: result.score,
+          });
           handleAssessmentResult(result.diagnostic, "DIAGNOSTIC_READY");
         }
       } catch (error) {
@@ -282,11 +324,18 @@ export function LessonEngineClient({
         setIsSubmittingAssessment(false);
       }
     },
-    [handleAssessmentResult, lessonRuntime.id, showErrorToast],
+    [
+      handleAssessmentResult,
+      lessonRuntime.id,
+      showErrorToast,
+      trackAssessmentResult,
+      trackAssessmentSubmit,
+    ],
   );
 
   const onChatSubmit = useCallback<LessonEngineActions["onChatSubmit"]>(
     async (transcript) => {
+      trackAssessmentSubmit({ kind: "chat", messageCount: transcript.length });
       setIsSubmittingAssessment(true);
       try {
         const result = await submitAssessment(lessonRuntime.id, {
@@ -309,7 +358,12 @@ export function LessonEngineClient({
         setIsSubmittingAssessment(false);
       }
     },
-    [handleAssessmentResult, lessonRuntime.id, showErrorToast],
+    [
+      handleAssessmentResult,
+      lessonRuntime.id,
+      showErrorToast,
+      trackAssessmentSubmit,
+    ],
   );
 
   const onAugmentationComplete = useCallback<
@@ -318,6 +372,7 @@ export function LessonEngineClient({
     setIsCompletingAugmentation(true);
     try {
       await completeAugmentation(lessonRuntime.id, augmentationId);
+      trackAugmentationComplete({ augmentationId });
       setAugmentations((items) =>
         items.map((item) =>
           item.augmentationId === augmentationId
@@ -339,7 +394,12 @@ export function LessonEngineClient({
     } finally {
       setIsCompletingAugmentation(false);
     }
-  }, [computeContext, lessonRuntime.id, showErrorToast]);
+  }, [
+    computeContext,
+    lessonRuntime.id,
+    showErrorToast,
+    trackAugmentationComplete,
+  ]);
 
   const machineContext = useMemo(() => computeContext(), [computeContext]);
 
@@ -348,10 +408,10 @@ export function LessonEngineClient({
       canStartAssessment: canStartAssessment(state, machineContext),
       canDiagnose: canDiagnose(state),
       canAugment: canAugment(state, machineContext),
-      isDone: isDone(state),
+      isDone: lessonIsDone,
       completionRatio,
     }),
-    [completionRatio, machineContext, state],
+    [completionRatio, lessonIsDone, machineContext, state],
   );
 
   const status = useMemo<LessonEngineStatus>(
