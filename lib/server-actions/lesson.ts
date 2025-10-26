@@ -7,16 +7,12 @@ import type {
   LessonRuntime,
 } from '../lesson/contracts';
 import type { Augmentation } from '../lesson/diagnostics';
+export type { SubmitQuizInput } from './lesson.assessment';
+export { submitQuiz } from './lesson.assessment';
 
 interface GetNextLessonInput {
   userId: string;
   assignmentId: string;
-}
-
-interface SubmitQuizInput {
-  userId: string;
-  lessonId: string;
-  answers: Record<string, unknown>;
 }
 
 interface SubmitChatProbeInput {
@@ -57,24 +53,6 @@ export const getNextLesson = async ({
     assessmentType: 'QUIZ',
     augmentations: [mockAugmentationRule],
   };
-};
-
-export const submitQuiz = async ({
-  userId,
-  lessonId,
-  answers,
-}: SubmitQuizInput): Promise<DiagnosticResult[]> => {
-  void userId;
-  void lessonId;
-  void answers;
-
-  return [
-    {
-      objectiveId: mockObjective.id,
-      level: 'MET',
-      score: 1,
-    },
-  ];
 };
 
 export const submitChatProbe = async ({
