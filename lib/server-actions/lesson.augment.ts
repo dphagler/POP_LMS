@@ -56,23 +56,29 @@ const normalizeDiagnostics = (value: unknown): DiagnosticResult[] => {
     return [];
   }
 
-  return results
-    .map((item) => {
-      if (!isRecord(item)) {
-        return null;
-      }
+  const normalized: DiagnosticResult[] = [];
 
-      const objectiveId = typeof item.objectiveId === 'string' ? item.objectiveId : undefined;
-      const level = typeof item.level === 'string' ? item.level.toUpperCase() : undefined;
-      const score = typeof item.score === 'number' ? item.score : undefined;
+  for (const item of results) {
+    if (!isRecord(item)) {
+      continue;
+    }
 
-      if (!objectiveId || (level !== 'MET' && level !== 'PARTIAL' && level !== 'NOT_MET')) {
-        return null;
-      }
+    const objectiveId = typeof item.objectiveId === 'string' ? item.objectiveId : undefined;
+    const level = typeof item.level === 'string' ? item.level.toUpperCase() : undefined;
+    const score = typeof item.score === 'number' ? item.score : undefined;
 
-      return { objectiveId, level: level as DiagnosticResult['level'], score } satisfies DiagnosticResult;
-    })
-    .filter((result): result is DiagnosticResult => result !== null);
+    if (!objectiveId || (level !== 'MET' && level !== 'PARTIAL' && level !== 'NOT_MET')) {
+      continue;
+    }
+
+    normalized.push({
+      objectiveId,
+      level: level as DiagnosticResult['level'],
+      score,
+    });
+  }
+
+  return normalized;
 };
 
 const toDiagnosticJson = (diagnostic: DiagnosticResult | undefined): Prisma.JsonObject | undefined => {
