@@ -15,7 +15,7 @@ type QuizQuestionSeed = {
   id: string;
   type: QuestionType;
   prompt: string;
-  options: Prisma.JsonValue;
+  options: Prisma.InputJsonValue;
   correctKey: string | null;
 };
 
