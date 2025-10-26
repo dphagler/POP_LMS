@@ -15,7 +15,7 @@ const rawStreamEventSchema = z.object({
   lessonId: z.string().min(1, "lessonId is required"),
   userId: z.string().min(1, "userId is required"),
   position: z.coerce
-    .number({ invalid_type_error: "position must be a number" })
+    .number({ message: "position must be a number" })
     .refine(Number.isFinite, "position must be a finite number")
     .min(0, "position must be non-negative"),
   occurredAt: z.coerce.date().optional(),
