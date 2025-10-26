@@ -114,6 +114,7 @@ CREATE TABLE "Progress" (
     "userId" TEXT NOT NULL,
     "lessonId" TEXT NOT NULL,
     "watchedSeconds" INTEGER NOT NULL DEFAULT 0,
+    "uniqueSeconds" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "lastHeartbeatAt" TIMESTAMP(3),
     "isComplete" BOOLEAN NOT NULL DEFAULT false,
     "segments" JSONB,

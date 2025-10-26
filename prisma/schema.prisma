@@ -218,6 +218,7 @@ model Progress {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   watchedSeconds  Int       @default(0)
+  uniqueSeconds   Float     @default(0)
   lastHeartbeatAt DateTime?
   isComplete      Boolean   @default(false)
   segments        Json?
