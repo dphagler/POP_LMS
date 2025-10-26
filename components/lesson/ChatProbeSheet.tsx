@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   Box,
   Button,
@@ -33,6 +33,7 @@ export type ChatProbeSheetProps = {
   onSubmit: (transcript: string[]) => Promise<void>;
   title?: string;
   initialAssistantPrompt?: string;
+  finalFocusRef?: RefObject<HTMLElement>;
 };
 
 const MAX_USER_MESSAGES = 4;
@@ -43,6 +44,7 @@ export function ChatProbeSheet({
   onSubmit,
   title = "Lesson reflection",
   initialAssistantPrompt = "I'd love to hear what stood out to you. Share a few takeaways below.",
+  finalFocusRef,
 }: ChatProbeSheetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
@@ -134,7 +136,8 @@ export function ChatProbeSheet({
       placement={placement}
       size={size}
       onClose={onClose}
-      returnFocusOnClose={false}
+      finalFocusRef={finalFocusRef}
+      trapFocus
     >
       <DrawerOverlay />
       <DrawerContent borderTopRadius={{ base: "2xl", md: "none" }}>

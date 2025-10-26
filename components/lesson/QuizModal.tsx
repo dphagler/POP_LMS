@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
 import {
   Alert,
   AlertIcon,
@@ -42,6 +42,7 @@ type QuizModalProps = {
   title?: string;
   questions: QuizQuestion[];
   onSubmit: (answers: QuizAnswers) => void | Promise<void>;
+  finalFocusRef?: RefObject<HTMLElement>;
 };
 
 function buildInitialAnswers(questions: QuizQuestion[]): QuizAnswers {
@@ -51,7 +52,14 @@ function buildInitialAnswers(questions: QuizQuestion[]): QuizAnswers {
   }, {});
 }
 
-export function QuizModal({ isOpen, onClose, title, questions, onSubmit }: QuizModalProps) {
+export function QuizModal({
+  isOpen,
+  onClose,
+  title,
+  questions,
+  onSubmit,
+  finalFocusRef,
+}: QuizModalProps) {
   const [answers, setAnswers] = useState<QuizAnswers>(() => buildInitialAnswers(questions));
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -100,7 +108,14 @@ export function QuizModal({ isOpen, onClose, title, questions, onSubmit }: QuizM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      isCentered
+      trapFocus
+      finalFocusRef={finalFocusRef}
+    >
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>{title ?? "Quiz"}</ModalHeader>
