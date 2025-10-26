@@ -12,9 +12,6 @@ import { prisma } from '../prisma';
 import { lessonEvents } from '../analytics/lessonEvents';
 import { getLessonRuntime } from './lesson.runtime';
 import { syncLessonCompletion } from '../lesson-progress';
-export type { SubmitQuizInput } from './lesson.assessment';
-export { submitQuiz } from './lesson.assessment';
-export { planAugmentations, markAugmentationComplete } from './lesson.augment';
 
 interface GetNextLessonInput {
   userId: string;

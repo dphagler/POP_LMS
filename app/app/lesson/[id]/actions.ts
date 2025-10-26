@@ -6,13 +6,15 @@ import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import type { DiagnosticResult, LessonRuntime, ProgressState } from "@/lib/lesson/contracts";
 import type { Segment } from "@/lib/lesson/progress";
+import { submitChatProbe } from "@/lib/server-actions/lesson";
 import {
   submitQuiz,
-  submitChatProbe,
-  planAugmentations,
-  markAugmentationComplete,
   type SubmitQuizInput
-} from "@/lib/server-actions/lesson";
+} from "@/lib/server-actions/lesson.assessment";
+import {
+  planAugmentations,
+  markAugmentationComplete
+} from "@/lib/server-actions/lesson.augment";
 import { getLessonRuntime } from "@/lib/server-actions/lesson.runtime";
 import { recordProgress } from "@/lib/server-actions/lesson.progress";
 
