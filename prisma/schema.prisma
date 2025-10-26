@@ -118,6 +118,7 @@ model User {
   sessions               Session[]
   progresses             Progress[]
   assessments            Assessment[]
+  augmentationsServed    AugmentationServed[]
   quizResponses          QuizResponse[]
   reflections            ReflectionResponse[]
   badges                 UserBadge[]
@@ -174,6 +175,7 @@ model Lesson {
   // back-relations
   progresses  Progress[]
   assessments Assessment[]
+  augmentations AugmentationServed[]
 }
 
 model Assignment {
@@ -227,6 +229,28 @@ model Progress {
   updatedAt       DateTime  @updatedAt
 
   @@unique([userId, lessonId])
+}
+
+model AugmentationServed {
+  id             String   @id @default(cuid())
+  userId         String
+  lessonId       String
+  augmentationId String
+  objectiveId    String
+  assetRef       String
+  ruleIndex      Int
+  diagnosticJson Json?
+  plannedAt      DateTime @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, augmentationId])
+  @@index([userId, lessonId])
+  @@index([lessonId])
 }
 
 model Quiz {
