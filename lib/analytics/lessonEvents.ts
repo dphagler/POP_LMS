@@ -94,8 +94,10 @@ export class LessonEventsEmitter {
       return;
     }
 
+    const validatedPayload = parsedPayload.data as LessonAnalyticsEventPayloads[Event];
+
     queueMicrotask(() => {
-      void this.processEvent(event, parsedPayload.data);
+      void this.processEvent(event, validatedPayload);
     });
   }
 
