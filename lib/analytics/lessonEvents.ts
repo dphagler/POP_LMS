@@ -15,12 +15,18 @@ const basePayloadSchema = z.object({
   deviceType: z.string().min(1, "deviceType is required"),
 });
 
+const assessmentResultPayloadSchema = basePayloadSchema.extend({
+  score: z.number().min(0).max(100),
+  passed: z.boolean(),
+  threshold: z.number().min(0).max(1),
+});
+
 const eventSchemas = {
   lesson_view_start: basePayloadSchema,
   lesson_view_complete: basePayloadSchema,
   assessment_start: basePayloadSchema,
   assessment_submit: basePayloadSchema,
-  assessment_result: basePayloadSchema,
+  assessment_result: assessmentResultPayloadSchema,
   augmentation_start: basePayloadSchema,
   augmentation_complete: basePayloadSchema,
 } as const;
