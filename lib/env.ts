@@ -96,5 +96,8 @@ export const env = {
   },
   get AUTH_EMAIL_TOKEN_MAX_AGE() {
     return readNumberEnv("AUTH_EMAIL_TOKEN_MAX_AGE", 10 * 60);
+  },
+  get STREAM_WEBHOOK_SECRET() {
+    return readOptionalEnv("STREAM_WEBHOOK_SECRET", "stream_webhook_secret_placeholder");
   }
 };
