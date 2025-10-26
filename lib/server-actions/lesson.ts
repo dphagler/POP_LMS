@@ -125,8 +125,14 @@ export const submitChatProbe = async ({
 
   let emitStart = false;
 
+  const diagnosticJsonResults = diagnostic.map((result) => ({
+    objectiveId: result.objectiveId,
+    level: result.level,
+    score: result.score ?? null,
+  })) satisfies Prisma.JsonArray;
+
   const diagnosticJson: Prisma.JsonObject = {
-    results: diagnostic,
+    results: diagnosticJsonResults,
     rationaleShort,
     usingMockRubric: true,
   };
