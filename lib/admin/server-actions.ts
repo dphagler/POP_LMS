@@ -99,12 +99,12 @@ const domainRecords = [
   {
     id: 'domain-1',
     domain: 'lms.poplearning.example',
-    status: DomainStatusEnum.Values.active,
-    connectionType: DomainConnectionTypeEnum.Values.apex,
+    status: DomainStatusEnum.enum.active,
+    connectionType: DomainConnectionTypeEnum.enum.apex,
     lastCheckedAt: '2025-01-12T09:30:00.000Z',
     verificationRecords: [
       {
-        type: DomainVerificationTypeEnum.Values.TXT,
+        type: DomainVerificationTypeEnum.enum.TXT,
         host: '@',
         value: 'v=spf1 include:_spf.google.com ~all'
       }
@@ -113,12 +113,12 @@ const domainRecords = [
   {
     id: 'domain-2',
     domain: 'training.poplearning.example',
-    status: DomainStatusEnum.Values.verifying,
-    connectionType: DomainConnectionTypeEnum.Values.subdomain,
+    status: DomainStatusEnum.enum.verifying,
+    connectionType: DomainConnectionTypeEnum.enum.subdomain,
     lastCheckedAt: '2025-01-11T18:05:00.000Z',
     verificationRecords: [
       {
-        type: DomainVerificationTypeEnum.Values.CNAME,
+        type: DomainVerificationTypeEnum.enum.CNAME,
         host: 'training',
         value: 'cname.poplearning.example'
       }
@@ -127,12 +127,12 @@ const domainRecords = [
   {
     id: 'domain-3',
     domain: 'academy.poplearning.example',
-    status: DomainStatusEnum.Values.pending,
-    connectionType: DomainConnectionTypeEnum.Values.subdomain,
+    status: DomainStatusEnum.enum.pending,
+    connectionType: DomainConnectionTypeEnum.enum.subdomain,
     lastCheckedAt: null,
     verificationRecords: [
       {
-        type: DomainVerificationTypeEnum.Values.CNAME,
+        type: DomainVerificationTypeEnum.enum.CNAME,
         host: 'academy',
         value: 'cname.poplearning.example'
       }
@@ -141,12 +141,12 @@ const domainRecords = [
   {
     id: 'domain-4',
     domain: 'learn.poplearning.example',
-    status: DomainStatusEnum.Values.failed,
-    connectionType: DomainConnectionTypeEnum.Values.apex,
+    status: DomainStatusEnum.enum.failed,
+    connectionType: DomainConnectionTypeEnum.enum.apex,
     lastCheckedAt: '2025-01-09T15:20:00.000Z',
     verificationRecords: [
       {
-        type: DomainVerificationTypeEnum.Values.TXT,
+        type: DomainVerificationTypeEnum.enum.TXT,
         host: '@',
         value: 'poplearning-domain-verification=abc123'
       }
@@ -155,12 +155,12 @@ const domainRecords = [
   {
     id: 'domain-5',
     domain: 'legacy.poplearning.example',
-    status: DomainStatusEnum.Values.removed,
-    connectionType: DomainConnectionTypeEnum.Values.apex,
+    status: DomainStatusEnum.enum.removed,
+    connectionType: DomainConnectionTypeEnum.enum.apex,
     lastCheckedAt: '2024-12-15T12:45:00.000Z',
     verificationRecords: [
       {
-        type: DomainVerificationTypeEnum.Values.TXT,
+        type: DomainVerificationTypeEnum.enum.TXT,
         host: '@',
         value: 'legacy-verification-token'
       }
@@ -173,8 +173,8 @@ const userRecords = [
     id: 'user-1',
     name: 'Alex Johnson',
     email: 'alex.johnson@example.com',
-    status: UserStatusEnum.Values.active,
-    role: UserRoleEnum.Values.admin,
+    status: UserStatusEnum.enum.active,
+    role: UserRoleEnum.enum.admin,
     groups: [
       { id: 'group-1', name: 'Customer Success' },
       { id: 'group-2', name: 'Sales Onboarding' }
@@ -186,8 +186,8 @@ const userRecords = [
     id: 'user-2',
     name: 'Jordan Smith',
     email: 'jordan.smith@example.com',
-    status: UserStatusEnum.Values.active,
-    role: UserRoleEnum.Values.manager,
+    status: UserStatusEnum.enum.active,
+    role: UserRoleEnum.enum.manager,
     groups: [{ id: 'group-3', name: 'Product Specialists' }],
     lastSeenAt: '2025-01-11T19:45:00.000Z',
     createdAt: '2024-04-10T09:15:00.000Z'
@@ -196,8 +196,8 @@ const userRecords = [
     id: 'user-3',
     name: 'Riley Chen',
     email: 'riley.chen@example.com',
-    status: UserStatusEnum.Values.suspended,
-    role: UserRoleEnum.Values.learner,
+    status: UserStatusEnum.enum.suspended,
+    role: UserRoleEnum.enum.learner,
     groups: [
       { id: 'group-4', name: 'Spring 2025 Cohort' },
       { id: 'group-5', name: 'Accessibility Advocates' }
@@ -209,8 +209,8 @@ const userRecords = [
     id: 'user-4',
     name: 'Jamie Rivera',
     email: 'jamie.rivera@example.com',
-    status: UserStatusEnum.Values.active,
-    role: UserRoleEnum.Values.manager,
+    status: UserStatusEnum.enum.active,
+    role: UserRoleEnum.enum.manager,
     groups: [{ id: 'group-6', name: 'Regional Leads' }],
     lastSeenAt: '2025-01-10T17:20:00.000Z',
     createdAt: '2024-05-22T16:00:00.000Z'
@@ -219,8 +219,8 @@ const userRecords = [
     id: 'user-5',
     name: 'Morgan Patel',
     email: 'morgan.patel@example.com',
-    status: UserStatusEnum.Values.invited,
-    role: UserRoleEnum.Values.learner,
+    status: UserStatusEnum.enum.invited,
+    role: UserRoleEnum.enum.learner,
     groups: [],
     lastSeenAt: null,
     createdAt: '2025-01-08T11:30:00.000Z'
@@ -229,8 +229,8 @@ const userRecords = [
     id: 'user-6',
     name: 'Taylor Lee',
     email: 'taylor.lee@example.com',
-    status: UserStatusEnum.Values.active,
-    role: UserRoleEnum.Values.owner,
+    status: UserStatusEnum.enum.active,
+    role: UserRoleEnum.enum.owner,
     groups: [
       { id: 'group-1', name: 'Customer Success' },
       { id: 'group-7', name: 'Executive Sponsors' }
@@ -242,8 +242,8 @@ const userRecords = [
     id: 'user-7',
     name: 'Emerson Brooks',
     email: 'emerson.brooks@example.com',
-    status: UserStatusEnum.Values.deactivated,
-    role: UserRoleEnum.Values.learner,
+    status: UserStatusEnum.enum.deactivated,
+    role: UserRoleEnum.enum.learner,
     groups: [{ id: 'group-8', name: 'Legacy Program' }],
     lastSeenAt: '2024-06-02T10:00:00.000Z',
     createdAt: '2022-09-14T08:20:00.000Z'
@@ -304,9 +304,9 @@ const groupRecords = [
 const importRecords = [
   {
     id: 'import-1',
-    source: ImportSourceEnum.Values.csv,
+    source: ImportSourceEnum.enum.csv,
     fileName: 'january_enrollments.csv',
-    status: ImportStatusEnum.Values.succeeded,
+    status: ImportStatusEnum.enum.succeeded,
     processedCount: 150,
     successCount: 148,
     errorCount: 2,
@@ -316,9 +316,9 @@ const importRecords = [
   },
   {
     id: 'import-2',
-    source: ImportSourceEnum.Values.csv,
+    source: ImportSourceEnum.enum.csv,
     fileName: 'group_memberships.csv',
-    status: ImportStatusEnum.Values.failed,
+    status: ImportStatusEnum.enum.failed,
     processedCount: 80,
     successCount: 60,
     errorCount: 20,
@@ -328,9 +328,9 @@ const importRecords = [
   },
   {
     id: 'import-3',
-    source: ImportSourceEnum.Values.csv,
+    source: ImportSourceEnum.enum.csv,
     fileName: 'legacy_cleanup.csv',
-    status: ImportStatusEnum.Values.cancelled,
+    status: ImportStatusEnum.enum.cancelled,
     processedCount: 30,
     successCount: 0,
     errorCount: 0,
@@ -340,9 +340,9 @@ const importRecords = [
   },
   {
     id: 'import-4',
-    source: ImportSourceEnum.Values.csv,
+    source: ImportSourceEnum.enum.csv,
     fileName: 'q4_results.csv',
-    status: ImportStatusEnum.Values.running,
+    status: ImportStatusEnum.enum.running,
     processedCount: 45,
     successCount: 45,
     errorCount: 0,
