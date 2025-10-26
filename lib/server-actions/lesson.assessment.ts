@@ -21,6 +21,12 @@ export interface SubmitQuizInput {
 
 type NormalizedAnswerMap = Map<string, string>;
 
+type PreparedQuizQuestion = {
+  id: string;
+  correctKey: string | null;
+  options: ReturnType<typeof parseMcqOptions>;
+};
+
 type QuizEvaluationResult = {
   questionId: string;
   answer: string;
@@ -175,7 +181,7 @@ const buildDiagnostic = (
 const prepareQuestions = (
   lessonId: string,
   questions: QuizQuestion[],
-): Array<QuizQuestion & { options: ReturnType<typeof parseMcqOptions> }> => {
+): PreparedQuizQuestion[] => {
   if (!Array.isArray(questions) || questions.length === 0) {
     throw new Error('Quiz has no questions');
   }
@@ -196,14 +202,15 @@ const prepareQuestions = (
     }
 
     return {
-      ...question,
+      id: question.id,
+      correctKey: question.correctKey,
       options,
-    };
+    } satisfies PreparedQuizQuestion;
   });
 };
 
 const evaluateResponses = (
-  questions: Array<QuizQuestion & { options: ReturnType<typeof parseMcqOptions> }>,
+  questions: PreparedQuizQuestion[],
   answers: NormalizedAnswerMap,
 ): QuizEvaluationResult[] => {
   return questions.map((question) => {
@@ -212,7 +219,7 @@ const evaluateResponses = (
       throw new Error('Missing answer for question');
     }
 
-    const isValidOption = question.options.some((option) => option != null && option.key === answer);
+    const isValidOption = question.options.some((option) => option.key === answer);
     if (!isValidOption) {
       throw new Error('Invalid answer choice');
     }
