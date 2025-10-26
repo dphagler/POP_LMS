@@ -91,7 +91,14 @@ export async function syncLessonCompletion({
 
   const watchRequirementMet = computeWatchRequirementMet(lesson, progress);
   const quizPassed = await computeQuizPassed(userId, lesson);
-  const nextIsComplete = watchRequirementMet && quizPassed;
+  const augmentationsPending = await prisma.augmentationServed.count({
+    where: {
+      userId,
+      lessonId,
+      completedAt: null
+    }
+  });
+  const nextIsComplete = watchRequirementMet && quizPassed && augmentationsPending === 0;
 
   if (progress.isComplete !== nextIsComplete) {
     await prisma.progress.update({

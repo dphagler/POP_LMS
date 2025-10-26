@@ -183,7 +183,14 @@ export async function recordProgress({
     });
     const reachedThreshold = ratio >= 1;
 
-    const augmentationsPending = false;
+    const augmentationsPending =
+      (await tx.augmentationServed.count({
+        where: {
+          userId,
+          lessonId: lesson.id,
+          completedAt: null,
+        },
+      })) > 0;
     const shouldMarkComplete =
       reachedThreshold && (!requiresAssessment ? !augmentationsPending : false);
     const nextIsComplete = existing?.isComplete ? true : shouldMarkComplete;
