@@ -8,6 +8,16 @@ import {projectId} from '@/sanity/env'
 
 const DEFAULT_REMOTE_STUDIO_URL = `https://${projectId}.sanity.studio`
 
+function normalizeBasePath(path: string | undefined) {
+  if (!path || path === '/') {
+    return '/'
+  }
+
+  const withLeadingSlash = path.startsWith('/') ? path : `/${path}`
+
+  return withLeadingSlash.replace(/\/+$/, '') || '/'
+}
+
 export default function StudioPageClient() {
   const isDevelopment = process.env.NODE_ENV === 'development'
   const remoteStudioUrl =
@@ -15,7 +25,15 @@ export default function StudioPageClient() {
 
   const iframeSrc = useMemo(() => {
     try {
-      return new URL('/?embedded=1', remoteStudioUrl).toString()
+      const url = new URL(remoteStudioUrl)
+
+      if (url.pathname === '/' || url.pathname === '') {
+        url.pathname = normalizeBasePath(config.basePath)
+      }
+
+      url.searchParams.set('embedded', '1')
+
+      return url.toString()
     } catch (error) {
       console.error('Invalid Sanity Studio URL', error)
       return remoteStudioUrl
