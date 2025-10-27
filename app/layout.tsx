@@ -33,7 +33,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(sans.variable, heading.variable)}>
+      <body
+        className={cn(sans.variable, heading.variable)}
+        suppressHydrationWarning
+      >
         <Providers>
           <Suspense fallback={null}>
             <PostHogClient />
