@@ -2,7 +2,7 @@
 import NextAuth from "next-auth";
 import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import EmailProvider from "next-auth/providers/email";
+import ResendProvider from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
 import { MembershipSource, OrgRole, UserRole } from "@prisma/client";
 import { buildAuthAdapter } from "./auth-adapter";
@@ -101,9 +101,10 @@ export const authConfig = {
     }),
     ...(emailAuthEnabled
       ? [
-          EmailProvider({
+          ResendProvider({
             name: "Email",
             from: env.AUTH_EMAIL_FROM!,
+            apiKey: env.RESEND_API_KEY!,
             maxAge: env.AUTH_EMAIL_TOKEN_MAX_AGE,
             async sendVerificationRequest({ identifier, url, provider, request }) {
               const email = identifier.toLowerCase();
