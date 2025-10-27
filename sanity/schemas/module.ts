@@ -1,6 +1,6 @@
 import { defineArrayMember, defineField, defineType } from "sanity";
 
-export const module = defineType({
+export const courseModule = defineType({
   name: "module",
   title: "Module",
   type: "document",
