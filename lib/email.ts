@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { ImportStatus } from "@prisma/client";
 
 import { renderSignInEmailHtml, renderSignInEmailText } from "./email-templates/sign-in-magic-link";
@@ -15,14 +16,6 @@ type ResendEmailPayload = {
 };
 
 async function sendResendEmail(payload: ResendEmailPayload) {
-  if (!env.RESEND_API_KEY) {
-    logger.info({
-      event: "email.resend_missing_key",
-      message: "Resend API key missing; skipping email send."
-    });
-    return;
-  }
-
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -38,10 +31,100 @@ async function sendResendEmail(payload: ResendEmailPayload) {
   }
 }
 
-export async function sendInviteEmail(email: string, inviteLink: string) {
-  const fromAddress = env.AUTH_EMAIL_FROM ?? "POP LMS <team@resend.dev>";
+async function sendMaildevEmail(payload: ResendEmailPayload) {
+  const mailOptions = {
+    from: payload.from,
+    to: payload.to.join(", "),
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+  } satisfies nodemailer.SendMailOptions;
 
-  await sendResendEmail({
+  const host = process.env.MAILDEV_HOST ?? "127.0.0.1";
+  const parsedPort = Number.parseInt(process.env.MAILDEV_PORT ?? "", 10);
+  const port = Number.isNaN(parsedPort) ? 1025 : parsedPort;
+
+  const transport = nodemailer.createTransport({
+    host,
+    port,
+    secure: false,
+  });
+
+  const info = await transport.sendMail(mailOptions);
+
+  logger.info({
+    event: "email.maildev_delivered",
+    host,
+    port,
+    messageId: info.messageId,
+    to: payload.to,
+    subject: payload.subject,
+  });
+}
+
+async function sendEtherealEmail(payload: ResendEmailPayload) {
+  const mailOptions = {
+    from: payload.from,
+    to: payload.to.join(", "),
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+  } satisfies nodemailer.SendMailOptions;
+
+  const testAccount = await nodemailer.createTestAccount();
+  const transport = nodemailer.createTransport({
+    host: "smtp.ethereal.email",
+    port: 587,
+    secure: false,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+
+  const info = await transport.sendMail(mailOptions);
+  const previewUrl = nodemailer.getTestMessageUrl(info);
+
+  logger.info({
+    event: "email.ethereal_delivered",
+    messageId: info.messageId,
+    to: payload.to,
+    subject: payload.subject,
+    previewUrl: previewUrl ?? undefined,
+  });
+}
+
+async function sendEmail(payload: ResendEmailPayload) {
+  if (env.RESEND_API_KEY) {
+    await sendResendEmail(payload);
+    return;
+  }
+
+  try {
+    await sendMaildevEmail(payload);
+    return;
+  } catch (error) {
+    logger.warn({
+      event: "email.maildev_failed",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  try {
+    await sendEtherealEmail(payload);
+  } catch (error) {
+    throw new Error(
+      `Unable to send email using fallback transports: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+export async function sendInviteEmail(email: string, inviteLink: string) {
+  const fromAddress = env.EMAIL_FROM ?? "POP LMS <team@resend.dev>";
+
+  await sendEmail({
     from: fromAddress,
     to: [email],
     subject: "You're invited to the POP LMS",
@@ -58,16 +141,16 @@ type SendSignInEmailOptions = {
 };
 
 export async function sendSignInEmail({ email, url, host, subject, expiresInMinutes }: SendSignInEmailOptions) {
-  const fromAddress = env.AUTH_EMAIL_FROM;
+  const fromAddress = env.EMAIL_FROM;
 
   if (!fromAddress) {
-    throw new Error("Missing AUTH_EMAIL_FROM environment variable.");
+    throw new Error("Missing EMAIL_FROM environment variable.");
   }
 
   const html = renderSignInEmailHtml({ url, host, expiresInMinutes });
   const text = renderSignInEmailText({ url, host, expiresInMinutes });
 
-  await sendResendEmail({
+  await sendEmail({
     from: fromAddress,
     to: [email],
     subject,
@@ -123,7 +206,7 @@ export async function sendImportResultsEmail({
     return;
   }
 
-  const fromAddress = env.AUTH_EMAIL_FROM ?? "POP LMS <team@resend.dev>";
+  const fromAddress = env.EMAIL_FROM ?? "POP LMS <team@resend.dev>";
   const statusDescription = describeStatus(status);
   const subject = `${orgName} CSV import ${statusDescription}`;
 
@@ -156,7 +239,7 @@ export async function sendImportResultsEmail({
     "The POP LMS Team"
   ].join("\n");
 
-  await sendResendEmail({
+  await sendEmail({
     from: fromAddress,
     to: uniqueRecipients,
     subject,

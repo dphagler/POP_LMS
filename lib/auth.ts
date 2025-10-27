@@ -14,8 +14,7 @@ import { prisma } from "./prisma";
 
 const adapter = buildAuthAdapter();
 
-const emailAuthEnabled =
-  env.AUTH_EMAIL_ENABLED && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
+const MAGIC_LINK_MAX_AGE_SECONDS = 10 * 60;
 
 type AdapterUserWithOrg = {
   id?: string | null;
@@ -99,58 +98,54 @@ export const authConfig = {
       clientId: env.GOOGLE_CLIENT_ID!,
       clientSecret: env.GOOGLE_CLIENT_SECRET!,
     }),
-    ...(emailAuthEnabled
-      ? [
-          EmailProvider({
-            name: "Email",
-            from: env.AUTH_EMAIL_FROM!,
-            maxAge: env.AUTH_EMAIL_TOKEN_MAX_AGE,
-            async sendVerificationRequest({ identifier, url, provider, request }) {
-              const email = identifier.toLowerCase();
-              const host = new URL(url).host;
+    EmailProvider({
+      name: "Email",
+      from: env.EMAIL_FROM ?? undefined,
+      maxAge: MAGIC_LINK_MAX_AGE_SECONDS,
+      async sendVerificationRequest({ identifier, url, request }) {
+        const email = identifier.toLowerCase();
+        const host = new URL(url).host;
 
-              const limit = env.AUTH_EMAIL_RATE_LIMIT_MAX;
-              const windowSeconds = env.AUTH_EMAIL_RATE_LIMIT_WINDOW;
+        const limit = env.AUTH_EMAIL_RATE_LIMIT_MAX;
+        const windowSeconds = env.AUTH_EMAIL_RATE_LIMIT_WINDOW;
 
-              const emailRateLimit = await enforceRateLimit(
-                `auth:magic-link:email:${email}`,
-                limit,
-                windowSeconds
-              );
+        const emailRateLimit = await enforceRateLimit(
+          `auth:magic-link:email:${email}`,
+          limit,
+          windowSeconds
+        );
 
-              if (!emailRateLimit.success) {
-                throw new Error("Email sign-in rate limit exceeded.");
-              }
+        if (!emailRateLimit.success) {
+          throw new Error("Email sign-in rate limit exceeded.");
+        }
 
-              const forwardedFor = request?.headers.get("x-forwarded-for");
-              const realIp = request?.headers.get("x-real-ip");
-              const ip = forwardedFor?.split(",")[0]?.trim() || realIp || undefined;
+        const forwardedFor = request?.headers.get("x-forwarded-for");
+        const realIp = request?.headers.get("x-real-ip");
+        const ip = forwardedFor?.split(",")[0]?.trim() || realIp || undefined;
 
-              if (ip) {
-                const ipRateLimit = await enforceRateLimit(
-                  `auth:magic-link:ip:${ip}`,
-                  limit,
-                  windowSeconds
-                );
+        if (ip) {
+          const ipRateLimit = await enforceRateLimit(
+            `auth:magic-link:ip:${ip}`,
+            limit,
+            windowSeconds
+          );
 
-                if (!ipRateLimit.success) {
-                  throw new Error("Email sign-in rate limit exceeded.");
-                }
-              }
+          if (!ipRateLimit.success) {
+            throw new Error("Email sign-in rate limit exceeded.");
+          }
+        }
 
-              const subject = env.AUTH_EMAIL_SUBJECT ?? `Sign in to ${host}`;
+        const subject = env.AUTH_EMAIL_SUBJECT ?? `Sign in to ${host}`;
 
-              await sendSignInEmail({
-                email,
-                url,
-                host,
-                subject,
-                expiresInMinutes: Math.max(1, Math.floor(env.AUTH_EMAIL_TOKEN_MAX_AGE / 60)),
-              });
-            },
-          }),
-        ]
-      : []),
+        await sendSignInEmail({
+          email,
+          url,
+          host,
+          subject,
+          expiresInMinutes: Math.max(1, Math.floor(MAGIC_LINK_MAX_AGE_SECONDS / 60)),
+        });
+      },
+    }),
   ],
   trustHost: true,
   callbacks: {

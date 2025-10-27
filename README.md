@@ -115,9 +115,9 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
 
 - **Upstash Redis** – set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to enable leaderboard helpers in `lib/redis.ts`.
 - **Resend** – set `RESEND_API_KEY` to send assignment invite emails via `lib/email.ts`.
-- **Email magic links** – set `AUTH_EMAIL_ENABLED=true`, provide a branded from address via `AUTH_EMAIL_FROM`, and optionally tune
-  `AUTH_EMAIL_SUBJECT`, `AUTH_EMAIL_RATE_LIMIT_MAX`, `AUTH_EMAIL_RATE_LIMIT_WINDOW`, and `AUTH_EMAIL_TOKEN_MAX_AGE` to send Resend-backed
-  magic links for sign-in.
+- **Email magic links** – set `EMAIL_FROM` for your branded from address. Provide `RESEND_API_KEY` for production delivery or rely on the
+  built-in MailDev/Ethereal fallbacks locally. Optionally tune `AUTH_EMAIL_SUBJECT`, `AUTH_EMAIL_RATE_LIMIT_MAX`, and
+  `AUTH_EMAIL_RATE_LIMIT_WINDOW` to customize the sign-in experience.
 - **PostHog** – set `NEXT_PUBLIC_POSTHOG_KEY` (and optionally `NEXT_PUBLIC_POSTHOG_HOST`) to enable telemetry. Leave the key unset to
   disable analytics entirely. When enabled in production, client error events are sampled (25%) and scrubbed before being sent to
   PostHog.

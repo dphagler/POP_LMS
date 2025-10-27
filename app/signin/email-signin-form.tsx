@@ -48,7 +48,7 @@ export function EmailSignInForm({ action, initialState, disabled }: EmailSignInF
             Sending…
           </span>
         ) : (
-          "Send magic link"
+          "Continue with Email"
         )}
       </Button>
       {state.message ? (

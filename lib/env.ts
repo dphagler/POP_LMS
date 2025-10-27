@@ -79,11 +79,8 @@ export const env = {
   get RESEND_API_KEY() {
     return readOptionalEnv("RESEND_API_KEY");
   },
-  get AUTH_EMAIL_ENABLED() {
-    return readBooleanEnv("AUTH_EMAIL_ENABLED", false);
-  },
-  get AUTH_EMAIL_FROM() {
-    return readOptionalEnv("AUTH_EMAIL_FROM");
+  get EMAIL_FROM() {
+    return readOptionalEnv("EMAIL_FROM");
   },
   get AUTH_EMAIL_SUBJECT() {
     return readOptionalEnv("AUTH_EMAIL_SUBJECT", "Your POP LMS magic link");
