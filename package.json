@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.5.2",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/ensure-sanity-cors.mjs && next dev",
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",
@@ -15,7 +15,8 @@
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "sanity:cors": "node scripts/ensure-sanity-cors.mjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
