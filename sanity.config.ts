@@ -8,7 +8,7 @@ import {schemaTypes} from './sanity/schemaTypes'         // <- and this folder
 import structure from './sanity/structure'               // <- optional custom Desk
 
 export default defineConfig({
-  name: 'pop_lms_studio',
+  name: 'pop-lms-studio',
   title: 'POP LMS Studio',
   projectId,
   dataset,
