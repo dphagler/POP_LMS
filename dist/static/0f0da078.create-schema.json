@@ -1,0 +1,308 @@
+[
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "of": [
+          {
+            "to": [
+              {
+                "type": "module"
+              }
+            ],
+            "type": "reference",
+            "title": "Reference to module"
+          }
+        ],
+        "name": "modules",
+        "type": "array"
+      }
+    ],
+    "name": "course",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "initialValue": 0,
+        "name": "order",
+        "type": "number"
+      },
+      {
+        "of": [
+          {
+            "to": [
+              {
+                "type": "lesson"
+              }
+            ],
+            "type": "reference",
+            "title": "Reference to lesson"
+          }
+        ],
+        "name": "lessons",
+        "type": "array"
+      }
+    ],
+    "name": "module",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "initialValue": 0,
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "min",
+                "constraint": 0
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "order",
+        "type": "number"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "streamId",
+        "type": "string"
+      },
+      {
+        "name": "youtubeId",
+        "type": "string",
+        "title": "YouTube ID"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "min",
+                "constraint": 0
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "durationS",
+        "type": "number"
+      },
+      {
+        "initialValue": true,
+        "name": "requiresFullWatch",
+        "type": "boolean"
+      },
+      {
+        "initialValue": "QUIZ",
+        "options": {
+          "layout": "radio",
+          "list": [
+            {
+              "title": "Quiz",
+              "value": "QUIZ"
+            },
+            {
+              "title": "None",
+              "value": "NONE"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "valid",
+                "constraint": [
+                  "QUIZ",
+                  "NONE"
+                ]
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "assessmentType",
+        "type": "string"
+      },
+      {
+        "of": [
+          {
+            "fields": [
+              {
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "name": "id",
+                "type": "string",
+                "title": "Objective ID"
+              },
+              {
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "name": "summary",
+                "type": "text"
+              }
+            ],
+            "type": "object",
+            "name": "objective"
+          }
+        ],
+        "name": "objectives",
+        "type": "array"
+      },
+      {
+        "of": [
+          {
+            "fields": [
+              {
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      },
+                      {
+                        "flag": "min",
+                        "constraint": 1
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "of": [
+                  {
+                    "type": "string"
+                  }
+                ],
+                "name": "targets",
+                "type": "array"
+              },
+              {
+                "name": "whenExpr",
+                "type": "string",
+                "title": "When Expression"
+              },
+              {
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "name": "assetRef",
+                "type": "string",
+                "title": "Asset Reference"
+              }
+            ],
+            "type": "object",
+            "name": "augmentation"
+          }
+        ],
+        "name": "augmentations",
+        "type": "array"
+      }
+    ],
+    "name": "lesson",
+    "type": "document"
+  }
+]
