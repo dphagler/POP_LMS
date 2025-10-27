@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type SendMailOptions } from "nodemailer";
 import { ImportStatus } from "@prisma/client";
 
 import { renderSignInEmailHtml, renderSignInEmailText } from "./email-templates/sign-in-magic-link";
@@ -32,13 +32,13 @@ async function sendResendEmail(payload: ResendEmailPayload) {
 }
 
 async function sendMaildevEmail(payload: ResendEmailPayload) {
-  const mailOptions = {
+  const mailOptions: SendMailOptions = {
     from: payload.from,
     to: payload.to.join(", "),
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
-  } satisfies nodemailer.SendMailOptions;
+  };
 
   const host = process.env.MAILDEV_HOST ?? "127.0.0.1";
   const parsedPort = Number.parseInt(process.env.MAILDEV_PORT ?? "", 10);
@@ -63,13 +63,13 @@ async function sendMaildevEmail(payload: ResendEmailPayload) {
 }
 
 async function sendEtherealEmail(payload: ResendEmailPayload) {
-  const mailOptions = {
+  const mailOptions: SendMailOptions = {
     from: payload.from,
     to: payload.to.join(", "),
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
-  } satisfies nodemailer.SendMailOptions;
+  };
 
   const testAccount = await nodemailer.createTestAccount();
   const transport = nodemailer.createTransport({
