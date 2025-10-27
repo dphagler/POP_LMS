@@ -80,6 +80,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Organization not found.", requestId }, { status: 400 });
     }
 
+    const existingOrg = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true }
+    });
+
+    if (!existingOrg) {
+      logger.error({
+        event: "admin.sanity_sync.org_missing_in_db",
+        orgId,
+        message: "Organization from session was not found in the database"
+      });
+      return NextResponse.json(
+        {
+          error: "Organization not found in database. Please create the organization or update the admin session.",
+          requestId
+        },
+        { status: 400 }
+      );
+    }
+
     const rateLimitKey = buildRateLimitKey("admin.sanity_sync", request, orgId ?? session.user?.id ?? undefined);
     const rateLimitResponse = await enforceApiRateLimit({
       key: rateLimitKey,
