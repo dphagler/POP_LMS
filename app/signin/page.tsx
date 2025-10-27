@@ -1,3 +1,4 @@
+// Email sign-in requires AUTH_EMAIL_ENABLED, RESEND_API_KEY, AUTH_EMAIL_FROM
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -24,7 +25,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     redirect(resolvedSearchParams?.callbackUrl ?? "/app");
   }
 
-  const emailAuthEnabled = env.AUTH_EMAIL_ENABLED && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
+  const emailSignInEnabled =
+    env.authEmailEnabled && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
 
   async function handleGoogleSignIn() {
     "use server";
@@ -37,10 +39,10 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   ): Promise<EmailSignInFormState> {
     "use server";
 
-    if (!emailAuthEnabled) {
+    if (!emailSignInEnabled) {
       return {
         status: "error",
-        message: "Email sign-in is currently disabled."
+        message: "Email sign-in is disabled by configuration."
       } satisfies EmailSignInFormState;
     }
 
@@ -116,7 +118,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               Continue with Google
             </Button>
           </form>
-          {emailAuthEnabled ? (
+          {emailSignInEnabled ? (
             <div className="w-full space-y-4 text-left">
               <div className="space-y-1">
                 <p className="text-sm font-semibold">Or use a magic link</p>
@@ -127,9 +129,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <EmailSignInForm action={handleEmailSignIn} initialState={initialEmailState} />
             </div>
           ) : null}
-          {!emailAuthEnabled ? (
+          {!emailSignInEnabled ? (
             <p className="w-full text-left text-xs text-muted-foreground">
-              Email sign-in is not available for this environment. Contact your administrator if you need access.
+              Email sign-in is disabled by configuration.
             </p>
           ) : null}
           <div className="w-full rounded-2xl border border-dashed border-base-300/70 bg-base-100/70 p-4 text-left text-xs text-muted-foreground">
@@ -151,7 +153,7 @@ function normalizeEmailErrorMessage(message: string) {
   }
 
   if (normalized.includes("disabled")) {
-    return "Email sign-in is currently disabled.";
+    return "Email sign-in is disabled by configuration.";
   }
 
   return "We couldn’t send the magic link. Please try again.";

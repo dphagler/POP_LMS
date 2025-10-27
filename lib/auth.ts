@@ -2,8 +2,8 @@
 import NextAuth from "next-auth";
 import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import ResendProvider from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
+import ResendProvider from "next-auth/providers/resend";
 import { MembershipSource, OrgRole, UserRole } from "@prisma/client";
 import { buildAuthAdapter } from "./auth-adapter";
 import { getOrCreateDefaultOrg, resolveOrgByEmailDomain } from "./org";
@@ -14,8 +14,8 @@ import { prisma } from "./prisma";
 
 const adapter = buildAuthAdapter();
 
-const emailAuthEnabled =
-  env.AUTH_EMAIL_ENABLED && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
+const emailProviderEnabled =
+  env.authEmailEnabled && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
 
 type AdapterUserWithOrg = {
   id?: string | null;
@@ -99,17 +99,15 @@ export const authConfig = {
       clientId: env.GOOGLE_CLIENT_ID!,
       clientSecret: env.GOOGLE_CLIENT_SECRET!,
     }),
-    ...(emailAuthEnabled
+    ...(emailProviderEnabled
       ? [
           ResendProvider({
             name: "Email",
             from: env.AUTH_EMAIL_FROM!,
             apiKey: env.RESEND_API_KEY!,
             maxAge: env.AUTH_EMAIL_TOKEN_MAX_AGE,
-            async sendVerificationRequest({ identifier, url, provider, request }) {
+            async sendVerificationRequest({ identifier, url, provider: _provider, request }) {
               const email = identifier.toLowerCase();
-              const host = new URL(url).host;
-
               const limit = env.AUTH_EMAIL_RATE_LIMIT_MAX;
               const windowSeconds = env.AUTH_EMAIL_RATE_LIMIT_WINDOW;
 
@@ -139,15 +137,7 @@ export const authConfig = {
                 }
               }
 
-              const subject = env.AUTH_EMAIL_SUBJECT ?? `Sign in to ${host}`;
-
-              await sendSignInEmail({
-                email,
-                url,
-                host,
-                subject,
-                expiresInMinutes: Math.max(1, Math.floor(env.AUTH_EMAIL_TOKEN_MAX_AGE / 60)),
-              });
+              await sendSignInEmail(email, url);
             },
           }),
         ]

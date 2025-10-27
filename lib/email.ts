@@ -49,28 +49,32 @@ export async function sendInviteEmail(email: string, inviteLink: string) {
   });
 }
 
-type SendSignInEmailOptions = {
-  email: string;
-  url: string;
-  host: string;
-  subject: string;
-  expiresInMinutes: number;
-};
-
-export async function sendSignInEmail({ email, url, host, subject, expiresInMinutes }: SendSignInEmailOptions) {
+export async function sendSignInEmail(email: string, url: string) {
   const fromAddress = env.AUTH_EMAIL_FROM;
 
-  if (!fromAddress) {
-    throw new Error("Missing AUTH_EMAIL_FROM environment variable.");
+  if (!fromAddress || !env.RESEND_API_KEY) {
+    throw new Error("Email sign-in is not configured.");
   }
 
+  let host = "POP LMS";
+  try {
+    host = new URL(url).host;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.warn({
+      event: "email.magic_link.invalid_url",
+      message: `Failed to parse magic link URL: ${errorMessage}`,
+    });
+  }
+
+  const expiresInMinutes = Math.max(1, Math.floor(env.AUTH_EMAIL_TOKEN_MAX_AGE / 60));
   const html = renderSignInEmailHtml({ url, host, expiresInMinutes });
   const text = renderSignInEmailText({ url, host, expiresInMinutes });
 
   await sendResendEmail({
     from: fromAddress,
     to: [email],
-    subject,
+    subject: "Sign in to POP LMS",
     html,
     text
   });
