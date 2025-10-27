@@ -17,6 +17,12 @@ enum UserRole {
   LEARNER
 }
 
+enum UserSource {
+  invite
+  csv
+  sso
+}
+
 enum EnrollmentStatus {
   ACTIVE
   PAUSED
@@ -111,6 +117,7 @@ model User {
   image        String?
   passwordHash String?
   role         UserRole     @default(LEARNER)
+  source       UserSource?  @default(sso)
   createdAt    DateTime     @default(now())
 
   // back-relations
