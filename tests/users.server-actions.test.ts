@@ -1,4 +1,4 @@
-import { describe, expect, beforeEach, vi, it, afterEach } from 'vitest';
+import { describe, expect, beforeEach, vi, it, afterEach, MockedFunction } from 'vitest';
 import { UserRole, UserSource } from '@prisma/client';
 
 vi.mock('@/lib/authz', () => ({
@@ -27,7 +27,7 @@ let inviteUser: typeof import('@/lib/server-actions/users').inviteUser;
 let updateUserRole: typeof import('@/lib/server-actions/users').updateUserRole;
 let sendResetLink: typeof import('@/lib/server-actions/users').sendResetLink;
 type CreateMagicLinkForEmail = typeof import('@/lib/server-actions/users')['createMagicLinkForEmail'];
-let createMagicLinkForEmailSpy: vi.MockedFunction<CreateMagicLinkForEmail>;
+let createMagicLinkForEmailSpy: MockedFunction<CreateMagicLinkForEmail>;
 
 let requireRoleMock: ReturnType<typeof vi.fn>;
 let upsertOrgUserMock: ReturnType<typeof vi.fn>;
