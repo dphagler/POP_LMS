@@ -16,7 +16,9 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "vitest": ["types/vitest"],
+      "vitest/config": ["types/vitest-config"]
     },
     "plugins": [
       {

@@ -49,7 +49,11 @@ export async function sendInviteEmail(email: string, inviteLink: string) {
   });
 }
 
-export async function sendSignInEmail(email: string, url: string) {
+type SendSignInEmailOptions = {
+  subject?: string;
+};
+
+export async function sendSignInEmail(email: string, url: string, options: SendSignInEmailOptions = {}) {
   const fromAddress = env.AUTH_EMAIL_FROM;
 
   if (!fromAddress || !env.RESEND_API_KEY) {
@@ -71,10 +75,12 @@ export async function sendSignInEmail(email: string, url: string) {
   const html = renderSignInEmailHtml({ url, host, expiresInMinutes });
   const text = renderSignInEmailText({ url, host, expiresInMinutes });
 
+  const subject = options.subject ?? env.AUTH_EMAIL_SUBJECT ?? "Sign in to POP LMS";
+
   await sendResendEmail({
     from: fromAddress,
     to: [email],
-    subject: "Sign in to POP LMS",
+    subject,
     html,
     text
   });

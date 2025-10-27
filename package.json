@@ -11,6 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --test lib/__tests__/auth-adapter.test.cjs lib/lesson/__tests__/progress.test.cjs lib/lesson/__tests__/diagnostics.test.cjs lib/lesson/__tests__/engine.test.cjs",
+    "test:vitest": "vitest",
     "check:routes": "node scripts/check-routes.mjs",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
@@ -65,6 +66,7 @@
     "prisma": "^6.17.1",
     "tailwindcss": "^4.1.15",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }
