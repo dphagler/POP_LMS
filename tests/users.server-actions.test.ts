@@ -26,7 +26,8 @@ vi.mock('next/cache', () => ({
 let inviteUser: typeof import('@/lib/server-actions/users').inviteUser;
 let updateUserRole: typeof import('@/lib/server-actions/users').updateUserRole;
 let sendResetLink: typeof import('@/lib/server-actions/users').sendResetLink;
-let createMagicLinkForEmailSpy: ReturnType<typeof vi.spyOn>;
+type CreateMagicLinkForEmail = typeof import('@/lib/server-actions/users')['createMagicLinkForEmail'];
+let createMagicLinkForEmailSpy: vi.MockedFunction<CreateMagicLinkForEmail>;
 
 let requireRoleMock: ReturnType<typeof vi.fn>;
 let upsertOrgUserMock: ReturnType<typeof vi.fn>;
