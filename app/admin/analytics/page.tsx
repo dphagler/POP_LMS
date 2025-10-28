@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Button as ChakraButton } from "@chakra-ui/react";
+import { BarChart3 } from "lucide-react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { requireAdminAccess } from "@/lib/authz";
 import { loadOrgAnalyticsSnapshot } from "@/lib/admin-analytics";
 import { capturePosthogEvent } from "@/lib/posthog";
@@ -74,12 +77,15 @@ export default async function AdminAnalyticsPage({
   return (
     <AdminShell title="Analytics" breadcrumb={[{ label: "Analytics" }]}> 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-balance">Analytics snapshot</h1>
-          <p className="text-sm text-muted-foreground">
-            Review cohort health at a glance. Metrics update when assignments or learner progress changes.
-          </p>
-        </header>
+        <PageHeader
+          title="Analytics snapshot"
+          subtitle="Review cohort health at a glance. Metrics update when assignments or learner progress changes."
+          actions={
+            <ChakraButton as="a" href={exportHref} colorScheme="primary" download>
+              Download CSV
+            </ChakraButton>
+          }
+        />
 
         <Card>
           <CardHeader>
@@ -199,11 +205,16 @@ export default async function AdminAnalyticsPage({
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                <p className="text-base font-medium">No assignments yet</p>
-                <p className="max-w-md text-sm text-muted-foreground">
-                  Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
-                </p>
+              <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 bg-muted">
+                  <BarChart3 className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-medium">No assignments yet</p>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
+                  </p>
+                </div>
                 <Button as={Link} href="/admin/assign">
                   Create assignment
                 </Button>

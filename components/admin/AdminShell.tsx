@@ -49,11 +49,10 @@ export function useAdminShellContext() {
 type AdminShellProps = {
   title?: string;
   breadcrumb?: AdminBreadcrumbItem[];
-  actions?: ReactNode;
   children: ReactNode;
 };
 
-export function AdminShell({ title, breadcrumb, actions, children }: AdminShellProps) {
+export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
   const { navItems } = useAdminShellContext();
   const disclosure = useDisclosure();
   const pathname = usePathname();
@@ -82,7 +81,6 @@ export function AdminShell({ title, breadcrumb, actions, children }: AdminShellP
       <Flex flex="1" direction="column" minH="100vh">
         <AdminTopbar
           title={title}
-          actions={actions}
           onMenuClick={disclosure.onOpen}
           showMenuButton={!isDesktop}
           showAdminHome={showAdminHome}

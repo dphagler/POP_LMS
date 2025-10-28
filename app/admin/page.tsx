@@ -7,15 +7,27 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Circle,
   Flex,
   Heading,
+  Icon,
   SimpleGrid,
   Stack,
-  Text
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr
 } from "@chakra-ui/react";
+import { Activity } from "lucide-react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { QuickActions } from "@/components/admin/QuickActions";
 import { requireAdminAccess } from "@/lib/authz";
+import { listAuditLogs, type AuditLogListItem } from "@/lib/db/audit";
 import { prisma } from "@/lib/prisma";
 import { getMissingSanityEnvVars } from "@/lib/sanity";
 import { loadOrgAnalyticsSnapshot } from "@/lib/admin-analytics";
@@ -28,6 +40,29 @@ const percentFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 1
 });
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short"
+});
+
+function resolveAuditTarget(log: AuditLogListItem) {
+  const metadata = log.metadata;
+
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const record = metadata as Record<string, unknown>;
+    const labelCandidate = record.targetLabel ?? record.targetName ?? record.name;
+    const urlCandidate = record.targetUrl ?? record.url;
+
+    const label = typeof labelCandidate === "string" && labelCandidate.trim().length > 0
+      ? labelCandidate
+      : log.targetId;
+    const url = typeof urlCandidate === "string" && urlCandidate.trim().length > 0 ? urlCandidate : null;
+
+    return { label: label ?? log.targetId ?? "—", url };
+  }
+
+  return { label: log.targetId ?? "—", url: null };
+}
 
 export default async function AdminDashboard() {
   const { session } = await requireAdminAccess(["ADMIN", "MANAGER"]);
@@ -35,7 +70,8 @@ export default async function AdminDashboard() {
 
   if (!orgId) {
     return (
-      <AdminShell title="Dashboard" breadcrumb={[{ label: "Dashboard" }]}> 
+      <AdminShell title="Dashboard" breadcrumb={[{ label: "Dashboard" }]}>
+        <PageHeader title="Admin dashboard" subtitle="Connect your account to an organization to see admin insights." />
         <Stack spacing={10} align="stretch">
           <Card>
             <CardHeader>
@@ -69,9 +105,10 @@ export default async function AdminDashboard() {
       ? `Sanity sync is unavailable. Missing environment variables: ${missingSanityEnvVars.join(", ")}.`
       : undefined;
 
-  const [groupCount, analyticsSnapshot] = await Promise.all([
+  const [groupCount, analyticsSnapshot, recentActivity] = await Promise.all([
     prisma.orgGroup.count({ where: { orgId } }),
-    loadOrgAnalyticsSnapshot(orgId)
+    loadOrgAnalyticsSnapshot(orgId),
+    listAuditLogs({ orgId, limit: 5 }).then((result) => result.items)
   ]);
 
   const overviewStats = [
@@ -101,30 +138,55 @@ export default async function AdminDashboard() {
     }
   ] as const;
 
+  const quickActions = [
+    {
+      id: "invite-user",
+      label: "Invite user",
+      description: "Add teammates to your organization and manage their roles.",
+      href: "/admin/users?modal=invite",
+      ctaLabel: "Invite user"
+    },
+    {
+      id: "create-group",
+      label: "Create group",
+      description: "Organize learners into cohorts for targeted assignments.",
+      href: "/admin/groups?modal=new",
+      ctaLabel: "Create group"
+    },
+    {
+      id: "assign-module",
+      label: "Assign module",
+      description: "Plan coursework and enroll groups into new learning.",
+      href: "/admin/assign",
+      ctaLabel: "Assign module"
+    },
+    {
+      id: "sync-sanity",
+      label: "Sync from Sanity",
+      description: syncDisabledReason
+        ? syncDisabledReason
+        : "Run a manual sync to pull the latest CMS content into the LMS.",
+      href: "/admin?runSync=1",
+      isDisabled: Boolean(syncDisabledReason),
+      disabledReason: syncDisabledReason ? "Unavailable" : undefined,
+      ctaLabel: "Run sync"
+    }
+  ] as const;
+
   return (
-    <AdminShell title="Dashboard" breadcrumb={[{ label: "Dashboard" }]}
-      actions={
-        <Flex gap={2}>
-          <Button as={Link} href="/admin/assign" variant="outline" size="sm">
-            Assign learning
+    <AdminShell title="Dashboard" breadcrumb={[{ label: "Dashboard" }]}> 
+      <PageHeader
+        title="Admin dashboard"
+        subtitle="Stay on top of assignments, learner activity, and content syncs for your organization."
+        actions={
+          <Button as={Link} href="/admin/assign" colorScheme="primary">
+            Create assignment
           </Button>
-          <Button as={Link} href="/admin/groups" variant="outline" size="sm">
-            Manage groups
-          </Button>
-        </Flex>
-      }
-    >
+        }
+      />
+
       <Stack spacing={10} align="stretch">
-        <Card>
-          <CardHeader>
-            <Stack spacing={3} maxW="3xl">
-              <Heading size="md">Organization overview</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Manage learners, assignments, and keep your Sanity content in sync with the LMS.
-              </Text>
-            </Stack>
-          </CardHeader>
-        </Card>
+        <QuickActions actions={quickActions} />
 
         <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
           {overviewStats.map((stat) => (
@@ -145,6 +207,75 @@ export default async function AdminDashboard() {
             </Card>
           ))}
         </SimpleGrid>
+
+        <Card>
+          <CardHeader>
+            <Flex align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} justify="space-between" gap={4}>
+              <Stack spacing={1}>
+                <Heading size="sm">Recently active</Heading>
+                <Text fontSize="sm" color="fg.muted">
+                  The five most recent audit events across your organization.
+                </Text>
+              </Stack>
+              <Button as={Link} href="/admin/audit" variant="outline" size="sm">
+                View audit trail
+              </Button>
+            </Flex>
+          </CardHeader>
+          <CardBody>
+            {recentActivity.length > 0 ? (
+              <Table size="sm" variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Actor</Th>
+                    <Th>Action</Th>
+                    <Th>Target</Th>
+                    <Th>When</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {recentActivity.map((log) => {
+                    const actorLabel = log.actor?.name ?? log.actor?.email ?? "System";
+                    const target = resolveAuditTarget(log);
+                    const timestamp = dateFormatter.format(new Date(log.createdAt));
+
+                    return (
+                      <Tr key={log.id}>
+                        <Td>{actorLabel}</Td>
+                        <Td>{log.action}</Td>
+                        <Td>
+                          {target.url ? (
+                            <Button as={Link} href={target.url} variant="link" size="sm" colorScheme="primary">
+                              {target.label}
+                            </Button>
+                          ) : (
+                            target.label
+                          )}
+                        </Td>
+                        <Td>{timestamp}</Td>
+                      </Tr>
+                    );
+                  })}
+                </Tbody>
+              </Table>
+            ) : (
+              <Stack align="center" spacing={4} py={10} textAlign="center">
+                <Circle size="64px" bg="bg.subtle">
+                  <Icon as={Activity} boxSize={6} color="fg.muted" />
+                </Circle>
+                <Stack spacing={1}>
+                  <Heading size="sm">No recent activity</Heading>
+                  <Text fontSize="sm" color="fg.muted">
+                    Activity from assignments, user management, and syncs will appear here.
+                  </Text>
+                </Stack>
+                <Button as={Link} href="/admin/audit" colorScheme="primary" variant="outline">
+                  View audit trail
+                </Button>
+              </Stack>
+            )}
+          </CardBody>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -176,11 +307,11 @@ export default async function AdminDashboard() {
             <ContentSyncControls disabled={Boolean(syncDisabledReason)} disabledReason={syncDisabledReason} />
           </SimpleGrid>
         </CardBody>
-      </Card>
+        </Card>
 
-      <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={5}>
-        <Card>
-          <CardBody>
+        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={5}>
+          <Card>
+            <CardBody>
             <Stack spacing={3}>
               <Heading size="sm">Assignments</Heading>
               <Text fontSize="sm" color="fg.muted">

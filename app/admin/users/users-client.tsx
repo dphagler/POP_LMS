@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   Avatar,
@@ -8,11 +9,12 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
+  Circle,
   Flex,
   FormControl,
   FormLabel,
   Heading,
+  Icon,
   Input,
   Modal,
   ModalBody,
@@ -34,7 +36,9 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { Users } from 'lucide-react';
 
+import { PageHeader } from '@/components/admin/PageHeader';
 import type { OrgUserListItem } from '@/lib/db/user';
 import { inviteUser, sendResetLink, updateUserRole } from '@/lib/server-actions/users';
 
@@ -55,6 +59,7 @@ type RoleOption = 'LEARNER' | 'MANAGER' | 'ADMIN';
 type AdminUsersClientProps = {
   currentUserId: string;
   initialUsers: OrgUserListItem[];
+  autoOpenInvite?: boolean;
 };
 
 type InviteFormState = {
@@ -87,7 +92,7 @@ const initialInviteState: InviteFormState = {
   role: 'LEARNER',
 };
 
-export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClientProps) {
+export function AdminUsersClient({ currentUserId, initialUsers, autoOpenInvite = false }: AdminUsersClientProps) {
   const [users, setUsers] = useState(initialUsers);
   const [inviteState, setInviteState] = useState<InviteFormState>(initialInviteState);
   const [rolePendingId, setRolePendingId] = useState<string | null>(null);
@@ -98,10 +103,52 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
   const usersSnapshot = useRef(initialUsers);
   const toast = useToast();
   const inviteDialog = useDisclosure();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const basePath = '/admin/users';
+
+  const updateModalParam = useCallback(
+    (value: 'invite' | null) => {
+      if (!router || !searchParams) {
+        return;
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (value) {
+        params.set('modal', value);
+      } else {
+        params.delete('modal');
+      }
+
+      const query = params.toString();
+      const href = query ? `${basePath}?${query}` : basePath;
+      router.replace(href, { scroll: false });
+    },
+    [router, searchParams]
+  );
 
   useEffect(() => {
     usersSnapshot.current = users;
   }, [users]);
+
+  const openInviteModal = useCallback(() => {
+    setInviteState(initialInviteState);
+    inviteDialog.onOpen();
+    updateModalParam('invite');
+  }, [inviteDialog, updateModalParam]);
+
+  const closeInviteModal = useCallback(() => {
+    setInviteState(initialInviteState);
+    inviteDialog.onClose();
+    updateModalParam(null);
+  }, [inviteDialog, updateModalParam]);
+
+  useEffect(() => {
+    if (autoOpenInvite) {
+      openInviteModal();
+    }
+  }, [autoOpenInvite, openInviteModal]);
 
   const handleInviteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -135,8 +182,7 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
           status: 'success',
         });
 
-        setInviteState(initialInviteState);
-        inviteDialog.onClose();
+        closeInviteModal();
       } catch (error) {
         const description = error instanceof Error ? error.message : 'Unable to invite user.';
         toast({ title: 'Invitation failed', description, status: 'error' });
@@ -202,8 +248,7 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
   };
 
   const handleModalClose = () => {
-    setInviteState(initialInviteState);
-    inviteDialog.onClose();
+    closeInviteModal();
   };
 
   const range = useMemo(() => {
@@ -215,136 +260,146 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
   }, [users.length]);
 
   return (
-    <Stack spacing={8} px={{ base: 4, md: 8 }} py={{ base: 6, md: 8 }}>
+    <Stack spacing={8}>
+      <PageHeader
+        title="Users"
+        subtitle="Monitor roles, access status, and group memberships across your organization."
+        actions={
+          <Button colorScheme="primary" onClick={openInviteModal}>
+            Invite user
+          </Button>
+        }
+      />
+
       <Card borderRadius="xl">
-        <CardHeader>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            justify="space-between"
-            align={{ base: 'stretch', md: 'center' }}
-            gap={4}
-          >
-            <Stack spacing={1}>
-              <Heading size="lg">Organization users</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Monitor roles, access status, and group memberships. Invitations and role changes will appear here.
-              </Text>
-            </Stack>
-            <Button
-              colorScheme="primary"
-              alignSelf={{ base: 'stretch', md: 'center' }}
-              onClick={inviteDialog.onOpen}
-            >
-              Invite user
-            </Button>
-          </Flex>
-        </CardHeader>
         <CardBody>
-          <TableContainer>
-            <Table variant="simple" size="sm">
-              <Thead>
-                <Tr>
-                  <Th>User</Th>
-                  <Th>Role</Th>
-                  <Th>Status</Th>
-                  <Th>Groups</Th>
-                  <Th>Last seen</Th>
-                  <Th>Joined</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {users.map((user) => {
-                  const membershipCount = user.groups.length;
-                  const initials = user.name
-                    ? user.name
-                        .split(' ')
-                        .map((part) => part[0])
-                        .join('')
-                        .slice(0, 2)
-                    : user.email[0];
-
-                  const selectValue = toRoleOption(user.role);
-                  const isSelfAdmin = user.id === currentUserId && user.role === 'admin';
-                  const disableRoleSelect =
-                    isSelfAdmin || (isRolePending && rolePendingId !== null && rolePendingId !== user.id);
-                  const disableResetButton =
-                    user.id === currentUserId || (isResetPending && resetPendingId !== null && resetPendingId !== user.id);
-
-                  return (
-                    <Tr key={user.id}>
-                      <Td>
-                        <Stack direction="row" spacing={3} align="center">
-                          <Avatar name={user.name ?? user.email} size="sm">
-                            {initials.toUpperCase()}
-                          </Avatar>
-                          <Stack spacing={0}>
-                            <Text fontWeight="medium">{user.name ?? user.email}</Text>
-                            <Text fontSize="xs" color="fg.muted">
-                              {user.email}
-                            </Text>
-                          </Stack>
-                        </Stack>
-                      </Td>
-                      <Td>
-                        <Select
-                          aria-label={`Change role for ${user.name ?? user.email}`}
-                          size="sm"
-                          value={selectValue}
-                          onChange={(event) => handleRoleChange(user.id, event.target.value as RoleOption)}
-                          isDisabled={disableRoleSelect}
-                        >
-                          {roleOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </Select>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme={statusColorMap[user.status] ?? 'gray'} textTransform="capitalize">
-                          {user.status}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <Text fontWeight="medium">{membershipCount}</Text>
-                        <Text fontSize="xs" color="fg.muted">
-                          {membershipCount === 1 ? 'group' : 'groups'}
-                        </Text>
-                      </Td>
-                      <Td>{user.lastSeenAt ? dateFormatter.format(new Date(user.lastSeenAt)) : '—'}</Td>
-                      <Td>{dateFormatter.format(new Date(user.createdAt))}</Td>
-                      <Td>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => handleResetLink(user.id)}
-                          isDisabled={disableResetButton}
-                          isLoading={isResetPending && resetPendingId === user.id}
-                        >
-                          Send reset link
-                        </Button>
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
-          </TableContainer>
-          <Flex mt={4} justify="space-between" align="center" wrap="wrap" gap={3} fontSize="sm" color="fg.muted">
-            <Text>Showing {range.start === 0 ? 0 : `${range.start}-${range.end}`} of {users.length}</Text>
-            <Stack direction="row" spacing={2}>
-              <Button size="sm" variant="outline" isDisabled>
-                Previous
+          {users.length === 0 ? (
+            <Stack align="center" spacing={4} py={10} textAlign="center">
+              <Circle size="64px" bg="bg.subtle">
+                <Icon as={Users} boxSize={6} color="fg.muted" />
+              </Circle>
+              <Stack spacing={1}>
+                <Heading size="sm">No users yet</Heading>
+                <Text fontSize="sm" color="fg.muted">
+                  Invite your first teammate.
+                </Text>
+              </Stack>
+              <Button colorScheme="primary" onClick={openInviteModal}>
+                Invite user
               </Button>
-              <Button size="sm" variant="outline" isDisabled>
-                Next
-              </Button>
-              <Text fontSize="xs" alignSelf="center" color="fg.muted">
-                Page 1 of 1
-              </Text>
             </Stack>
-          </Flex>
+          ) : (
+            <Stack spacing={6}>
+              <Text fontSize="sm" color="fg.muted">
+                Keep track of member access, roles, and sign-in status. Updates appear immediately after changes are made.
+              </Text>
+              <TableContainer>
+                <Table variant="simple" size="sm">
+                  <Thead>
+                    <Tr>
+                      <Th>User</Th>
+                      <Th>Role</Th>
+                      <Th>Status</Th>
+                      <Th>Groups</Th>
+                      <Th>Last seen</Th>
+                      <Th>Joined</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {users.map((user) => {
+                      const membershipCount = user.groups.length;
+                      const initials = user.name
+                        ? user.name
+                            .split(' ')
+                            .map((part) => part[0])
+                            .join('')
+                            .slice(0, 2)
+                        : user.email[0];
+
+                      const selectValue = toRoleOption(user.role);
+                      const isSelfAdmin = user.id === currentUserId && user.role === 'admin';
+                      const disableRoleSelect =
+                        isSelfAdmin || (isRolePending && rolePendingId !== null && rolePendingId !== user.id);
+                      const disableResetButton =
+                        user.id === currentUserId || (isResetPending && resetPendingId !== null && resetPendingId !== user.id);
+
+                      return (
+                        <Tr key={user.id}>
+                          <Td>
+                            <Stack direction="row" spacing={3} align="center">
+                              <Avatar name={user.name ?? user.email} size="sm">
+                                {initials.toUpperCase()}
+                              </Avatar>
+                              <Stack spacing={0}>
+                                <Text fontWeight="medium">{user.name ?? user.email}</Text>
+                                <Text fontSize="xs" color="fg.muted">
+                                  {user.email}
+                                </Text>
+                              </Stack>
+                            </Stack>
+                          </Td>
+                          <Td>
+                            <Select
+                              aria-label={`Change role for ${user.name ?? user.email}`}
+                              size="sm"
+                              value={selectValue}
+                              onChange={(event) => handleRoleChange(user.id, event.target.value as RoleOption)}
+                              isDisabled={disableRoleSelect}
+                            >
+                              {roleOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </Td>
+                          <Td>
+                            <Badge colorScheme={statusColorMap[user.status] ?? 'gray'} textTransform="capitalize">
+                              {user.status}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <Text fontWeight="medium">{membershipCount}</Text>
+                            <Text fontSize="xs" color="fg.muted">
+                              {membershipCount === 1 ? 'group' : 'groups'}
+                            </Text>
+                          </Td>
+                          <Td>{user.lastSeenAt ? dateFormatter.format(new Date(user.lastSeenAt)) : '—'}</Td>
+                          <Td>{dateFormatter.format(new Date(user.createdAt))}</Td>
+                          <Td>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => handleResetLink(user.id)}
+                              isDisabled={disableResetButton}
+                              isLoading={isResetPending && resetPendingId === user.id}
+                            >
+                              Send reset link
+                            </Button>
+                          </Td>
+                        </Tr>
+                      );
+                    })}
+                  </Tbody>
+                </Table>
+              </TableContainer>
+              <Flex mt={2} justify="space-between" align="center" wrap="wrap" gap={3} fontSize="sm" color="fg.muted">
+                <Text>Showing {range.start === 0 ? 0 : `${range.start}-${range.end}`} of {users.length}</Text>
+                <Stack direction="row" spacing={2} align="center">
+                  <Button size="sm" variant="outline" isDisabled>
+                    Previous
+                  </Button>
+                  <Button size="sm" variant="outline" isDisabled>
+                    Next
+                  </Button>
+                  <Text fontSize="xs" color="fg.muted">
+                    Page 1 of 1
+                  </Text>
+                </Stack>
+              </Flex>
+            </Stack>
+          )}
         </CardBody>
       </Card>
 

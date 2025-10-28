@@ -4,7 +4,11 @@ import { listOrgGroups } from '@/lib/db/group';
 
 import { AdminGroupsClient } from './groups-list';
 
-export default async function AdminGroupsPage() {
+export default async function AdminGroupsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ modal?: string }>;
+}) {
   const { session } = await requireAdminAccess(['ADMIN', 'MANAGER']);
   const orgId = session.user.orgId;
 
@@ -12,11 +16,14 @@ export default async function AdminGroupsPage() {
     throw new Error('Organization not found for admin user');
   }
 
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const autoOpenCreate = resolvedSearchParams.modal === 'new';
+
   const groups = await listOrgGroups({ orgId });
 
   return (
     <AdminShell title="Groups" breadcrumb={[{ label: 'Groups' }]}> 
-      <AdminGroupsClient initialGroups={groups} />
+      <AdminGroupsClient initialGroups={groups} autoOpenCreate={autoOpenCreate} />
     </AdminShell>
   );
 }

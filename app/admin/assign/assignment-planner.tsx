@@ -430,7 +430,7 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
   };
 
   return (
-    <div className="space-y-8">
+    <div id="assignment-planner" className="space-y-8">
       <Card>
         <CardHeader className="space-y-2">
           <CardTitle>Create a new assignment</CardTitle>
