@@ -11,6 +11,7 @@ import { env } from "./env";
 import { sendSignInEmail } from "./email";
 import { enforceRateLimit } from "./rate-limit";
 import { prisma } from "./prisma";
+import { logAudit } from "./db/audit";
 
 const adapter = buildAuthAdapter();
 
@@ -77,16 +78,13 @@ async function logSsoResolution({
   const resolvedOrgId =
     orgId ?? (await getOrCreateDefaultOrg(prisma)).id;
 
-  await prisma.auditLog.create({
-    data: {
-      orgId: resolvedOrgId,
-      action: "audit.auth.sso.resolve",
-      entity: "AuthSession",
-      entityId,
-      meta: {
-        domain,
-        outcome,
-      },
+  await logAudit({
+    orgId: resolvedOrgId,
+    action: "auth.sso.resolve",
+    targetId: entityId,
+    metadata: {
+      domain,
+      outcome,
     },
   });
 }

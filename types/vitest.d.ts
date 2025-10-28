@@ -21,11 +21,19 @@ declare module 'vitest' {
     importActual: <T>(id: string) => Promise<T>;
     stubEnv: (name: string, value: string | undefined) => void;
     unstubAllEnvs: () => void;
+    hoisted: <T>(factory: () => T) => T;
   };
 
   export const describe: (name: string, fn: () => any) => void;
   export const it: (name: string, fn: () => any) => void;
   export const beforeEach: (fn: () => any) => void;
   export const afterEach: (fn: () => any) => void;
-  export const expect: (value: any) => any;
+
+  export interface Expect {
+    (value: any): any;
+    objectContaining: (value: any) => any;
+    stringContaining: (value: string) => any;
+  }
+
+  export const expect: Expect;
 }

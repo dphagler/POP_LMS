@@ -15,6 +15,7 @@ import {
   deleteOrgDomain,
   updateOrgBranding,
 } from "@/lib/db/org";
+import { logAudit } from "@/lib/db/audit";
 
 type SerializableDomainRecord = {
   id: string;
@@ -62,7 +63,7 @@ const DomainInputSchema = z.object({
     .transform((value) => normalizeDomain(value)),
 });
 
-async function requireAdminOrgId() {
+async function requireAdminOrgContext() {
   const session = await requireRole("ADMIN");
   const orgId = session.user.orgId;
 
@@ -70,7 +71,7 @@ async function requireAdminOrgId() {
     throw new Error("Organization not found for admin user");
   }
 
-  return { orgId };
+  return { orgId, userId: session.user.id };
 }
 
 function shouldSkipDnsVerification() {
@@ -122,7 +123,7 @@ export async function updateBranding(input: {
   themeAccent: string;
   loginBlurb?: string | null;
 }) {
-  const { orgId } = await requireAdminOrgId();
+  const { orgId, userId } = await requireAdminOrgContext();
   const payload = BrandingPayloadSchema.parse(input);
 
   const branding = await updateOrgBranding({
@@ -130,6 +131,18 @@ export async function updateBranding(input: {
     themePrimary: payload.themePrimary,
     themeAccent: payload.themeAccent,
     loginBlurb: payload.loginBlurb ?? null,
+  });
+
+  await logAudit({
+    orgId,
+    actorId: userId,
+    action: "branding.update",
+    targetId: orgId,
+    metadata: {
+      themePrimary: branding.themePrimary,
+      themeAccent: branding.themeAccent,
+      loginBlurb: branding.loginBlurb,
+    },
   });
 
   await revalidatePath(BRANDING_PATH);
@@ -141,13 +154,24 @@ export async function verifyDomain(input: { domain: string }): Promise<{
   ok: true;
   domain: SerializableDomainRecord;
 }> {
-  const { orgId } = await requireAdminOrgId();
+  const { orgId, userId } = await requireAdminOrgContext();
   const payload = DomainInputSchema.parse(input);
   const token = buildDomainVerificationToken(orgId, payload.domain);
 
   await verifyDomainOwnership({ domain: payload.domain, token });
 
   const domain = await createOrgDomain({ orgId, value: payload.domain });
+
+  await logAudit({
+    orgId,
+    actorId: userId,
+    action: "domain.verify",
+    targetId: domain.id,
+    metadata: {
+      domain: domain.value,
+      verifiedAt: domain.verifiedAt?.toISOString() ?? null,
+    },
+  });
 
   await revalidatePath(BRANDING_PATH);
 
@@ -163,7 +187,7 @@ export async function verifyDomain(input: { domain: string }): Promise<{
 }
 
 export async function removeDomain(input: { domainId: string }) {
-  const { orgId } = await requireAdminOrgId();
+  const { orgId } = await requireAdminOrgContext();
   const parsed = z
     .object({ domainId: z.string().trim().min(1, "Domain id is required") })
     .parse(input);

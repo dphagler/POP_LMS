@@ -22,6 +22,10 @@ vi.mock("@/lib/db/org", async () => {
   };
 });
 
+vi.mock("@/lib/db/audit", () => ({
+  logAudit: vi.fn(),
+}));
+
 let updateBrandingAction: typeof import("@/lib/server-actions/org").updateBranding;
 let verifyDomainAction: typeof import("@/lib/server-actions/org").verifyDomain;
 let removeDomainAction: typeof import("@/lib/server-actions/org").removeDomain;
