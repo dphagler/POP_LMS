@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-import { requireRole } from '@/lib/authz';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { requireAdminAccess } from '@/lib/authz';
 import { listAuditLogs, type AuditLogListItem } from '@/lib/db/audit';
 import {
   Card,
@@ -99,7 +100,7 @@ export default async function AdminAuditLogPage({
 }: {
   searchParams?: Promise<AuditPageSearchParams>;
 }) {
-  const session = await requireRole('ADMIN');
+  const { session } = await requireAdminAccess(['ADMIN']);
   const orgId = session.user.orgId;
 
   if (!orgId) {
@@ -132,137 +133,139 @@ export default async function AdminAuditLogPage({
   const endValue = resolvedSearchParams.end ?? '';
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-balance">Audit trail</h1>
-        <p className="text-sm text-muted-foreground">
-          Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes.
-        </p>
-      </header>
+    <AdminShell title="Audit" breadcrumb={[{ label: 'Audit' }]}> 
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <h1 className="text-balance">Audit trail</h1>
+          <p className="text-sm text-muted-foreground">
+            Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes.
+          </p>
+        </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Only the most recent 100 events are shown.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4 md:grid-cols-5" method="get">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="action">Action</Label>
-              <Select id="action" name="action" defaultValue={actionFilter ?? ''}>
-                <option value="">All actions</option>
-                {actions.map((action) => (
-                  <option key={action} value={action}>
-                    {action}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="actor">Actor</Label>
-              <Select id="actor" name="actor" defaultValue={actorFilter ?? ''}>
-                <option value="">All actors</option>
-                {actors.map((actor) => {
-                  const label = actor.name ?? actor.email ?? actor.id;
-                  return (
-                    <option key={actor.id} value={actor.id}>
-                      {label}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+            <CardDescription>Only the most recent 100 events are shown.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 md:grid-cols-5" method="get">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="action">Action</Label>
+                <Select id="action" name="action" defaultValue={actionFilter ?? ''}>
+                  <option value="">All actions</option>
+                  {actions.map((action) => (
+                    <option key={action} value={action}>
+                      {action}
                     </option>
-                  );
-                })}
-              </Select>
-            </div>
+                  ))}
+                </Select>
+              </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="start">Start date</Label>
-              <Input id="start" name="start" type="date" defaultValue={startValue} />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="end">End date</Label>
-              <Input id="end" name="end" type="date" defaultValue={endValue} />
-            </div>
-
-            <div className="flex items-end gap-2">
-              <Button type="submit">Apply filters</Button>
-              <Button asChild variant="outline">
-                <Link href="/admin/audit">Reset</Link>
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent events</CardTitle>
-          <CardDescription>Showing up to the last 100 records that match your filters.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {items.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">No audit events found for the selected filters.</p>
-          ) : (
-            <TableContainer>
-              <Table size="sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Target</TableHead>
-                    <TableHead>Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((log) => {
-                    const actor = log.actor;
-                    const actorLabel = actor?.name ?? actor?.email ?? 'System';
-                    const actorSubLabel = actor?.email ?? actor?.id ?? '—';
-                    const target = resolveTarget(log);
-                    const metadataText = renderMetadata(log.metadata);
-
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="actor">Actor</Label>
+                <Select id="actor" name="actor" defaultValue={actorFilter ?? ''}>
+                  <option value="">All actors</option>
+                  {actors.map((actor) => {
+                    const label = actor.name ?? actor.email ?? actor.id;
                     return (
-                      <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap align-top">
-                          <span className="font-medium">{dateFormatter.format(new Date(log.createdAt))}</span>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex flex-col">
-                            <span className="font-medium">{actorLabel}</span>
-                            <span className="text-xs text-muted-foreground">{actorSubLabel}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <span className="font-medium">{log.action}</span>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {target.url ? (
-                            <Link href={target.url} className="text-primary-500 hover:underline" target="_blank">
-                              {target.label}
-                            </Link>
-                          ) : (
-                            <span>{target.label}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {typeof metadataText === 'string' && metadataText.includes('\n') ? (
-                            <pre className="max-h-32 overflow-auto rounded-md bg-muted p-3 text-xs">
-                              {metadataText}
-                            </pre>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{metadataText}</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
+                      <option key={actor.id} value={actor.id}>
+                        {label}
+                      </option>
                     );
                   })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="start">Start date</Label>
+                <Input id="start" name="start" type="date" defaultValue={startValue} />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="end">End date</Label>
+                <Input id="end" name="end" type="date" defaultValue={endValue} />
+              </div>
+
+              <div className="flex items-end gap-2">
+                <Button type="submit">Apply filters</Button>
+                <Button asChild variant="outline">
+                  <Link href="/admin/audit">Reset</Link>
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent events</CardTitle>
+            <CardDescription>Showing up to the last 100 records that match your filters.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {items.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No audit events found for the selected filters.</p>
+            ) : (
+              <TableContainer>
+                <Table size="sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Target</TableHead>
+                      <TableHead>Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((log) => {
+                      const actor = log.actor;
+                      const actorLabel = actor?.name ?? actor?.email ?? 'System';
+                      const actorSubLabel = actor?.email ?? actor?.id ?? '—';
+                      const target = resolveTarget(log);
+                      const metadataText = renderMetadata(log.metadata);
+
+                      return (
+                        <TableRow key={log.id}>
+                          <TableCell className="whitespace-nowrap align-top">
+                            <span className="font-medium">{dateFormatter.format(new Date(log.createdAt))}</span>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{actorLabel}</span>
+                              <span className="text-xs text-muted-foreground">{actorSubLabel}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <span className="font-medium">{log.action}</span>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {target.url ? (
+                              <Link href={target.url} className="text-primary-500 hover:underline" target="_blank">
+                                {target.label}
+                              </Link>
+                            ) : (
+                              <span>{target.label}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {typeof metadataText === 'string' && metadataText.includes('\n') ? (
+                              <pre className="max-h-32 overflow-auto rounded-md bg-muted p-3 text-xs">
+                                {metadataText}
+                              </pre>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">{metadataText}</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AdminShell>
   );
 }

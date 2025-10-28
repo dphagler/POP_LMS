@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { requireRole } from '@/lib/authz';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { requireAdminAccess } from '@/lib/authz';
 import { getGroupDetail } from '@/lib/db/group';
 
 import { GroupDetailClient } from './group-detail-client';
@@ -15,7 +16,7 @@ export default async function AdminGroupDetailPage({
   params: Promise<GroupPageParams>;
 }) {
   const { groupId } = await params;
-  const session = await requireRole('ADMIN');
+  const { session } = await requireAdminAccess(['ADMIN', 'MANAGER']);
   const orgId = session.user.orgId;
 
   if (!orgId) {
@@ -29,12 +30,20 @@ export default async function AdminGroupDetailPage({
   }
 
   return (
-    <GroupDetailClient
-      groupId={group.id}
-      initialName={group.name}
-      initialDescription={group.description}
-      initialMembers={group.members}
-      currentUserId={session.user.id}
-    />
+    <AdminShell
+      title={group.name}
+      breadcrumb={[
+        { label: 'Groups', href: '/admin/groups' },
+        { label: group.name }
+      ]}
+    >
+      <GroupDetailClient
+        groupId={group.id}
+        initialName={group.name}
+        initialDescription={group.description}
+        initialMembers={group.members}
+        currentUserId={session.user.id}
+      />
+    </AdminShell>
   );
 }

@@ -1,10 +1,11 @@
-import { requireRole } from '@/lib/authz';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { requireAdminAccess } from '@/lib/authz';
 import { listOrgGroups } from '@/lib/db/group';
 
 import { AdminGroupsClient } from './groups-list';
 
 export default async function AdminGroupsPage() {
-  const session = await requireRole('ADMIN');
+  const { session } = await requireAdminAccess(['ADMIN', 'MANAGER']);
   const orgId = session.user.orgId;
 
   if (!orgId) {
@@ -13,5 +14,9 @@ export default async function AdminGroupsPage() {
 
   const groups = await listOrgGroups({ orgId });
 
-  return <AdminGroupsClient initialGroups={groups} />;
+  return (
+    <AdminShell title="Groups" breadcrumb={[{ label: 'Groups' }]}> 
+      <AdminGroupsClient initialGroups={groups} />
+    </AdminShell>
+  );
 }
