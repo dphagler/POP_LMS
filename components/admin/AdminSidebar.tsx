@@ -13,7 +13,7 @@ type AdminSidebarProps = {
   navItems: AdminNavItem[];
   onNavigate?: () => void;
   isInDrawer?: boolean;
-  initialFocusRef?: RefObject<HTMLAnchorElement>;
+  initialFocusRef?: RefObject<HTMLAnchorElement | null>;
   navigationId?: string;
 };
 

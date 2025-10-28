@@ -69,7 +69,7 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
   const isDesktop = useBreakpointValue({ base: false, lg: true }, { fallback: "base" });
   const showAdminHome = pathname !== "/admin";
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const firstNavLinkRef = useRef<HTMLAnchorElement>(null);
+  const firstNavLinkRef = useRef<HTMLAnchorElement | null>(null);
   const drawerNavigationId = "admin-mobile-navigation";
 
   const accessibleNavItems = useMemo(
