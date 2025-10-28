@@ -43,7 +43,7 @@ type AdminTopbarProps = {
   showMenuButton?: boolean;
   showAdminHome?: boolean;
   isMenuOpen?: boolean;
-  menuButtonRef?: RefObject<HTMLButtonElement>;
+  menuButtonRef?: RefObject<HTMLButtonElement | null>;
   menuButtonControls?: string;
 };
 
