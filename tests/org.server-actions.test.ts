@@ -31,11 +31,11 @@ let updateOrgBrandingMock: ReturnType<typeof vi.fn>;
 let createOrgDomainMock: ReturnType<typeof vi.fn>;
 let deleteOrgDomainMock: ReturnType<typeof vi.fn>;
 
-const originalNodeEnv = process.env.NODE_ENV;
 let fetchSpy: ReturnType<typeof vi.spyOn> | null = null;
 
 beforeEach(async () => {
   vi.resetModules();
+  vi.unstubAllEnvs();
 
   const actions = await import("@/lib/server-actions/org");
   updateBrandingAction = actions.updateBranding;
@@ -49,8 +49,6 @@ beforeEach(async () => {
   updateOrgBrandingMock = vi.mocked(db.updateOrgBranding);
   createOrgDomainMock = vi.mocked(db.createOrgDomain);
   deleteOrgDomainMock = vi.mocked(db.deleteOrgDomain);
-
-  process.env.NODE_ENV = originalNodeEnv;
 });
 
 afterEach(() => {
@@ -60,7 +58,7 @@ afterEach(() => {
   }
 
   vi.clearAllMocks();
-  process.env.NODE_ENV = originalNodeEnv;
+  vi.unstubAllEnvs();
 });
 
 describe("org server actions", () => {
@@ -115,7 +113,7 @@ describe("org server actions", () => {
       verifiedAt: now,
     });
 
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     const token = buildDomainVerificationToken("org-1", "example.org");
 
     fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
@@ -145,7 +143,7 @@ describe("org server actions", () => {
       },
     } as any);
 
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({ Answer: [{ data: '"unrelated"' }] }),
