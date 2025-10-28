@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, isValidElement, type ReactNode } from "react";
+import { Fragment, forwardRef, isValidElement, type ReactNode } from "react";
 import { Button, type ButtonProps, useColorModeValue } from "@chakra-ui/react";
 
 import { isActive } from "@/lib/admin/nav-active";
@@ -17,14 +17,10 @@ export type AdminNavLinkProps = Omit<ButtonProps, "as" | "href" | "leftIcon" | "
   testId?: string;
 };
 
-export function AdminNavLink({
-  href,
-  exact,
-  children,
-  leftIcon,
-  testId,
-  ...rest
-}: AdminNavLinkProps) {
+export const AdminNavLink = forwardRef<HTMLAnchorElement, AdminNavLinkProps>(function AdminNavLink(
+  { href, exact, children, leftIcon, testId, ...rest },
+  ref
+) {
   const pathname = usePathname();
   const active = isActive(href, exact, pathname);
 
@@ -68,9 +64,10 @@ export function AdminNavLink({
       color={resolvedColor}
       data-testid={testId}
       aria-current={active ? "page" : undefined}
+      ref={ref}
       {...otherProps}
     >
       {children}
     </Button>
   );
-}
+});
