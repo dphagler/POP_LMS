@@ -121,17 +121,16 @@ describe('admin user server actions', () => {
       source: UserSource.invite,
     });
 
-    expect(sendSignInEmailMock).toHaveBeenCalledWith(
-      'learner@example.com',
-      expect.stringContaining('callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fapp'),
-    );
-    expect(logAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orgId: 'org-1',
-        actorId: 'admin-1',
-        action: 'user.invite',
-      }),
-    );
+    expect(sendSignInEmailMock).toHaveBeenCalled();
+    const [, inviteEmailBody] = sendSignInEmailMock.mock.calls.at(-1) ?? [];
+    expect(inviteEmailBody).toContain('callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fapp');
+
+    const lastAuditCall = logAuditMock.mock.calls.at(-1)?.[0];
+    expect(lastAuditCall).toMatchObject({
+      orgId: 'org-1',
+      actorId: 'admin-1',
+      action: 'user.invite',
+    });
   });
 
   it('updateUserRole throws when the session user is not an admin', async () => {

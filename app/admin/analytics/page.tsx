@@ -24,7 +24,7 @@ type AnalyticsSearchParams = {
 export default async function AdminAnalyticsPage({
   searchParams,
 }: {
-  searchParams?: AnalyticsSearchParams;
+  searchParams?: Promise<AnalyticsSearchParams>;
 }) {
   const session = await requireRole("ADMIN");
   const { id: userId, orgId } = session.user;
@@ -33,9 +33,11 @@ export default async function AdminAnalyticsPage({
     throw new Error("Organization not found for admin user");
   }
 
-  const groupFilter = typeof searchParams?.groupId === "string" ? searchParams.groupId : "";
-  const startFilter = typeof searchParams?.start === "string" ? searchParams.start : "";
-  const endFilter = typeof searchParams?.end === "string" ? searchParams.end : "";
+  const resolvedSearchParams = (await searchParams) ?? {};
+
+  const groupFilter = typeof resolvedSearchParams.groupId === "string" ? resolvedSearchParams.groupId : "";
+  const startFilter = typeof resolvedSearchParams.start === "string" ? resolvedSearchParams.start : "";
+  const endFilter = typeof resolvedSearchParams.end === "string" ? resolvedSearchParams.end : "";
 
   const snapshot = await loadOrgAnalyticsSnapshot(orgId);
 

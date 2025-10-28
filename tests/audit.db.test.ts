@@ -50,10 +50,9 @@ describe('logAudit', () => {
       metadata: largePayload,
     });
 
-    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ metadata: largePayload }),
-      }),
-    );
+    const callArgs = prismaMock.auditLog.create.mock.calls[0]?.[0];
+    expect(callArgs).toMatchObject({
+      data: { metadata: largePayload },
+    });
   });
 });

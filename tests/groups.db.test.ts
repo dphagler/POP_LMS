@@ -228,7 +228,7 @@ describe('importGroupMembers', () => {
     expect(result.summary.createdUsers).toBe(1);
     expect(result.summary.errors).toHaveLength(2);
 
-    const membershipUserIds = Array.from(fake.store.memberships.values()).map((membership) => membership.userId);
+    const membershipUserIds = Array.from(fake.store.memberships.values()).map(({ userId }) => userId);
     expect(membershipUserIds).toContain(existingUser.id);
 
     const createdUser = fake.getUserByEmail('new@example.com');
