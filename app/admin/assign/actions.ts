@@ -2,7 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/authz";
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
+
+const assignmentInclude = {
+  enrollments: { select: { userId: true } }
+} as const;
+
+type AssignmentWithEnrollments = Prisma.AssignmentGetPayload<{
+  include: typeof assignmentInclude;
+}>;
 
 export type AssignToGroupsInput = {
   mode: "course" | "module";
@@ -81,13 +91,13 @@ export async function assignToGroupsAction(input: AssignToGroupsInput): Promise<
   const targetCourseId = input.mode === "module" && moduleRecord ? moduleRecord.courseId : course.id;
   const targetModuleId = input.mode === "module" ? moduleRecord?.id ?? null : null;
 
-  let assignment = await prisma.assignment.findFirst({
+  let assignment: AssignmentWithEnrollments | null = await prisma.assignment.findFirst({
     where: {
       orgId,
       courseId: targetCourseId,
       moduleId: targetModuleId
     },
-    include: { enrollments: { select: { userId: true } } }
+    include: assignmentInclude
   });
 
   let createdAssignment = false;
@@ -100,7 +110,7 @@ export async function assignToGroupsAction(input: AssignToGroupsInput): Promise<
         moduleId: targetModuleId,
         createdBy: userId
       },
-      include: { enrollments: { select: { userId: true } } }
+      include: assignmentInclude
     });
     createdAssignment = true;
   }
