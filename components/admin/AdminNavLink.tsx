@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { Fragment, isValidElement, type ReactNode } from "react";
 import { Button, type ButtonProps, useColorModeValue } from "@chakra-ui/react";
 
 import { isActive } from "@/lib/admin/nav-active";
@@ -47,11 +47,18 @@ export function AdminNavLink({
   const resolvedBg = active ? activeBg : bg;
   const resolvedColor = active ? activeColor : color;
 
+  const resolvedLeftIcon =
+    leftIcon == null
+      ? undefined
+      : isValidElement(leftIcon)
+        ? leftIcon
+        : <Fragment>{leftIcon}</Fragment>;
+
   return (
     <Button
       as={NextLink}
       href={href}
-      leftIcon={leftIcon}
+      leftIcon={resolvedLeftIcon}
       variant={resolvedVariant}
       colorScheme={resolvedColorScheme}
       justifyContent={justifyContent}
