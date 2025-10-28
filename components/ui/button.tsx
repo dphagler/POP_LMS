@@ -1,7 +1,11 @@
 "use client";
 
-import { AnchorHTMLAttributes, forwardRef, isValidElement } from "react";
-import { Slot } from "@radix-ui/react-slot";
+import {
+  AnchorHTMLAttributes,
+  ElementType,
+  forwardRef,
+  isValidElement
+} from "react";
 import {
   Button as ChakraButton,
   type ButtonProps as ChakraButtonProps
@@ -47,27 +51,38 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedVariant: ChakraButtonProps["variant"] =
       variant === "primary" ? "solid" : variant;
 
-    const child = asChild
-      ? isValidElement(children)
-        ? children
-        : <span>{children}</span>
-      : children;
+    const chakraButtonProps: ChakraButtonProps = {
+      variant: resolvedVariant,
+      colorScheme,
+      borderRadius,
+      fontWeight,
+      _focusVisible,
+      _disabled,
+      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+      _active: { transform: "translateY(0)" },
+      ...props
+    };
+
+    if (asChild && isValidElement(children)) {
+      const { children: childContent, ...childProps } = children.props;
+      const childType = children.type as ElementType;
+
+      return (
+        <ChakraButton ref={ref} as={childType} {...childProps} {...chakraButtonProps}>
+          {childContent}
+        </ChakraButton>
+      );
+    }
+
+    if (asChild && process.env.NODE_ENV !== "production") {
+      console.warn(
+        "Button with \"asChild\" expects a single valid React element child. Falling back to a span wrapper."
+      );
+    }
 
     return (
-      <ChakraButton
-        as={asChild ? Slot : undefined}
-        ref={ref}
-        variant={resolvedVariant}
-        colorScheme={colorScheme}
-        borderRadius={borderRadius}
-        fontWeight={fontWeight}
-        _focusVisible={_focusVisible}
-        _disabled={_disabled}
-        transition="transform 0.2s ease, box-shadow 0.2s ease"
-        _active={{ transform: "translateY(0)" }}
-        {...props}
-      >
-        {child}
+      <ChakraButton ref={ref} {...chakraButtonProps}>
+        {asChild ? <span>{children}</span> : children}
       </ChakraButton>
     );
   }
