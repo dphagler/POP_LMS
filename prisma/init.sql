@@ -85,11 +85,8 @@ CREATE TABLE "Lesson" (
 CREATE TABLE "Assignment" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
-    "groupId" TEXT NOT NULL,
     "courseId" TEXT,
     "moduleId" TEXT,
-    "dueAt" TIMESTAMP(3),
-    "label" TEXT,
     "createdBy" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -520,7 +517,6 @@ ALTER TABLE "Lesson" ADD CONSTRAINT "Lesson_moduleId_fkey" FOREIGN KEY ("moduleI
 ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -644,4 +640,43 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ===== Manual application of migration 20251030000000_add_assignment_group_fields =====
+ALTER TABLE "Assignment" ADD COLUMN "groupId" TEXT;
+ALTER TABLE "Assignment" ADD COLUMN "dueAt" TIMESTAMP(3);
+ALTER TABLE "Assignment" ADD COLUMN "label" TEXT;
+
+UPDATE "Assignment" AS a
+SET "groupId" = ag."groupId"
+FROM (
+  SELECT DISTINCT ON ("assignmentId")
+    "assignmentId",
+    "groupId",
+    "createdAt",
+    "id"
+  FROM "AssignmentGroup"
+  ORDER BY "assignmentId", "createdAt" NULLS LAST, "id"
+) AS ag
+WHERE a."id" = ag."assignmentId"
+  AND a."groupId" IS NULL;
+
+DO $$
+DECLARE
+  missing_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO missing_count
+  FROM "Assignment"
+  WHERE "groupId" IS NULL;
+
+  IF missing_count > 0 THEN
+    RAISE EXCEPTION 'Assignments missing groupId after init script backfill: %', missing_count;
+  END IF;
+END $$;
+
+ALTER TABLE "Assignment"
+ALTER COLUMN "groupId" SET NOT NULL;
+
+ALTER TABLE "Assignment"
+ADD CONSTRAINT IF NOT EXISTS "Assignment_groupId_fkey"
+FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
