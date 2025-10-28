@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test lib/__tests__/auth-adapter.test.cjs lib/lesson/__tests__/progress.test.cjs lib/lesson/__tests__/diagnostics.test.cjs lib/lesson/__tests__/engine.test.cjs",
     "test:vitest": "vitest",
+    "test:e2e": "playwright test",
     "check:routes": "node scripts/check-routes.mjs",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "file:./packages/tailwindcss-postcss",
+    "@playwright/test": "^1.51.1",
     "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",

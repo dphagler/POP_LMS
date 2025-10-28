@@ -15,5 +15,5 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Assignments", href: "/admin/assign", roles: ["ADMIN", "MANAGER"] },
   { label: "Org Settings", href: "/admin/org", roles: ["ADMIN"] },
   { label: "Audit", href: "/admin/audit", roles: ["ADMIN"] },
-  { label: "Analytics", href: "/admin/analytics", roles: ["ADMIN"] }
+  { label: "Analytics", href: "/admin/analytics", roles: ["ADMIN", "MANAGER"] }
 ];

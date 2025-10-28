@@ -30,7 +30,7 @@ export default async function AdminAnalyticsPage({
 }: {
   searchParams?: Promise<AnalyticsSearchParams>;
 }) {
-  const { session } = await requireAdminAccess(["ADMIN"]);
+  const { session } = await requireAdminAccess(["ADMIN", "MANAGER"]);
   const { id: userId, orgId } = session.user;
 
   if (!orgId) {
