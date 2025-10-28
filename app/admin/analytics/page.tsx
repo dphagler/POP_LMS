@@ -99,8 +99,8 @@ export default async function AdminAnalyticsPage({
             </div>
             <div className="flex items-end gap-2">
               <Button type="submit">Apply filters</Button>
-              <Button asChild variant="outline">
-                <Link href="/admin/analytics">Reset</Link>
+              <Button as={Link} href="/admin/analytics" variant="outline">
+                Reset
               </Button>
             </div>
           </form>
