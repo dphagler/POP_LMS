@@ -15,6 +15,18 @@ vi.mock('@/lib/db/user', async () => {
   };
 });
 
+vi.mock('@/lib/db/audit', () => ({
+  logAudit: vi.fn(),
+}));
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    verificationToken: {
+      create: vi.fn(),
+    },
+  },
+}));
+
 vi.mock('@/lib/email', () => ({
   sendSignInEmail: vi.fn(),
 }));
@@ -34,6 +46,7 @@ let upsertOrgUserMock: ReturnType<typeof vi.fn>;
 let changeOrgUserRoleMock: ReturnType<typeof vi.fn>;
 let findOrgUserByIdMock: ReturnType<typeof vi.fn>;
 let sendSignInEmailMock: ReturnType<typeof vi.fn>;
+let logAuditMock: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -53,6 +66,9 @@ beforeEach(async () => {
   upsertOrgUserMock = vi.mocked(dbModule.upsertOrgUser);
   changeOrgUserRoleMock = vi.mocked(dbModule.changeOrgUserRole);
   findOrgUserByIdMock = vi.mocked(dbModule.findOrgUserById);
+
+  const auditModule = await import('@/lib/db/audit');
+  logAuditMock = vi.mocked(auditModule.logAudit);
 
   const emailModule = await import('@/lib/email');
   sendSignInEmailMock = vi.mocked(emailModule.sendSignInEmail);
@@ -105,10 +121,16 @@ describe('admin user server actions', () => {
       source: UserSource.invite,
     });
 
-    expect(createMagicLinkForEmailSpy).toHaveBeenCalledWith('learner@example.com', {
-      callbackPath: '/app',
+    expect(sendSignInEmailMock).toHaveBeenCalled();
+    const [, inviteEmailBody] = sendSignInEmailMock.mock.calls.at(-1) ?? [];
+    expect(inviteEmailBody).toContain('callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fapp');
+
+    const lastAuditCall = logAuditMock.mock.calls.at(-1)?.[0];
+    expect(lastAuditCall).toMatchObject({
+      orgId: 'org-1',
+      actorId: 'admin-1',
+      action: 'user.invite',
     });
-    expect(sendSignInEmailMock).toHaveBeenCalledWith('learner@example.com', 'https://example.com/magic');
   });
 
   it('updateUserRole throws when the session user is not an admin', async () => {
@@ -124,6 +146,7 @@ describe('admin user server actions', () => {
       'Only admins can perform this action.'
     );
     expect(changeOrgUserRoleMock).not.toHaveBeenCalled();
+    expect(logAuditMock).not.toHaveBeenCalled();
   });
 
   it('sendResetLink rejects when the user has no email address', async () => {

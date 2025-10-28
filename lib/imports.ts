@@ -11,6 +11,7 @@ import { prisma } from "./prisma";
 import { createLogger, serializeError } from "./logger";
 import { env } from "./env";
 import { sendImportResultsEmail } from "./email";
+import { logAudit } from "./db/audit";
 
 const logger = createLogger({ component: "csv-import" });
 
@@ -402,24 +403,22 @@ async function processRow(jobId: string, orgId: string, row: ParsedCsvRow): Prom
       }
     }
 
-    await tx.auditLog.create({
-      data: {
-        orgId,
-        action: "audit.csv.import.row.ok",
-        entity: "ImportJob",
-        entityId: jobId,
-        meta: {
-          jobId,
-          rowNumber: row.rowNumber,
-          email: normalizedEmail,
-          userId: user.id,
-          membershipId: membership.id,
-          createdUser,
-          createdMembership,
-          createdGroupIds,
-          createdGroupMemberIds
-        }
-      }
+    await logAudit({
+      orgId,
+      action: "import.csv.row.success",
+      targetId: jobId,
+      metadata: {
+        jobId,
+        rowNumber: row.rowNumber,
+        email: normalizedEmail,
+        userId: user.id,
+        membershipId: membership.id,
+        createdUser,
+        createdMembership,
+        createdGroupIds,
+        createdGroupMemberIds
+      },
+      client: tx,
     });
 
     return {
@@ -504,18 +503,16 @@ export async function processCsv(jobId: string) {
       }
     });
 
-    await tx.auditLog.create({
-      data: {
-        orgId: job.orgId,
-        action: "audit.csv.import.start",
-        entity: "ImportJob",
-        entityId: jobId,
-        meta: {
-          jobId,
-          fileName: job.fileName,
-          source: job.source
-        }
-      }
+    await logAudit({
+      orgId: job.orgId,
+      action: "import.csv.start",
+      targetId: jobId,
+      metadata: {
+        jobId,
+        fileName: job.fileName,
+        source: job.source
+      },
+      client: tx,
     });
   });
 
@@ -557,19 +554,16 @@ export async function processCsv(jobId: string) {
         errors.push({ row: row.rowNumber, email: normalizedEmail, reason });
         results.totals.processed += 1;
         results.totals.failed += 1;
-        await prisma.auditLog.create({
-          data: {
-            orgId: job.orgId,
-            action: "audit.csv.import.row.error",
-            entity: "ImportJob",
-            entityId: jobId,
-            meta: {
-              jobId,
-              rowNumber: row.rowNumber,
-              email: normalizedEmail,
-              reason
-            }
-          }
+        await logAudit({
+          orgId: job.orgId,
+          action: "import.csv.row.error",
+          targetId: jobId,
+          metadata: {
+            jobId,
+            rowNumber: row.rowNumber,
+            email: normalizedEmail,
+            reason
+          },
         });
         continue;
       }
@@ -601,20 +595,17 @@ export async function processCsv(jobId: string) {
         results.totals.processed += 1;
         results.totals.failed += 1;
 
-        await prisma.auditLog.create({
-          data: {
-            orgId: job.orgId,
-            action: "audit.csv.import.row.error",
-            entity: "ImportJob",
-            entityId: jobId,
-            meta: {
-              jobId,
-              rowNumber,
-              email,
-              reason: message,
-              error: serializeError(error)
-            }
-          }
+        await logAudit({
+          orgId: job.orgId,
+          action: "import.csv.row.error",
+          targetId: jobId,
+          metadata: {
+            jobId,
+            rowNumber,
+            email,
+            reason: message,
+            error: serializeError(error)
+          },
         });
 
         jobLogger.warn({
@@ -657,21 +648,18 @@ export async function processCsv(jobId: string) {
     }
   });
 
-  await prisma.auditLog.create({
-    data: {
-      orgId: job.orgId,
-      action: "audit.csv.import.complete",
-      entity: "ImportJob",
-      entityId: jobId,
-      meta: {
-        jobId,
-        status,
-        processedCount: results.totals.processed,
-        successCount: results.totals.succeeded,
-        errorCount: results.totals.failed,
-        lastError
-      }
-    }
+  await logAudit({
+    orgId: job.orgId,
+    action: "import.csv.complete",
+    targetId: jobId,
+    metadata: {
+      jobId,
+      status,
+      processedCount: results.totals.processed,
+      successCount: results.totals.succeeded,
+      errorCount: results.totals.failed,
+      lastError
+    },
   });
 
   try {

@@ -547,19 +547,15 @@ model AuditLog {
   id        String   @id @default(cuid())
   orgId     String
   actorId   String?
-  actorRole String?
   action    String
-  entity    String
-  entityId  String
-  meta      Json?
+  targetId  String?
+  metadata  Json?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   actor User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
-  @@index([orgId])
-  @@index([entity, entityId])
+  @@index([orgId, createdAt])
 }
 
 model Account {
