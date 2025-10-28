@@ -346,62 +346,62 @@ async function main() {
     }
   ]);
 
-  const assignment = await prisma.assignment.upsert({
-    where: { id: "assignment-workplace-readiness" },
-    update: {
-      orgId: organization.id,
-      courseId: course.id,
-      moduleId: module.id,
-      createdBy: adminUserId,
-      deletedAt: null
-    },
-    create: {
-      id: "assignment-workplace-readiness",
-      orgId: organization.id,
-      courseId: course.id,
-      moduleId: module.id,
-      createdBy: adminUserId
-    }
-  });
+  const assignmentTargets = [
+    { id: "assignment-workplace-readiness", groupId: roboticsGroup.id },
+    { id: "assignment-workplace-readiness-it", groupId: itGroup.id }
+  ];
 
-  const assignmentGroupIds = [roboticsGroup.id, itGroup.id];
-
-  for (const groupId of assignmentGroupIds) {
-    await prisma.assignmentGroup.upsert({
-      where: { assignmentId_groupId: { assignmentId: assignment.id, groupId } },
-      update: {},
-      create: { assignmentId: assignment.id, groupId }
-    });
-  }
-
-  await prisma.assignmentGroup.deleteMany({
-    where: {
-      assignmentId: assignment.id,
-      groupId: { notIn: assignmentGroupIds }
-    }
-  });
-
-  for (const learnerId of learnerUserIds) {
-    await prisma.enrollment.upsert({
-      where: { assignmentId_userId: { assignmentId: assignment.id, userId: learnerId } },
+  for (const target of assignmentTargets) {
+    const assignment = await prisma.assignment.upsert({
+      where: { id: target.id },
       update: {
-        status: EnrollmentStatus.ACTIVE,
+        orgId: organization.id,
+        groupId: target.groupId,
+        courseId: course.id,
+        moduleId: module.id,
+        label: ASSIGNMENT_LABEL,
+        createdBy: adminUserId,
         deletedAt: null
       },
       create: {
+        id: target.id,
+        orgId: organization.id,
+        groupId: target.groupId,
+        courseId: course.id,
+        moduleId: module.id,
+        label: ASSIGNMENT_LABEL,
+        createdBy: adminUserId
+      }
+    });
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: { groupId: target.groupId },
+      select: { userId: true }
+    });
+    const memberIds = groupMembers.map((member) => member.userId);
+
+    for (const userId of memberIds) {
+      await prisma.enrollment.upsert({
+        where: { assignmentId_userId: { assignmentId: assignment.id, userId } },
+        update: {
+          status: EnrollmentStatus.ACTIVE,
+          deletedAt: null
+        },
+        create: {
+          assignmentId: assignment.id,
+          userId,
+          status: EnrollmentStatus.ACTIVE
+        }
+      });
+    }
+
+    await prisma.enrollment.deleteMany({
+      where: {
         assignmentId: assignment.id,
-        userId: learnerId,
-        status: EnrollmentStatus.ACTIVE
+        userId: { notIn: memberIds }
       }
     });
   }
-
-  await prisma.enrollment.deleteMany({
-    where: {
-      assignmentId: assignment.id,
-      userId: { notIn: learnerUserIds }
-    }
-  });
 
   const [
     groupCount,
@@ -409,7 +409,7 @@ async function main() {
     instructorCount,
     learnerCount,
     lessonCount,
-    assignmentGroupCount,
+    assignmentCount,
     enrollmentCount
   ] = await Promise.all([
     prisma.orgGroup.count({ where: { orgId: organization.id } }),
@@ -417,15 +417,15 @@ async function main() {
     prisma.user.count({ where: { orgId: organization.id, role: UserRole.INSTRUCTOR } }),
     prisma.user.count({ where: { orgId: organization.id, role: UserRole.LEARNER } }),
     prisma.lesson.count({ where: { moduleId: module.id } }),
-    prisma.assignmentGroup.count({ where: { assignmentId: assignment.id } }),
-    prisma.enrollment.count({ where: { assignmentId: assignment.id } })
+    prisma.assignment.count({ where: { orgId: organization.id } }),
+    prisma.enrollment.count({ where: { assignment: { orgId: organization.id } } })
   ]);
 
   console.log(
     `Seed summary: org=${organization.id}, admins=${adminCount}, instructors=${instructorCount}, learners=${learnerCount}, groups=${groupCount}`
   );
   console.log(
-    `Assignment: ${ASSIGNMENT_LABEL} (id=${assignment.id}) targeting ${assignmentGroupCount} groups with ${enrollmentCount} enrollments.`
+    `Assignments created: ${assignmentCount} total with ${enrollmentCount} enrollments.`
   );
   console.log(
     `Lessons: ${lessonRecords.map((lesson) => lesson.title).join(", ")}`
