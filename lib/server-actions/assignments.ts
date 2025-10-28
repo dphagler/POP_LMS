@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireRole } from '@/lib/authz';
+import { logAudit } from '@/lib/db/audit';
 import {
   backfillAssignmentsEnrollments,
   bulkUpdateAssignmentsDueAt,
@@ -81,6 +82,20 @@ export async function createAssignment(input: CreateAssignmentInput): Promise<Cr
     label: sanitizeLabel(input.label ?? null),
   });
 
+  await logAudit({
+    orgId: user.orgId,
+    actorId: user.id,
+    action: 'assignment.create',
+    targetId: result.assignment.id,
+    metadata: {
+      groupId: input.groupId,
+      moduleId: input.moduleId,
+      dueAt: result.assignment.dueAt,
+      enrollmentsCreated: result.enrollmentsCreated,
+      totalMembers: result.totalMembers,
+    },
+  });
+
   revalidatePath('/admin/assign');
   revalidatePath('/app');
 
@@ -125,6 +140,19 @@ export async function withdrawAssignmentsAction(
 
   const leaveEnrollments = process.env.LEAVE_ENROLLMENTS !== 'false';
   const result = await withdrawAssignments(user.orgId, input.ids, { leaveEnrollments });
+
+  if (result.removedIds.length > 0) {
+    await logAudit({
+      orgId: user.orgId,
+      actorId: user.id,
+      action: 'assignment.withdraw',
+      targetId: result.removedIds.join(','),
+      metadata: {
+        assignmentIds: result.removedIds,
+        leaveEnrollments,
+      },
+    });
+  }
 
   if (result.removedIds.length > 0) {
     revalidatePath('/admin/assign');

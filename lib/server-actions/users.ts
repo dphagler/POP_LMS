@@ -18,6 +18,7 @@ import {
 import { sendSignInEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/db/audit";
 
 const InviteUserSchema = z.object({
   email: z.string().email(),
@@ -170,6 +171,17 @@ export async function inviteUser(rawInput: InviteUserInput): Promise<ServerActio
 
     await sendSignInEmail(user.email, url);
 
+    await logAudit({
+      orgId,
+      actorId: session.user.id,
+      action: "user.invite",
+      targetId: user.id,
+      metadata: {
+        email: user.email,
+        role: input.role,
+      },
+    });
+
     revalidatePath("/admin/users");
 
     return { ok: true, user };
@@ -205,6 +217,16 @@ export async function updateUserRole(
     orgId,
     userId: input.userId,
     role: userRole,
+  });
+
+  await logAudit({
+    orgId,
+    actorId: session.user.id,
+    action: "role.update",
+    targetId: user.id,
+    metadata: {
+      role: input.role,
+    },
   });
 
   revalidatePath("/admin/users");

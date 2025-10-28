@@ -1,9 +1,12 @@
 import Link from "next/link";
+
 import { requireRole } from "@/lib/authz";
 import { loadOrgAnalyticsSnapshot } from "@/lib/admin-analytics";
 import { capturePosthogEvent } from "@/lib/posthog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const percentFormatter = new Intl.NumberFormat("en-US", {
@@ -12,13 +15,27 @@ const percentFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1
 });
 
-export default async function AdminAnalyticsPage() {
+type AnalyticsSearchParams = {
+  groupId?: string;
+  start?: string;
+  end?: string;
+};
+
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams?: AnalyticsSearchParams;
+}) {
   const session = await requireRole("ADMIN");
   const { id: userId, orgId } = session.user;
 
   if (!orgId) {
     throw new Error("Organization not found for admin user");
   }
+
+  const groupFilter = typeof searchParams?.groupId === "string" ? searchParams.groupId : "";
+  const startFilter = typeof searchParams?.start === "string" ? searchParams.start : "";
+  const endFilter = typeof searchParams?.end === "string" ? searchParams.end : "";
 
   const snapshot = await loadOrgAnalyticsSnapshot(orgId);
 
@@ -36,6 +53,21 @@ export default async function AdminAnalyticsPage() {
   const completionRateLabel = percentFormatter.format(snapshot.completionRate || 0);
   const hasAssignments = snapshot.assignments.length > 0;
 
+  const downloadParams = new URLSearchParams();
+  if (groupFilter) {
+    downloadParams.set("groupId", groupFilter);
+  }
+  if (startFilter) {
+    downloadParams.set("start", startFilter);
+  }
+  if (endFilter) {
+    downloadParams.set("end", endFilter);
+  }
+
+  const exportHref = downloadParams.toString()
+    ? `/admin/analytics/export?${downloadParams.toString()}`
+    : "/admin/analytics/export";
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
       <header className="flex flex-col gap-2">
@@ -44,6 +76,34 @@ export default async function AdminAnalyticsPage() {
           Review cohort health at a glance. Metrics update when assignments or learner progress changes.
         </p>
       </header>
+      <Card>
+        <CardHeader>
+          <CardTitle>Export filters</CardTitle>
+          <CardDescription>Filters apply to the CSV export of learner progress.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4 md:grid-cols-4" method="get">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="groupId">Group ID</Label>
+              <Input id="groupId" name="groupId" placeholder="group_123" defaultValue={groupFilter} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="start">Start date</Label>
+              <Input id="start" name="start" type="date" defaultValue={startFilter} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="end">End date</Label>
+              <Input id="end" name="end" type="date" defaultValue={endFilter} />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button type="submit">Apply filters</Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/analytics">Reset</Link>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="grid flex-1 gap-4 sm:grid-cols-3">
           <Card>
@@ -74,7 +134,7 @@ export default async function AdminAnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-        <Button as="a" href="/admin/analytics/export" download variant="outline" className="shrink-0">
+        <Button as="a" href={exportHref} download variant="outline" className="shrink-0">
           Download CSV
         </Button>
       </div>

@@ -8,6 +8,7 @@ import { env } from "./env";
 import { createLogger } from "./logger";
 import { prisma } from "./prisma";
 import { enforceRateLimit } from "./rate-limit";
+import { logAudit } from "./db/audit";
 
 const logger = createLogger({ component: "invite" });
 
@@ -187,20 +188,17 @@ export async function inviteUser(
         select: { id: true },
       });
 
-      await tx.auditLog.create({
-        data: {
-          orgId,
-          actorId: inviterId,
-          actorRole: membership.role,
-          action: "audit.invite.create",
-          entity: "OrgInvite",
-          entityId: created.id,
-          meta: {
-            email: normalizedEmail,
-            role,
-            groupIds: validGroups.map((group) => group.id),
-          },
+      await logAudit({
+        orgId,
+        actorId: inviterId,
+        action: "user.invite",
+        targetId: created.id,
+        metadata: {
+          email: normalizedEmail,
+          role,
+          groupIds: validGroups.map((group) => group.id),
         },
+        client: tx,
       });
 
       return created;
@@ -367,20 +365,17 @@ export async function acceptInvite(token: string): Promise<AcceptInviteResult> {
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          orgId: invite.orgId,
-          actorId: user.id,
-          actorRole: membershipRole,
-          action: "audit.invite.accept",
-          entity: "OrgInvite",
-          entityId: invite.id,
-          meta: {
-            email: normalizedEmail,
-            role: invite.role,
-            groupIds: uniqueGroupIds,
-          },
+      await logAudit({
+        orgId: invite.orgId,
+        actorId: user.id,
+        action: "user.invite.accept",
+        targetId: invite.id,
+        metadata: {
+          email: normalizedEmail,
+          role: invite.role,
+          groupIds: uniqueGroupIds,
         },
+        client: tx,
       });
 
       return { orgId: invite.orgId, userId: user.id };

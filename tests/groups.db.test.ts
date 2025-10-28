@@ -196,7 +196,7 @@ function createInMemoryPrisma() {
   };
 }
 
-const fake = createInMemoryPrisma();
+const fake = vi.hoisted(() => createInMemoryPrisma());
 
 vi.mock('@/lib/prisma', () => ({
   prisma: fake.prisma,
