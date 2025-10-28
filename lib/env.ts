@@ -61,6 +61,9 @@ export const env = {
   get DATABASE_URL() {
     return isProduction ? readRequiredEnv("DATABASE_URL") : readOptionalEnv("DATABASE_URL");
   },
+  get DATABASE_DIRECT_URL() {
+    return readOptionalEnv("DATABASE_DIRECT_URL");
+  },
   get SANITY_PROJECT_ID() {
     return readOptionalEnv("SANITY_PROJECT_ID");
   },
