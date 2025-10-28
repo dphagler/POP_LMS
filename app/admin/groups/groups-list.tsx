@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -38,6 +37,7 @@ import {
 } from "@chakra-ui/react";
 import { Plus, Users } from "lucide-react";
 
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { PageHeader } from "@/components/admin/PageHeader";
 import type { GroupListItem } from "@/lib/db/group";
 import { createGroup } from "@/lib/server-actions/groups";
@@ -258,9 +258,9 @@ export function AdminGroupsClient({ initialGroups, autoOpenCreate = false }: Adm
                         </Td>
                         <Td>{dateFormatter.format(new Date(group.updatedAt))}</Td>
                         <Td>
-                          <Button as={Link} href={`/admin/groups/${group.id}`} size="sm" variant="outline">
+                          <AdminNavLink href={`/admin/groups/${group.id}`} size="sm" variant="outline">
                             Manage
-                          </Button>
+                          </AdminNavLink>
                         </Td>
                       </Tr>
                     ))}

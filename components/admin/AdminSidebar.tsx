@@ -1,23 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Box, Button, Flex, Stack, Text, useColorModeValue } from "@chakra-ui/react";
+import { Box, Flex, Stack, Text, useColorModeValue } from "@chakra-ui/react";
 
 import type { AdminNavItem } from "@/lib/admin/nav";
 
-function isItemActive(item: AdminNavItem, pathname: string) {
-  if (item.exact) {
-    return pathname === item.href;
-  }
-
-  if (pathname === item.href) {
-    return true;
-  }
-
-  const normalized = item.href.endsWith("/") ? item.href.slice(0, -1) : item.href;
-  return pathname.startsWith(`${normalized}/`);
-}
+import { AdminNavLink, isActive } from "./AdminNavLink";
 
 type AdminSidebarProps = {
   navItems: AdminNavItem[];
@@ -59,35 +47,38 @@ export function AdminSidebar({ navItems, onNavigate, isInDrawer }: AdminSidebarP
       <Box flex="1" overflowY="auto">
         <Stack as="nav" spacing={1} px={2} py={4} aria-label="Admin navigation">
           {navItems.map((item) => {
-            const isActive = isItemActive(item, pathname);
+            const active = isActive(item.href, item.exact, pathname);
             const leftIcon =
               item.icon === null || item.icon === undefined ? undefined : <>{item.icon}</>;
+            const slug = item.href.replace(/^\/+/, "").replace(/\//g, "-") || "root";
             return (
-              <Button
+              <AdminNavLink
                 key={item.href}
-                as={Link}
                 href={item.href}
-                variant={isActive ? "solid" : "ghost"}
-                colorScheme={isActive ? "primary" : undefined}
-                justifyContent="flex-start"
-                fontWeight="medium"
-                borderRadius="md"
-                bg={isActive ? activeBg : undefined}
-                color={isActive ? activeColor : undefined}
+                exact={item.exact}
                 leftIcon={leftIcon}
+                bg={active ? activeBg : undefined}
+                color={active ? activeColor : undefined}
                 onClick={handleNavigate}
-                aria-current={isActive ? "page" : undefined}
+                testId={`admin-sidebar-link-${slug}`}
               >
                 {item.label}
-              </Button>
+              </AdminNavLink>
             );
           })}
         </Stack>
       </Box>
       <Box px={4} py={6} borderTopWidth="1px" borderColor={borderColor}>
-        <Button as={Link} href="/app" variant="ghost" w="full" justifyContent="flex-start" onClick={handleNavigate}>
+        <AdminNavLink
+          href="/app"
+          variant="ghost"
+          w="full"
+          justifyContent="flex-start"
+          onClick={handleNavigate}
+          testId="admin-sidebar-link-app"
+        >
           ← Back to POP LMS
-        </Button>
+        </AdminNavLink>
       </Box>
     </Flex>
   );

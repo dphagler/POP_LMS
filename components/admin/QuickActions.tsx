@@ -1,6 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { Button, Card, CardBody, Heading, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Card, CardBody, Heading, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+
+import { AdminNavLink } from "./AdminNavLink";
 
 export type QuickActionItem = {
   id: string;
@@ -11,6 +12,7 @@ export type QuickActionItem = {
   isDisabled?: boolean;
   disabledReason?: string;
   ctaLabel?: string;
+  testId?: string;
 };
 
 export type QuickActionsProps = {
@@ -33,17 +35,17 @@ export function QuickActions({ title = "Quick actions", actions }: QuickActionsP
                     {action.description}
                   </Text>
                 </Stack>
-                <Button
-                  as={Link}
+                <AdminNavLink
                   href={action.href}
                   colorScheme="primary"
                   variant={action.isDisabled ? "outline" : "solid"}
                   isDisabled={action.isDisabled}
+                  testId={action.testId ?? `admin-quick-action-${action.id}`}
                 >
                   {action.isDisabled && action.disabledReason
                     ? action.disabledReason
                     : action.ctaLabel ?? action.label}
-                </Button>
+                </AdminNavLink>
               </Stack>
             </CardBody>
           </Card>

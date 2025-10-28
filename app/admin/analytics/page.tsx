@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Button as ChakraButton } from "@chakra-ui/react";
 import { BarChart3 } from "lucide-react";
 
@@ -11,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const percentFormatter = new Intl.NumberFormat("en-US", {
@@ -108,9 +108,9 @@ export default async function AdminAnalyticsPage({
               </div>
               <div className="flex items-end gap-2">
                 <Button type="submit">Apply filters</Button>
-                <Button as={Link} href="/admin/analytics" variant="outline">
+                <AdminNavLink href="/admin/analytics" variant="outline">
                   Reset
-                </Button>
+                </AdminNavLink>
               </div>
             </form>
           </CardContent>
@@ -215,9 +215,9 @@ export default async function AdminAnalyticsPage({
                     Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
                   </p>
                 </div>
-                <Button as={Link} href="/admin/assign">
+                <AdminNavLink href="/admin/assign" colorScheme="primary">
                   Create assignment
-                </Button>
+                </AdminNavLink>
               </div>
             )}
           </CardContent>

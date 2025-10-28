@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Avatar,
   Button,
@@ -9,20 +10,32 @@ import {
   HStack,
   Heading,
   IconButton,
+  Kbd,
+  List,
+  ListItem,
   Menu,
   MenuButton,
   MenuDivider,
   MenuItem,
   MenuList,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
   Stack,
   Text,
+  useDisclosure,
   useColorModeValue
 } from "@chakra-ui/react";
 import { Menu as MenuIcon } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/sign-out";
+import { useShortcutSequences, type ShortcutDefinition } from "@/lib/shortcuts";
 
 import { useAdminShellContext } from "./AdminShell";
+import { AdminNavLink } from "./AdminNavLink";
 
 type AdminTopbarProps = {
   title?: string;
@@ -32,9 +45,40 @@ type AdminTopbarProps = {
 };
 
 export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdminHome = false }: AdminTopbarProps) {
-  const { user, org } = useAdminShellContext();
+  const router = useRouter();
+  const { user, org, navItems } = useAdminShellContext();
   const borderColor = useColorModeValue("border.subtle", "border.emphasis");
   const bg = useColorModeValue("white", "gray.900");
+  const shortcutsModal = useDisclosure();
+
+  const availableShortcuts = useMemo<ShortcutDefinition[]>(() => {
+    const definitions: ShortcutDefinition[] = [
+      { id: "dashboard", label: "Dashboard", keys: ["g", "d"], href: "/admin" },
+      { id: "users", label: "Users", keys: ["g", "u"], href: "/admin/users" },
+      { id: "groups", label: "Groups", keys: ["g", "g"], href: "/admin/groups" },
+      { id: "assign", label: "Assignments", keys: ["g", "a"], href: "/admin/assign" },
+      { id: "org", label: "Org settings", keys: ["g", "o"], href: "/admin/org" },
+      { id: "analytics", label: "Analytics", keys: ["g", "l"], href: "/admin/analytics" }
+    ];
+
+    return definitions.filter((definition) =>
+      navItems.some((item) => item.href === definition.href)
+    );
+  }, [navItems]);
+
+  const shortcutRegistrations = useMemo(
+    () =>
+      availableShortcuts.map((shortcut) => ({
+        id: shortcut.id,
+        keys: shortcut.keys,
+        onMatch: () => {
+          router.push(shortcut.href);
+        }
+      })),
+    [availableShortcuts, router]
+  );
+
+  useShortcutSequences(shortcutRegistrations, { enabled: availableShortcuts.length > 0 });
 
   return (
     <Flex
@@ -58,6 +102,7 @@ export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdm
             variant="ghost"
             icon={<MenuIcon size={18} />}
             onClick={onMenuClick}
+            data-testid="admin-topbar-menu-button"
           />
         ) : null}
         <Stack spacing={0}>
@@ -70,13 +115,24 @@ export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdm
 
       <HStack spacing={3} align="center">
         {showAdminHome ? (
-          <Button as={Link} href="/admin" variant="ghost" size="sm">
+          <AdminNavLink href="/admin" variant="ghost" size="sm" testId="admin-topbar-home-link">
             Admin Home
-          </Button>
+          </AdminNavLink>
         ) : null}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={shortcutsModal.onOpen}
+          aria-label="Show keyboard shortcuts"
+          data-testid="admin-topbar-shortcuts-button"
+        >
+          ?
+        </Button>
         <OrgMenu orgName={org.name} options={org.options} />
         <UserMenu name={user.name} email={user.email} image={user.image} />
       </HStack>
+
+      <ShortcutCheatSheet isOpen={shortcutsModal.isOpen} onClose={shortcutsModal.onClose} shortcuts={availableShortcuts} />
     </Flex>
   );
 }
@@ -92,7 +148,7 @@ function OrgMenu({ orgName, options }: OrgMenuProps) {
 
   return (
     <Menu isLazy placement="bottom-end">
-      <MenuButton as={Button} variant="ghost" size="sm">
+      <MenuButton as={Button} variant="ghost" size="sm" data-testid="admin-topbar-org-menu">
         {orgName}
       </MenuButton>
       <MenuList>
@@ -125,6 +181,7 @@ function UserMenu({ name, email, image }: UserMenuProps) {
         size="sm"
         leftIcon={<Avatar size="xs" name={name ?? undefined} src={image ?? undefined} />}
         isLoading={isPending}
+        data-testid="admin-topbar-user-menu"
       >
         {name ?? email ?? "Account"}
       </MenuButton>
@@ -144,5 +201,45 @@ function UserMenu({ name, email, image }: UserMenuProps) {
         </MenuItem>
       </MenuList>
     </Menu>
+  );
+}
+
+type ShortcutCheatSheetProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  shortcuts: ShortcutDefinition[];
+};
+
+function ShortcutCheatSheet({ isOpen, onClose, shortcuts }: ShortcutCheatSheetProps) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="sm" isCentered>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Keyboard shortcuts</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6}>
+          {shortcuts.length === 0 ? (
+            <Text fontSize="sm" color="fg.muted">
+              Keyboard shortcuts are unavailable for your current access level.
+            </Text>
+          ) : (
+            <List spacing={3}>
+              {shortcuts.map((shortcut) => (
+                <ListItem key={shortcut.id} display="flex" justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" fontWeight="medium">
+                    {shortcut.label}
+                  </Text>
+                  <HStack spacing={1}>
+                    {shortcut.keys.map((key) => (
+                      <Kbd key={key}>{key.toUpperCase()}</Kbd>
+                    ))}
+                  </HStack>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }
