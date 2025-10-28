@@ -60,8 +60,11 @@ async function resolveTestUser(email: string): Promise<TestUser> {
 }
 
 async function applySession(page: Page, user: TestUser) {
+  const secret = env.NEXTAUTH_SECRET ?? "development_secret";
+
   const token = await encode({
-    secret: env.NEXTAUTH_SECRET,
+    secret,
+    salt: secret,
     token: {
       name: user.name ?? undefined,
       email: user.email,
