@@ -87,7 +87,7 @@ function resolveAdminCanonicalRedirect(url: URL): URL | null {
     return null;
   }
 
-  const redirectUrl = url.clone();
+  const redirectUrl = new URL(url.href);
   redirectUrl.pathname = targetPath;
   return redirectUrl;
 }
