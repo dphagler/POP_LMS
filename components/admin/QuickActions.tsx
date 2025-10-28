@@ -15,7 +15,7 @@ export type QuickActionItem = {
 
 export type QuickActionsProps = {
   title?: string;
-  actions: QuickActionItem[];
+  actions: ReadonlyArray<QuickActionItem>;
 };
 
 export function QuickActions({ title = "Quick actions", actions }: QuickActionsProps) {
