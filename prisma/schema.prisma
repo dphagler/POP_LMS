@@ -382,6 +382,7 @@ model OrgGroup {
   orgId     String
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   name      String
+  description String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   deletedAt DateTime?
@@ -457,6 +458,7 @@ model GroupMember {
   id      String @id @default(cuid())
   groupId String
   userId  String
+  groupManager Boolean @default(false)
 
   group OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,133 +1,262 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useTransition } from "react";
 
-import { DataDensityToggle, type DataDensity } from "@/components/admin/data-density-toggle";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  SimpleGrid,
+  Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useDisclosure,
+  useToast,
+} from "@chakra-ui/react";
+import { Plus } from "lucide-react";
 
-import ImportMembersForm from "./import-form";
-import type { ImportResultState } from "./actions";
+import type { GroupListItem } from "@/lib/db/group";
+import { createGroup } from "@/lib/server-actions/groups";
 
-type GroupListItem = {
-  id: string;
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+type AdminGroupsClientProps = {
+  initialGroups: GroupListItem[];
+};
+
+type CreateGroupForm = {
   name: string;
-  _count: { members: number };
+  description: string;
 };
 
-type GroupsListProps = {
-  groups: GroupListItem[];
-  renameGroup: (formData: FormData) => Promise<void>;
-  deleteGroup: (formData: FormData) => Promise<void>;
-  importMembers: (state: ImportResultState, formData: FormData) => Promise<ImportResultState>;
+const initialFormState: CreateGroupForm = {
+  name: "",
+  description: "",
 };
 
-export default function GroupsList({ groups, renameGroup, deleteGroup, importMembers }: GroupsListProps) {
-  const [density, setDensity] = useState<DataDensity>("comfortable");
-  const [query, setQuery] = useState("");
-  const isCompact = density === "compact";
-  const formGap = isCompact ? "flex flex-col gap-2 sm:flex-row sm:items-end" : "flex flex-col gap-3 sm:flex-row sm:items-end";
-  const gridLayout = cn("grid", isCompact ? "gap-3 sm:grid-cols-2 xl:grid-cols-3" : "gap-4 sm:grid-cols-2 xl:grid-cols-3");
-  const filteredGroups = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    if (!normalized) {
-      return groups;
-    }
+export function AdminGroupsClient({ initialGroups }: AdminGroupsClientProps) {
+  const [groups, setGroups] = useState<GroupListItem[]>(() => [...initialGroups]);
+  const [form, setForm] = useState<CreateGroupForm>(initialFormState);
+  const [isPending, startTransition] = useTransition();
+  const dialog = useDisclosure();
+  const toast = useToast();
 
-    return groups.filter((group) => group.name.toLocaleLowerCase().includes(normalized));
-  }, [groups, query]);
+  const stats = useMemo(() => {
+    const total = groups.length;
+    const members = groups.reduce((sum, group) => sum + group.memberCount, 0);
+    const average = total > 0 ? Math.round(members / total) : 0;
+    return { total, members, average };
+  }, [groups]);
 
-  if (groups.length === 0) {
-    return <p className="text-sm text-muted-foreground">Groups you create will appear here.</p>;
-  }
+  const handleOpenModal = () => {
+    setForm(initialFormState);
+    dialog.onOpen();
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    startTransition(async () => {
+      try {
+        const result = await createGroup({
+          name: form.name,
+          description: form.description ? form.description : undefined,
+        });
+
+        if (!result.ok) {
+          toast({
+            title: "Unable to create group",
+            description: result.error,
+            status: "error",
+          });
+          return;
+        }
+
+        setGroups((current) => {
+          const filtered = current.filter((group) => group.id !== result.data.id);
+          return [result.data, ...filtered];
+        });
+        toast({ title: "Group created", status: "success" });
+        dialog.onClose();
+        setForm(initialFormState);
+      } catch (error) {
+        const description = error instanceof Error ? error.message : "Unexpected error creating group";
+        toast({ title: "Unable to create group", description, status: "error" });
+      }
+    });
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-full sm:max-w-xs">
-          <label htmlFor="group-search" className="sr-only">
-            Search groups
-          </label>
-          <Input
-            id="group-search"
-            type="search"
-            placeholder="Search groups"
-            value={query}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-          />
-        </div>
-        <DataDensityToggle density={density} onDensityChange={setDensity} />
-      </div>
+    <Stack spacing={8} px={{ base: 4, md: 8 }} py={{ base: 6, md: 8 }}>
+      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+        <Card borderRadius="xl">
+          <CardBody>
+            <Stack spacing={1}>
+              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+                Groups
+              </Text>
+              <Heading size="lg">{stats.total}</Heading>
+              <Text fontSize="sm" color="fg.muted">
+                Active cohorts available to target assignments.
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+        <Card borderRadius="xl">
+          <CardBody>
+            <Stack spacing={1}>
+              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+                Members tracked
+              </Text>
+              <Heading size="lg">{stats.members}</Heading>
+              <Text fontSize="sm" color="fg.muted">
+                Learners represented across all groups.
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+        <Card borderRadius="xl">
+          <CardBody>
+            <Stack spacing={1}>
+              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
+                Average size
+              </Text>
+              <Heading size="lg">{stats.average}</Heading>
+              <Text fontSize="sm" color="fg.muted">
+                Member count average per group.
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+      </SimpleGrid>
 
-      {filteredGroups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No groups match your search.</p>
-      ) : (
-        <div className={gridLayout}>
-          {filteredGroups.map((group) => (
-            <Card
-              key={group.id}
-              className="group relative flex h-full flex-col overflow-hidden border border-base-200 bg-base-100 shadow-xl transition hover:border-primary/40 hover:shadow-2xl"
-            >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(140%_85%_at_100%_0%,theme(colors.primary/0.14),transparent_65%)] opacity-0 transition group-hover:opacity-100"
-            />
-            <CardHeader className="relative pb-0">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-base font-semibold tracking-tight">{group.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {group._count.members} member{group._count.members === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <Button
-                  as={Link}
-                  href={`/admin/groups/${group.id}`}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-full shrink-0 sm:w-auto"
-                >
-                  Manage members
-                </Button>
-              </div>
-            </CardHeader>
+      <Card borderRadius="xl">
+        <CardHeader>
+          <Flex align="center" justify="space-between" gap={4} wrap="wrap">
+            <Stack spacing={1}>
+              <Heading size="lg">Groups</Heading>
+              <Text fontSize="sm" color="fg.muted">
+                Keep cohorts aligned with assignment targets. Import data to sync with HRIS systems.
+              </Text>
+            </Stack>
+            <Button colorScheme="primary" leftIcon={<Plus size={16} />} onClick={handleOpenModal}>
+              New group
+            </Button>
+          </Flex>
+        </CardHeader>
+        <CardBody>
+          {groups.length === 0 ? (
+            <Text fontSize="sm" color="fg.muted">
+              No groups yet. Create your first cohort to get started.
+            </Text>
+          ) : (
+            <TableContainer>
+              <Table variant="simple" size="sm">
+                <Thead>
+                  <Tr>
+                    <Th>Name</Th>
+                    <Th>Description</Th>
+                    <Th>Members</Th>
+                    <Th>Updated</Th>
+                    <Th></Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {groups.map((group) => (
+                    <Tr key={group.id}>
+                      <Td>
+                        <Stack spacing={1}>
+                          <Text fontWeight="medium">{group.name}</Text>
+                          <Badge alignSelf="start" colorScheme={group.memberCount > 30 ? "primary" : "gray"}>
+                            {group.memberCount > 30 ? "Large cohort" : "Standard cohort"}
+                          </Badge>
+                        </Stack>
+                      </Td>
+                      <Td maxW="320px">
+                        <Text noOfLines={2} color="fg.muted">
+                          {group.description ?? "—"}
+                        </Text>
+                      </Td>
+                      <Td>
+                        <Text fontWeight="semibold">{group.memberCount}</Text>
+                      </Td>
+                      <Td>{dateFormatter.format(new Date(group.updatedAt))}</Td>
+                      <Td>
+                        <Button as={Link} href={`/admin/groups/${group.id}`} size="sm" variant="outline">
+                          Manage
+                        </Button>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardBody>
+      </Card>
 
-            <CardContent className={cn("relative flex flex-1 flex-col pt-4", isCompact ? "gap-3" : "gap-4")}>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground">Rename group</h4>
-                <form action={renameGroup} className={formGap}>
-                  <input type="hidden" name="groupId" value={group.id} />
-                  <div className="form-control flex-1">
-                    <label htmlFor={`name-${group.id}`} className="label">
-                      <span className="label-text font-semibold">Group name</span>
-                    </label>
-                    <Input id={`name-${group.id}`} name="name" defaultValue={group.name} required />
-                  </div>
-                  <Button type="submit" size="sm" className="w-full sm:w-auto">
-                    Save name
-                  </Button>
-                </form>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground">Import members</h4>
-                <ImportMembersForm groupId={group.id} action={importMembers} compact={isCompact} />
-              </div>
-
-              <form action={deleteGroup} className="mt-auto flex justify-end">
-                <input type="hidden" name="groupId" value={group.id} />
-                <Button type="submit" colorScheme="red" size="sm" className="w-full sm:w-auto">
-                  Delete group
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          ))}
-        </div>
-      )}
-    </div>
+      <Modal isOpen={dialog.isOpen} onClose={dialog.onClose} isCentered size="lg">
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={handleSubmit}>
+          <ModalHeader>Create a new group</ModalHeader>
+          <ModalCloseButton disabled={isPending} />
+          <ModalBody>
+            <Stack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel htmlFor="group-name">Group name</FormLabel>
+                <Input
+                  id="group-name"
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Regional managers"
+                  autoFocus
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel htmlFor="group-description">Description (optional)</FormLabel>
+                <Input
+                  id="group-description"
+                  value={form.description}
+                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                  placeholder="Quarterly onboarding cohort"
+                />
+              </FormControl>
+            </Stack>
+          </ModalBody>
+          <ModalFooter gap={3}>
+            <Button variant="ghost" onClick={dialog.onClose} isDisabled={isPending}>
+              Cancel
+            </Button>
+            <Button colorScheme="primary" type="submit" isLoading={isPending}>
+              Create group
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Stack>
   );
 }

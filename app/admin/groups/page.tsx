@@ -1,12 +1,7 @@
-import { Badge, Card, CardBody, CardHeader, Flex, Heading, SimpleGrid, Stack, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
-
 import { requireRole } from '@/lib/authz';
-import { listGroups } from '@/lib/admin/server-actions';
+import { listOrgGroups } from '@/lib/db/group';
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short'
-});
+import { AdminGroupsClient } from './groups-list';
 
 export default async function AdminGroupsPage() {
   const session = await requireRole('ADMIN');
@@ -16,116 +11,7 @@ export default async function AdminGroupsPage() {
     throw new Error('Organization not found for admin user');
   }
 
-  const { props } = await listGroups({ orgId, page: 1, pageSize: 6 });
-  const { groups, pagination } = props;
-  const totalMembers = groups.reduce((sum, group) => sum + group.memberCount, 0);
-  const totalPages = Math.max(1, Math.ceil(pagination.totalCount / pagination.pageSize));
-  const rangeStart = groups.length > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0;
-  const rangeEnd = groups.length > 0 ? rangeStart + groups.length - 1 : 0;
+  const groups = await listOrgGroups({ orgId });
 
-  return (
-    <Stack spacing={8} px={{ base: 4, md: 8 }} py={{ base: 6, md: 8 }}>
-      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-        <Card borderRadius="xl">
-          <CardBody>
-            <Stack spacing={1}>
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
-                Groups
-              </Text>
-              <Heading size="lg">{pagination.totalCount}</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Active cohorts available to target assignments.
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-        <Card borderRadius="xl">
-          <CardBody>
-            <Stack spacing={1}>
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
-                Members tracked
-              </Text>
-              <Heading size="lg">{totalMembers}</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Total learners represented across the current page.
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-        <Card borderRadius="xl">
-          <CardBody>
-            <Stack spacing={1}>
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
-                Average size
-              </Text>
-              <Heading size="lg">{groups.length > 0 ? Math.round(totalMembers / groups.length) : 0}</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Member count average for visible groups.
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-      </SimpleGrid>
-
-      <Card borderRadius="xl">
-        <CardHeader>
-          <Stack spacing={1}>
-            <Heading size="lg">Groups</Heading>
-            <Text fontSize="sm" color="fg.muted">
-              Keep cohorts aligned with assignment targets. Import data to sync with HRIS systems.
-            </Text>
-          </Stack>
-        </CardHeader>
-        <CardBody>
-          <TableContainer>
-            <Table variant="simple" size="sm">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Description</Th>
-                  <Th>Members</Th>
-                  <Th>Created</Th>
-                  <Th>Updated</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {groups.map((group) => (
-                  <Tr key={group.id}>
-                    <Td>
-                      <Stack spacing={1}>
-                        <Text fontWeight="medium">{group.name}</Text>
-                        <Badge alignSelf="start" colorScheme={group.memberCount > 30 ? 'primary' : 'gray'}>
-                          {group.memberCount > 30 ? 'Large cohort' : 'Standard cohort'}
-                        </Badge>
-                      </Stack>
-                    </Td>
-                    <Td maxW="280px">
-                      <Text noOfLines={2} color="fg.muted">
-                        {group.description ?? '—'}
-                      </Text>
-                    </Td>
-                    <Td>
-                      <Text fontWeight="semibold">{group.memberCount}</Text>
-                    </Td>
-                    <Td>{dateFormatter.format(new Date(group.createdAt))}</Td>
-                    <Td>{dateFormatter.format(new Date(group.updatedAt))}</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </TableContainer>
-          <Flex mt={4} justify="space-between" align="center" wrap="wrap" gap={3} fontSize="sm" color="fg.muted">
-            <Text>
-              Showing {groups.length === 0 ? 0 : `${rangeStart}-${rangeEnd}`} of {pagination.totalCount}
-            </Text>
-            <Stack direction="row" spacing={2}>
-              <Badge variant="subtle" colorScheme="primary">
-                Page {pagination.page} of {totalPages}
-              </Badge>
-            </Stack>
-          </Flex>
-        </CardBody>
-      </Card>
-    </Stack>
-  );
+  return <AdminGroupsClient initialGroups={groups} />;
 }
