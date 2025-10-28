@@ -55,7 +55,7 @@ function resolveDatasourceUrl(): { db: { url: string } } | undefined {
 
     logOnce(
       "warn",
-      "[prisma] DATABASE_URL appears to use Prisma Accelerate but no direct connection string (DATABASE_DIRECT_URL or DIRECT_URL) is set. Falling back to DATABASE_URL which may be unavailable locally."
+      "[prisma] DATABASE_URL appears to use Prisma Accelerate but no direct connection string (DATABASE_DIRECT_URL, DIRECT_URL, or POSTGRES_URL_NON_POOLING) is set. Falling back to DATABASE_URL which may be unavailable locally."
     );
   }
 
