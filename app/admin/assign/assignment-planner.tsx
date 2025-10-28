@@ -649,7 +649,13 @@ export default function AssignmentPlanner({ courses, groups, assignments }: Assi
                 </p>
               </div>
               <div className="flex gap-3">
-                <Button type="button" variant="destructive" onClick={handleWithdraw} disabled={isWithdrawing || !hasSelection}>
+                <Button
+                  type="button"
+                  variant="solid"
+                  colorScheme="red"
+                  onClick={handleWithdraw}
+                  disabled={isWithdrawing || !hasSelection}
+                >
                   {isWithdrawing ? "Withdrawing…" : "Withdraw"}
                 </Button>
               </div>
