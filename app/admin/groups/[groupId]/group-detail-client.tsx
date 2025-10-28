@@ -34,6 +34,7 @@ import {
   Th,
   Thead,
   Tr,
+  chakra,
   useToast,
 } from "@chakra-ui/react";
 import { Trash2 } from "lucide-react";
@@ -134,6 +135,7 @@ export function GroupDetailClient({
       const result = await addGroupMember({
         groupId,
         email: emailValue,
+        name: undefined,
         groupManager: optimisticMember.groupManager,
       });
 
@@ -361,31 +363,33 @@ export function GroupDetailClient({
                   <Heading size="md">Add a member</Heading>
                 </CardHeader>
                 <CardBody>
-                  <Stack as="form" spacing={4} onSubmit={handleAddMember} direction="column">
-                    <FormControl isRequired>
-                      <FormLabel htmlFor="member-email">Email address</FormLabel>
-                      <Input
-                        id="member-email"
-                        type="email"
-                        value={addEmail}
-                        onChange={(event) => setAddEmail(event.target.value)}
-                        placeholder="learner@example.com"
-                      />
-                    </FormControl>
-                    <FormControl display="flex" alignItems="center" gap={3}>
-                      <Switch
-                        id="member-manager"
-                        isChecked={addManager}
-                        onChange={(event) => setAddManager(event.target.checked)}
-                      />
-                      <FormLabel htmlFor="member-manager" mb={0}>
-                        Add as group manager
-                      </FormLabel>
-                    </FormControl>
-                    <Button type="submit" colorScheme="primary" isLoading={isMembersPending} alignSelf="start">
-                      Add member
-                    </Button>
-                  </Stack>
+                  <chakra.form onSubmit={handleAddMember}>
+                    <Stack spacing={4} direction="column">
+                      <FormControl isRequired>
+                        <FormLabel htmlFor="member-email">Email address</FormLabel>
+                        <Input
+                          id="member-email"
+                          type="email"
+                          value={addEmail}
+                          onChange={(event) => setAddEmail(event.target.value)}
+                          placeholder="learner@example.com"
+                        />
+                      </FormControl>
+                      <FormControl display="flex" alignItems="center" gap={3}>
+                        <Switch
+                          id="member-manager"
+                          isChecked={addManager}
+                          onChange={(event) => setAddManager(event.target.checked)}
+                        />
+                        <FormLabel htmlFor="member-manager" mb={0}>
+                          Add as group manager
+                        </FormLabel>
+                      </FormControl>
+                      <Button type="submit" colorScheme="primary" isLoading={isMembersPending} alignSelf="start">
+                        Add member
+                      </Button>
+                    </Stack>
+                  </chakra.form>
                 </CardBody>
               </Card>
 
@@ -445,62 +449,64 @@ export function GroupDetailClient({
 
           <TabPanel px={0}>
             <Stack spacing={6}>
-              <Card as="form" onSubmit={handleImportMembers}>
-                <CardHeader>
-                  <Heading size="md">Import members from CSV</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Stack spacing={4}>
-                    <FormControl>
-                      <FormLabel htmlFor="csv-upload">Upload CSV</FormLabel>
-                      <Input id="csv-upload" type="file" accept=".csv" onChange={handleCsvChange} />
-                      <FormHelperText>Include at least an email column. Name is optional.</FormHelperText>
-                    </FormControl>
-                    {importError ? (
-                      <Alert status="error">
-                        <AlertIcon />
-                        <AlertDescription>{importError}</AlertDescription>
-                      </Alert>
-                    ) : null}
-                    {importPreview.length > 0 ? (
-                      <Box>
-                        <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                          Previewing first {importPreview.length} of {importRows.length} rows
-                        </Text>
-                        <TableContainer>
-                          <Table size="sm" variant="simple">
-                            <Thead>
-                              <Tr>
-                                <Th>Row</Th>
-                                <Th>Email</Th>
-                                <Th>Name</Th>
-                              </Tr>
-                            </Thead>
-                            <Tbody>
-                              {importPreview.map((row) => (
-                                <Tr key={row.rowNumber}>
-                                  <Td>{row.rowNumber}</Td>
-                                  <Td>{row.email}</Td>
-                                  <Td>{row.name || "—"}</Td>
+              <chakra.form onSubmit={handleImportMembers}>
+                <Card>
+                  <CardHeader>
+                    <Heading size="md">Import members from CSV</Heading>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack spacing={4}>
+                      <FormControl>
+                        <FormLabel htmlFor="csv-upload">Upload CSV</FormLabel>
+                        <Input id="csv-upload" type="file" accept=".csv" onChange={handleCsvChange} />
+                        <FormHelperText>Include at least an email column. Name is optional.</FormHelperText>
+                      </FormControl>
+                      {importError ? (
+                        <Alert status="error">
+                          <AlertIcon />
+                          <AlertDescription>{importError}</AlertDescription>
+                        </Alert>
+                      ) : null}
+                      {importPreview.length > 0 ? (
+                        <Box>
+                          <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                            Previewing first {importPreview.length} of {importRows.length} rows
+                          </Text>
+                          <TableContainer>
+                            <Table size="sm" variant="simple">
+                              <Thead>
+                                <Tr>
+                                  <Th>Row</Th>
+                                  <Th>Email</Th>
+                                  <Th>Name</Th>
                                 </Tr>
-                              ))}
-                            </Tbody>
-                          </Table>
-                        </TableContainer>
-                      </Box>
-                    ) : null}
-                    <Button
-                      type="submit"
-                      colorScheme="primary"
-                      isLoading={isImporting}
-                      isDisabled={importRows.length === 0}
-                      alignSelf="start"
-                    >
-                      Import members
-                    </Button>
-                  </Stack>
-                </CardBody>
-              </Card>
+                              </Thead>
+                              <Tbody>
+                                {importPreview.map((row) => (
+                                  <Tr key={row.rowNumber}>
+                                    <Td>{row.rowNumber}</Td>
+                                    <Td>{row.email}</Td>
+                                    <Td>{row.name || "—"}</Td>
+                                  </Tr>
+                                ))}
+                              </Tbody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      ) : null}
+                      <Button
+                        type="submit"
+                        colorScheme="primary"
+                        isLoading={isImporting}
+                        isDisabled={importRows.length === 0}
+                        alignSelf="start"
+                      >
+                        Import members
+                      </Button>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </chakra.form>
 
               {importSummary ? (
                 <Alert status={importSummary.errors.length > 0 ? "warning" : "success"}>
@@ -532,69 +538,73 @@ export function GroupDetailClient({
 
           <TabPanel px={0}>
             <Stack spacing={6}>
-              <Card as="form" onSubmit={handleUpdateSettings}>
-                <CardHeader>
-                  <Heading size="md">Group details</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Stack spacing={4}>
-                    <FormControl isRequired>
-                      <FormLabel htmlFor="group-name-settings">Group name</FormLabel>
-                      <Input
-                        id="group-name-settings"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                      />
-                    </FormControl>
-                    <FormControl>
-                      <FormLabel htmlFor="group-description-settings">Description</FormLabel>
-                      <Input
-                        id="group-description-settings"
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        placeholder="Optional context for this group"
-                      />
-                    </FormControl>
-                    <Button type="submit" colorScheme="primary" isLoading={isSettingsPending} alignSelf="start">
-                      Save changes
-                    </Button>
-                  </Stack>
-                </CardBody>
-              </Card>
+              <chakra.form onSubmit={handleUpdateSettings}>
+                <Card>
+                  <CardHeader>
+                    <Heading size="md">Group details</Heading>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack spacing={4}>
+                      <FormControl isRequired>
+                        <FormLabel htmlFor="group-name-settings">Group name</FormLabel>
+                        <Input
+                          id="group-name-settings"
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel htmlFor="group-description-settings">Description</FormLabel>
+                        <Input
+                          id="group-description-settings"
+                          value={description}
+                          onChange={(event) => setDescription(event.target.value)}
+                          placeholder="Optional context for this group"
+                        />
+                      </FormControl>
+                      <Button type="submit" colorScheme="primary" isLoading={isSettingsPending} alignSelf="start">
+                        Save changes
+                      </Button>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </chakra.form>
 
-              <Card as="form" onSubmit={handleDeleteGroup} borderColor="red.200">
-                <CardHeader>
-                  <Heading size="md" color="red.500">
-                    Danger zone
-                  </Heading>
-                </CardHeader>
-                <CardBody>
-                  <Stack spacing={4}>
-                    <Text fontSize="sm">
-                      Deleting this group will remove all memberships. This action cannot be undone.
-                    </Text>
-                    <FormControl>
-                      <FormLabel htmlFor="delete-confirmation">
-                        Type <Text as="span" fontWeight="semibold">{name}</Text> to confirm
-                      </FormLabel>
-                      <Input
-                        id="delete-confirmation"
-                        value={confirmation}
-                        onChange={(event) => setConfirmation(event.target.value)}
-                      />
-                    </FormControl>
-                    <Button
-                      type="submit"
-                      colorScheme="red"
-                      isDisabled={confirmation !== name}
-                      isLoading={isDeleting}
-                      alignSelf="start"
-                    >
-                      Delete group
-                    </Button>
-                  </Stack>
-                </CardBody>
-              </Card>
+              <chakra.form onSubmit={handleDeleteGroup}>
+                <Card borderColor="red.200">
+                  <CardHeader>
+                    <Heading size="md" color="red.500">
+                      Danger zone
+                    </Heading>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack spacing={4}>
+                      <Text fontSize="sm">
+                        Deleting this group will remove all memberships. This action cannot be undone.
+                      </Text>
+                      <FormControl>
+                        <FormLabel htmlFor="delete-confirmation">
+                          Type <Text as="span" fontWeight="semibold">{name}</Text> to confirm
+                        </FormLabel>
+                        <Input
+                          id="delete-confirmation"
+                          value={confirmation}
+                          onChange={(event) => setConfirmation(event.target.value)}
+                        />
+                      </FormControl>
+                      <Button
+                        type="submit"
+                        colorScheme="red"
+                        isDisabled={confirmation !== name}
+                        isLoading={isDeleting}
+                        alignSelf="start"
+                      >
+                        Delete group
+                      </Button>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </chakra.form>
             </Stack>
           </TabPanel>
         </TabPanels>

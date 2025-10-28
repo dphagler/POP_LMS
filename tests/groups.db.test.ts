@@ -57,21 +57,32 @@ function createInMemoryPrisma() {
     return record;
   }
 
-  function buildMembership(record: { id: string; groupId: string; userId: string; groupManager: boolean }, include?: { user?: { select: { id: boolean; email: boolean; name: boolean } } }) {
-    const base = { ...record } as GroupMemberItem & { user?: { id: string; email: string; name: string | null } };
+  function buildMembership(
+    record: { id: string; groupId: string; userId: string; groupManager: boolean },
+    include?: { user?: { select: { id: boolean; email: boolean; name: boolean } } }
+  ) {
+    const userRecord = store.users.get(record.userId);
+    if (!userRecord) {
+      throw new Error('User not found for membership');
+    }
+
+    const membership: GroupMemberItem & { user?: { id: string; email: string; name: string | null } } = {
+      membershipId: record.id,
+      userId: record.userId,
+      email: userRecord.email,
+      name: userRecord.name,
+      groupManager: record.groupManager,
+    };
+
     if (include?.user) {
-      const userId = record.userId;
-      const userRecord = store.users.get(userId);
-      if (!userRecord) {
-        throw new Error('User not found for membership');
-      }
-      base.user = {
+      membership.user = {
         id: userRecord.id,
         email: userRecord.email,
         name: userRecord.name,
       };
     }
-    return base;
+
+    return membership;
   }
 
   const orgGroup = {
