@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   Box,
   Button,
@@ -38,6 +38,8 @@ import {
   useToast,
 } from "@chakra-ui/react";
 
+import { PageHeader } from "@/components/admin/PageHeader";
+
 import {
   assertValidDomain,
   buildDomainVerificationToken,
@@ -45,6 +47,7 @@ import {
   normalizeDomain,
 } from "@/lib/domain-utils";
 import { removeDomain, updateBranding, verifyDomain } from "@/lib/server-actions/org";
+import { Globe } from "lucide-react";
 
 const fallbackPrimary = "#4f46e5";
 const fallbackAccent = "#f97316";
@@ -92,6 +95,7 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
   );
   const [domainInput, setDomainInput] = useState("");
   const [pendingDomain, setPendingDomain] = useState<string | null>(null);
+  const domainInputRef = useRef<HTMLInputElement | null>(null);
   const [isBrandingPending, startBrandingTransition] = useTransition();
   const [isDomainPending, startDomainTransition] = useTransition();
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
@@ -157,6 +161,10 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
     }
   };
 
+  const focusDomainInput = () => {
+    domainInputRef.current?.focus();
+  };
+
   const handleVerifyDomain = () => {
     if (!pendingDomain) return;
     startDomainTransition(async () => {
@@ -206,12 +214,23 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
   }, [orgId, pendingDomain]);
 
   return (
-    <Tabs colorScheme="primary" variant="enclosed">
-      <TabList>
-        <Tab>Branding</Tab>
-        <Tab>Domains</Tab>
-      </TabList>
-      <TabPanels>
+    <Stack spacing={8}>
+      <PageHeader
+        title="Organization settings"
+        subtitle="Update your branding, configure sign-in messaging, and manage verified domains."
+        actions={
+          <Button as="a" href="#domain-settings" colorScheme="primary">
+            Add domain
+          </Button>
+        }
+      />
+
+      <Tabs colorScheme="primary" variant="enclosed">
+        <TabList>
+          <Tab>Branding</Tab>
+          <Tab>Domains</Tab>
+        </TabList>
+        <TabPanels>
         <TabPanel px={0}>
           <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10} mt={6} alignItems="start">
             <chakra.form onSubmit={handleBrandingSubmit} w="full">
@@ -338,7 +357,7 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
           </SimpleGrid>
         </TabPanel>
         <TabPanel px={0}>
-          <Stack spacing={6} mt={6}>
+          <Stack spacing={6} mt={6} id="domain-settings">
             <Card borderRadius="2xl">
               <CardHeader>
                 <Stack spacing={2}>
@@ -353,6 +372,7 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
                   <FormControl>
                     <FormLabel>Domain</FormLabel>
                     <Input
+                      ref={domainInputRef}
                       value={domainInput}
                       onChange={(event) => setDomainInput(event.target.value)}
                       placeholder="example.org"
@@ -378,9 +398,29 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
               <CardBody>
                 <Stack spacing={4}>
                   {domains.length === 0 ? (
-                    <Text fontSize="sm" color="fg.muted">
-                      No domains have been verified yet.
-                    </Text>
+                    <Stack spacing={5} align="center" py={6} textAlign="center">
+                      <Box
+                        borderRadius="full"
+                        bg="bg.subtle"
+                        color="fg.muted"
+                        w={16}
+                        h={16}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Globe size={28} />
+                      </Box>
+                      <Stack spacing={1}>
+                        <Text fontWeight="medium">No domains verified</Text>
+                        <Text fontSize="sm" color="fg.muted">
+                          Connect a domain to streamline single sign-on for your org.
+                        </Text>
+                      </Stack>
+                      <Button colorScheme="primary" onClick={focusDomainInput}>
+                        Add domain
+                      </Button>
+                    </Stack>
                   ) : (
                     domains.map((domain) => (
                       <Box
@@ -455,6 +495,7 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Tabs>
+      </Tabs>
+    </Stack>
   );
 }
