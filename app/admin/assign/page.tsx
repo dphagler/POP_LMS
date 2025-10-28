@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AssignmentPlanner from "./assignment-planner";
+import { listAssignmentsForOrg } from "@/lib/db/assignment";
 
 export default async function AssignmentPage() {
   const session = await requireRole("ADMIN");
@@ -38,14 +39,7 @@ export default async function AssignmentPage() {
         }
       }
     }),
-    prisma.assignment.findMany({
-      where: { orgId },
-      include: {
-        enrollments: {
-          select: { userId: true }
-        }
-      }
-    })
+    listAssignmentsForOrg(orgId)
   ]);
 
   const courseOptions = courses.map((course) => ({
@@ -69,13 +63,6 @@ export default async function AssignmentPage() {
     }))
   }));
 
-  const assignmentOptions = assignments.map((assignment) => ({
-    id: assignment.id,
-    courseId: assignment.courseId,
-    moduleId: assignment.moduleId,
-    enrollments: assignment.enrollments
-  }));
-
   return (
     <div className="space-y-6">
       <Card>
@@ -97,7 +84,7 @@ export default async function AssignmentPage() {
         </CardHeader>
       </Card>
 
-      <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignmentOptions} />
+      <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignments} />
     </div>
   );
 }

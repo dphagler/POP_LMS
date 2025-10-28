@@ -186,15 +186,21 @@ model Lesson {
 }
 
 model Assignment {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  groupId String
+  group   OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   courseId String?
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   moduleId String?
   module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  dueAt DateTime?
+  label String?
 
   createdBy String
   createdAt DateTime  @default(now())
@@ -389,6 +395,7 @@ model OrgGroup {
 
   // back-relations
   members          GroupMember[]
+  assignments      Assignment[]
   assignmentGroups AssignmentGroup[]
   inviteGroups     OrgInviteGroup[]
 }
