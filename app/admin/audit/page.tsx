@@ -1,8 +1,11 @@
 import Link from 'next/link';
 
 import { AdminShell } from '@/components/admin/AdminShell';
+import { PageHeader } from '@/components/admin/PageHeader';
 import { requireAdminAccess } from '@/lib/authz';
 import { listAuditLogs, type AuditLogListItem } from '@/lib/db/audit';
+import { Button as ChakraButton } from '@chakra-ui/react';
+import { ScrollText } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -10,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button as UiButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -135,14 +138,17 @@ export default async function AdminAuditLogPage({
   return (
     <AdminShell title="Audit" breadcrumb={[{ label: 'Audit' }]}> 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-balance">Audit trail</h1>
-          <p className="text-sm text-muted-foreground">
-            Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes.
-          </p>
-        </header>
+        <PageHeader
+          title="Audit trail"
+          subtitle="Review recent security-sensitive actions across your organization. Filter by actor, action, or date."
+          actions={
+            <ChakraButton as={Link} href="#audit-filters" colorScheme="primary">
+              Filter events
+            </ChakraButton>
+          }
+        />
 
-        <Card>
+        <Card id="audit-filters">
           <CardHeader>
             <CardTitle>Filters</CardTitle>
             <CardDescription>Only the most recent 100 events are shown.</CardDescription>
@@ -187,10 +193,10 @@ export default async function AdminAuditLogPage({
               </div>
 
               <div className="flex items-end gap-2">
-                <Button type="submit">Apply filters</Button>
-                <Button as={Link} href="/admin/audit" variant="outline">
+                <UiButton type="submit">Apply filters</UiButton>
+                <UiButton as={Link} href="/admin/audit" variant="outline">
                   Reset
-                </Button>
+                </UiButton>
               </div>
             </form>
           </CardContent>
@@ -203,7 +209,20 @@ export default async function AdminAuditLogPage({
           </CardHeader>
           <CardContent>
             {items.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No audit events found for the selected filters.</p>
+              <div className="flex flex-col items-center gap-4 py-12 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <ScrollText className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">No audit events found</p>
+                  <p className="text-sm text-muted-foreground">
+                    Adjust your filters or broaden the date range to see more activity.
+                  </p>
+                </div>
+                <ChakraButton as={Link} href="#audit-filters" variant="outline" size="sm">
+                  Update filters
+                </ChakraButton>
+              </div>
             ) : (
               <TableContainer>
                 <Table size="sm">

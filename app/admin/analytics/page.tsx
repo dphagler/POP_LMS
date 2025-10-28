@@ -1,13 +1,16 @@
 import Link from "next/link";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { requireAdminAccess } from "@/lib/authz";
 import { loadOrgAnalyticsSnapshot } from "@/lib/admin-analytics";
 import { capturePosthogEvent } from "@/lib/posthog";
+import { Button as ChakraButton } from "@chakra-ui/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button as UiButton } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BarChart3 } from "lucide-react";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const percentFormatter = new Intl.NumberFormat("en-US", {
@@ -74,12 +77,15 @@ export default async function AdminAnalyticsPage({
   return (
     <AdminShell title="Analytics" breadcrumb={[{ label: "Analytics" }]}> 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-balance">Analytics snapshot</h1>
-          <p className="text-sm text-muted-foreground">
-            Review cohort health at a glance. Metrics update when assignments or learner progress changes.
-          </p>
-        </header>
+        <PageHeader
+          title="Analytics snapshot"
+          subtitle="Review cohort health at a glance. Metrics update when assignments or learner progress changes."
+          actions={
+            <ChakraButton as="a" href={exportHref} download colorScheme="primary">
+              Download CSV
+            </ChakraButton>
+          }
+        />
 
         <Card>
           <CardHeader>
@@ -101,10 +107,10 @@ export default async function AdminAnalyticsPage({
                 <Input id="end" name="end" type="date" defaultValue={endFilter} />
               </div>
               <div className="flex items-end gap-2">
-                <Button type="submit">Apply filters</Button>
-                <Button as={Link} href="/admin/analytics" variant="outline">
+                <UiButton type="submit">Apply filters</UiButton>
+                <UiButton as={Link} href="/admin/analytics" variant="outline">
                   Reset
-                </Button>
+                </UiButton>
               </div>
             </form>
           </CardContent>
@@ -140,9 +146,9 @@ export default async function AdminAnalyticsPage({
               </CardContent>
             </Card>
           </div>
-          <Button as="a" href={exportHref} download variant="outline" className="shrink-0">
+          <UiButton as="a" href={exportHref} download variant="outline" className="shrink-0">
             Download CSV
-          </Button>
+          </UiButton>
         </div>
 
         <Card>
@@ -199,14 +205,19 @@ export default async function AdminAnalyticsPage({
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                <p className="text-base font-medium">No assignments yet</p>
-                <p className="max-w-md text-sm text-muted-foreground">
-                  Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
-                </p>
-                <Button as={Link} href="/admin/assign">
+              <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <BarChart3 className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-medium">No assignments yet</p>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    Create an assignment to start tracking learner progress. Once learners begin completing lessons, you&apos;ll see metrics here.
+                  </p>
+                </div>
+                <UiButton as={Link} href="/admin/assign">
                   Create assignment
-                </Button>
+                </UiButton>
               </div>
             )}
           </CardContent>

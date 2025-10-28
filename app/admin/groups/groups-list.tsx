@@ -5,11 +5,11 @@ import { FormEvent, useMemo, useState, useTransition } from "react";
 
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
-  Flex,
   FormControl,
   FormLabel,
   Heading,
@@ -34,7 +34,9 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
+
+import { PageHeader } from "@/components/admin/PageHeader";
 
 import type { GroupListItem } from "@/lib/db/group";
 import { createGroup } from "@/lib/server-actions/groups";
@@ -111,7 +113,17 @@ export function AdminGroupsClient({ initialGroups }: AdminGroupsClientProps) {
   };
 
   return (
-    <Stack spacing={8} px={{ base: 4, md: 8 }} py={{ base: 6, md: 8 }}>
+    <Stack spacing={10}>
+      <PageHeader
+        title="Groups"
+        subtitle="Keep cohorts aligned with assignment targets and roster changes."
+        actions={
+          <Button colorScheme="primary" leftIcon={<Plus size={16} />} onClick={handleOpenModal}>
+            New group
+          </Button>
+        }
+      />
+
       <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
         <Card borderRadius="xl">
           <CardBody>
@@ -156,23 +168,38 @@ export function AdminGroupsClient({ initialGroups }: AdminGroupsClientProps) {
 
       <Card borderRadius="xl">
         <CardHeader>
-          <Flex align="center" justify="space-between" gap={4} wrap="wrap">
-            <Stack spacing={1}>
-              <Heading size="lg">Groups</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Keep cohorts aligned with assignment targets. Import data to sync with HRIS systems.
-              </Text>
-            </Stack>
-            <Button colorScheme="primary" leftIcon={<Plus size={16} />} onClick={handleOpenModal}>
-              New group
-            </Button>
-          </Flex>
+          <Stack spacing={1}>
+            <Heading size="sm">Group directory</Heading>
+            <Text fontSize="sm" color="fg.muted">
+              Import rosters or manage memberships manually to keep everyone in sync.
+            </Text>
+          </Stack>
         </CardHeader>
         <CardBody>
           {groups.length === 0 ? (
-            <Text fontSize="sm" color="fg.muted">
-              No groups yet. Create your first cohort to get started.
-            </Text>
+            <Stack spacing={5} align="center" py={10} textAlign="center">
+              <Box
+                borderRadius="full"
+                bg="bg.subtle"
+                color="fg.muted"
+                w={16}
+                h={16}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Users size={28} />
+              </Box>
+              <Stack spacing={1}>
+                <Text fontWeight="medium">No groups yet</Text>
+                <Text fontSize="sm" color="fg.muted">
+                  Create your first cohort to get started.
+                </Text>
+              </Stack>
+              <Button colorScheme="primary" leftIcon={<Plus size={16} />} onClick={handleOpenModal}>
+                New group
+              </Button>
+            </Stack>
           ) : (
             <TableContainer>
               <Table variant="simple" size="sm">

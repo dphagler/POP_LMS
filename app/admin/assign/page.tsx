@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { requireAdminAccess } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
+import { Button as ChakraButton } from "@chakra-ui/react";
+import { Button as UiButton } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AssignmentPlanner from "./assignment-planner";
 import { listAssignmentsForOrg } from "@/lib/db/assignment";
@@ -66,27 +68,39 @@ export default async function AssignmentPage() {
 
   return (
     <AdminShell title="Assignments" breadcrumb={[{ label: "Assignments" }]}> 
-      <div className="space-y-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <PageHeader
+          title="Assignments"
+          subtitle="Assign courses or individual modules to learner groups with a preview of who will be enrolled."
+          actions={
+            <ChakraButton as={Link} href="#assignment-planner" colorScheme="primary">
+              New assignment
+            </ChakraButton>
+          }
+        />
+
         <Card>
           <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <CardTitle>Assign learning</CardTitle>
+              <CardTitle>Plan assignments</CardTitle>
               <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
-                Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
+                Create assignments, preview enrollment lists, and keep everyone aligned with the latest learning paths.
               </CardDescription>
             </div>
-            <Button as={Link} href="/admin/groups" variant="outline" className="sm:w-auto">
+            <UiButton as={Link} href="/admin/groups" variant="outline" className="sm:w-auto">
               Manage groups
-            </Button>
+            </UiButton>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-sm text-muted-foreground">
-              Create assignments, preview enrollment lists, and keep everyone aligned with the latest learning paths.
+              Use the planner below to build new assignments or update due dates in bulk.
             </p>
           </CardContent>
         </Card>
 
-        <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignments} />
+        <div id="assignment-planner">
+          <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignments} />
+        </div>
       </div>
     </AdminShell>
   );
