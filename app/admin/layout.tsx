@@ -9,7 +9,7 @@ import { resolveOrgName } from "@/lib/org";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const { session, role } = await requireAdminAccess(["ADMIN", "MANAGER"]);
-  const pathname = resolveRequestedPath();
+  const pathname = await resolveRequestedPath();
   const navMatch = matchNavItem(pathname);
 
   if (navMatch && !navMatch.roles.includes(role)) {
@@ -50,8 +50,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   );
 }
 
-function resolveRequestedPath(): string {
-  const headerList = headers();
+async function resolveRequestedPath(): Promise<string> {
+  const headerList = await headers();
   const candidates = [
     headerList.get("x-invoke-path"),
     headerList.get("x-internal-nextjs-url"),

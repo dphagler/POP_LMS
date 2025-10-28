@@ -60,6 +60,8 @@ export function AdminSidebar({ navItems, onNavigate, isInDrawer }: AdminSidebarP
         <Stack as="nav" spacing={1} px={2} py={4} aria-label="Admin navigation">
           {navItems.map((item) => {
             const isActive = isItemActive(item, pathname);
+            const leftIcon =
+              item.icon === null || item.icon === undefined ? undefined : <>{item.icon}</>;
             return (
               <Button
                 key={item.href}
@@ -72,7 +74,7 @@ export function AdminSidebar({ navItems, onNavigate, isInDrawer }: AdminSidebarP
                 borderRadius="md"
                 bg={isActive ? activeBg : undefined}
                 color={isActive ? activeColor : undefined}
-                leftIcon={item.icon}
+                leftIcon={leftIcon}
                 onClick={handleNavigate}
                 aria-current={isActive ? "page" : undefined}
               >
