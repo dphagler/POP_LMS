@@ -1,6 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { prisma } from "./prisma";
-import { DEFAULT_ORG_NAME, resolveOrgByEmailDomain } from "./org";
+import { DEFAULT_ORG_NAME, getDefaultOrgForEmail } from "./org";
 
 type UserProfile = {
   name?: string | null;
@@ -38,12 +38,11 @@ export async function getOrCreateUserForEmail(
     return existing;
   }
 
-  const resolvedOrgId = await resolveOrgByEmailDomain(email, client);
+  const resolvedOrgId = await getDefaultOrgForEmail(email, client);
 
-  let org =
-    resolvedOrgId && resolvedOrgId !== "ambiguous"
-      ? await client.organization.findUnique({ where: { id: resolvedOrgId } })
-      : null;
+  let org = resolvedOrgId
+    ? await client.organization.findUnique({ where: { id: resolvedOrgId } })
+    : null;
 
   if (!org) {
     org = await client.organization.findFirst({

@@ -19,6 +19,8 @@ declare module 'vitest' {
     resetModules: () => void;
     spyOn: (object: any, key: string) => MockedFunction<any>;
     importActual: <T>(id: string) => Promise<T>;
+    stubEnv: (name: string, value: string | undefined) => void;
+    unstubAllEnvs: () => void;
   };
 
   export const describe: (name: string, fn: () => any) => void;
