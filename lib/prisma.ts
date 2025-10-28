@@ -21,29 +21,6 @@ function logOnce(level: LogLevel, message: string) {
   }
 }
 
-const datasources = resolveDatasourceUrl();
-const usingPrismaAccelerate = Boolean(
-  datasources?.db?.url && isPrismaAccelerateUrl(datasources.db.url)
-);
-
-if (usingPrismaAccelerate) {
-  const currentEngineType = process.env.PRISMA_CLIENT_ENGINE_TYPE;
-
-  if (!currentEngineType) {
-    process.env.PRISMA_CLIENT_ENGINE_TYPE = "dataproxy";
-    logOnce(
-      "info",
-      "[prisma] Prisma Accelerate connection detected. Configuring Prisma Client to use the Data Proxy engine (PRISMA_CLIENT_ENGINE_TYPE=dataproxy)."
-    );
-  } else if (currentEngineType !== "dataproxy") {
-    logOnce(
-      "warn",
-      `[prisma] Prisma Accelerate connection detected but PRISMA_CLIENT_ENGINE_TYPE=${currentEngineType}. Overriding to dataproxy so the client can reach the Accelerate endpoint.`
-    );
-    process.env.PRISMA_CLIENT_ENGINE_TYPE = "dataproxy";
-  }
-}
-
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
@@ -53,7 +30,7 @@ export const prisma =
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
-    datasources,
+    datasources: resolveDatasourceUrl(),
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
@@ -78,7 +55,7 @@ function resolveDatasourceUrl(): { db: { url: string } } | undefined {
 
     logOnce(
       "warn",
-      "[prisma] DATABASE_URL appears to use Prisma Accelerate but no direct connection string (DATABASE_DIRECT_URL, DIRECT_URL, POSTGRES_URL_NON_POOLING, or POSTGRES_URL) is set. Falling back to DATABASE_URL which may be unavailable locally."
+      "[prisma] DATABASE_URL appears to use Prisma Accelerate but no direct connection string (DATABASE_DIRECT_URL, DIRECT_URL, or POSTGRES_URL_NON_POOLING) is set. Falling back to DATABASE_URL which may be unavailable locally."
     );
   }
 

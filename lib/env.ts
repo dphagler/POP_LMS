@@ -65,8 +65,7 @@ export const env = {
     return (
       readOptionalEnv("DATABASE_DIRECT_URL") ??
       readOptionalEnv("DIRECT_URL") ??
-      readOptionalEnv("POSTGRES_URL_NON_POOLING") ??
-      readOptionalEnv("POSTGRES_URL")
+      readOptionalEnv("POSTGRES_URL_NON_POOLING")
     );
   },
   get SANITY_PROJECT_ID() {
