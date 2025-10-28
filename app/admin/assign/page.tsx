@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { Button as ChakraButton } from "@chakra-ui/react";
+
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { requireAdminAccess } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
@@ -66,6 +69,15 @@ export default async function AssignmentPage() {
 
   return (
     <AdminShell title="Assignments" breadcrumb={[{ label: "Assignments" }]}> 
+      <PageHeader
+        title="Assignments"
+        subtitle="Plan coursework, enroll learner groups, and track who has access to each module."
+        actions={
+          <ChakraButton as={Link} href="#assignment-planner" colorScheme="primary">
+            New assignment
+          </ChakraButton>
+        }
+      />
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">

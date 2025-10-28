@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, type ReactNode } from "react";
+import { useTransition } from "react";
 import Link from "next/link";
 import {
   Avatar,
@@ -26,13 +26,12 @@ import { useAdminShellContext } from "./AdminShell";
 
 type AdminTopbarProps = {
   title?: string;
-  actions?: ReactNode;
   onMenuClick: () => void;
   showMenuButton?: boolean;
   showAdminHome?: boolean;
 };
 
-export function AdminTopbar({ title, actions, onMenuClick, showMenuButton = true, showAdminHome = false }: AdminTopbarProps) {
+export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdminHome = false }: AdminTopbarProps) {
   const { user, org } = useAdminShellContext();
   const borderColor = useColorModeValue("border.subtle", "border.emphasis");
   const bg = useColorModeValue("white", "gray.900");
@@ -70,7 +69,6 @@ export function AdminTopbar({ title, actions, onMenuClick, showMenuButton = true
       </HStack>
 
       <HStack spacing={3} align="center">
-        {actions ? <BoxActions>{actions}</BoxActions> : null}
         {showAdminHome ? (
           <Button as={Link} href="/admin" variant="ghost" size="sm">
             Admin Home
@@ -80,18 +78,6 @@ export function AdminTopbar({ title, actions, onMenuClick, showMenuButton = true
         <UserMenu name={user.name} email={user.email} image={user.image} />
       </HStack>
     </Flex>
-  );
-}
-
-type BoxActionsProps = {
-  children: ReactNode;
-};
-
-function BoxActions({ children }: BoxActionsProps) {
-  return (
-    <HStack spacing={2} align="center" flexWrap="wrap" justify="flex-end">
-      {children}
-    </HStack>
   );
 }
 

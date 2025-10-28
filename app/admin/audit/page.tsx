@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { Button as ChakraButton } from '@chakra-ui/react';
+import { FileSearch } from 'lucide-react';
 
 import { AdminShell } from '@/components/admin/AdminShell';
+import { PageHeader } from '@/components/admin/PageHeader';
 import { requireAdminAccess } from '@/lib/authz';
 import { listAuditLogs, type AuditLogListItem } from '@/lib/db/audit';
 import {
@@ -135,12 +138,15 @@ export default async function AdminAuditLogPage({
   return (
     <AdminShell title="Audit" breadcrumb={[{ label: 'Audit' }]}> 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-balance">Audit trail</h1>
-          <p className="text-sm text-muted-foreground">
-            Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes.
-          </p>
-        </header>
+        <PageHeader
+          title="Audit trail"
+          subtitle="Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes."
+          actions={
+            <ChakraButton as={Link} href="#audit-filters" colorScheme="primary">
+              Filter events
+            </ChakraButton>
+          }
+        />
 
         <Card>
           <CardHeader>
@@ -148,7 +154,7 @@ export default async function AdminAuditLogPage({
             <CardDescription>Only the most recent 100 events are shown.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="grid gap-4 md:grid-cols-5" method="get">
+            <form id="audit-filters" className="grid gap-4 md:grid-cols-5" method="get">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="action">Action</Label>
                 <Select id="action" name="action" defaultValue={actionFilter ?? ''}>
@@ -203,7 +209,18 @@ export default async function AdminAuditLogPage({
           </CardHeader>
           <CardContent>
             {items.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No audit events found for the selected filters.</p>
+              <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 bg-muted">
+                  <FileSearch className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-medium">No audit events found</p>
+                  <p className="text-sm text-muted-foreground">Adjust your filters or broaden the date range.</p>
+                </div>
+                <Button as={Link} href="/admin/audit" variant="outline">
+                  Clear filters
+                </Button>
+              </div>
             ) : (
               <TableContainer>
                 <Table size="sm">
