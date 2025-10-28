@@ -91,6 +91,7 @@ async function logSsoResolution({
 
 export const authConfig = {
   adapter,
+  secret: env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" as const },
   providers: [
     Google({
