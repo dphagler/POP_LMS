@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@chakra-ui/react";
-import { ChevronRightIcon } from "@chakra-ui/icons";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, Icon } from "@chakra-ui/react";
+import { ChevronRight } from "lucide-react";
 
 export type AdminBreadcrumbItem = {
   label: string;
@@ -32,7 +32,11 @@ export function AdminBreadcrumbs({ items }: AdminBreadcrumbsProps) {
   })();
 
   return (
-    <Breadcrumb spacing="0.5rem" separator={<ChevronRightIcon color="fg.muted" />} aria-label="Breadcrumb">
+    <Breadcrumb
+      spacing="0.5rem"
+      separator={<Icon as={ChevronRight} boxSize={3} color="fg.muted" />}
+      aria-label="Breadcrumb"
+    >
       {trail.map((item, index) => {
         const isLast = index === trail.length - 1;
         if (isLast) {
