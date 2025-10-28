@@ -47,7 +47,7 @@ function resolveDatasourceUrl(): { db: { url: string } } | undefined {
     if (directUrl) {
       logOnce(
         "info",
-        "[prisma] Using DATABASE_DIRECT_URL because DATABASE_URL points to Prisma Accelerate, which is often unreachable in development environments."
+        "[prisma] Using a direct database connection string because DATABASE_URL points to Prisma Accelerate, which is often unreachable in development environments."
       );
 
       return { db: { url: directUrl } };
@@ -55,7 +55,7 @@ function resolveDatasourceUrl(): { db: { url: string } } | undefined {
 
     logOnce(
       "warn",
-      "[prisma] DATABASE_URL appears to use Prisma Accelerate but DATABASE_DIRECT_URL is not set. Falling back to DATABASE_URL which may be unavailable locally."
+      "[prisma] DATABASE_URL appears to use Prisma Accelerate but no direct connection string (DATABASE_DIRECT_URL, DIRECT_URL, or POSTGRES_URL_NON_POOLING) is set. Falling back to DATABASE_URL which may be unavailable locally."
     );
   }
 
