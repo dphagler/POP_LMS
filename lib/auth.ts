@@ -6,7 +6,7 @@ import Google from "next-auth/providers/google";
 import ResendProvider from "next-auth/providers/resend";
 import { MembershipSource, OrgRole, UserRole } from "@prisma/client";
 import { buildAuthAdapter } from "./auth-adapter";
-import { getOrCreateDefaultOrg, resolveOrgByEmailDomain } from "./org";
+import { findOrgIdForDomain, getDefaultOrgForEmail, getOrCreateDefaultOrg } from "./org";
 import { env } from "./env";
 import { sendSignInEmail } from "./email";
 import { enforceRateLimit } from "./rate-limit";
@@ -174,17 +174,7 @@ export const authConfig = {
       let outcome: "domain" | "invite" | "ambiguous" | "none" = "none";
 
       if (domain) {
-        const resolution = await resolveOrgByEmailDomain(domain, prisma);
-
-        if (resolution === "ambiguous") {
-          await logSsoResolution({
-            domain,
-            outcome: "ambiguous",
-            orgId: adapterUser.orgId ?? null,
-            entityId: adapterUser.id,
-          });
-          throw new Error("Select your organization");
-        }
+        const resolution = await findOrgIdForDomain(domain, prisma);
 
         if (resolution) {
           resolvedOrgId = resolution;

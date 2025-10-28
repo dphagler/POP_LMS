@@ -46,10 +46,17 @@ export async function ensureOrgThemeApplied(response: NextResponse) {
   if (!session?.user?.orgId) return response;
   const org = await prisma.organization.findUnique({
     where: { id: session.user.orgId },
-    select: { themeJson: true }
+    select: { themePrimary: true, themeAccent: true, loginBlurb: true }
   });
-  if (org?.themeJson) {
-    response.cookies.set("pop-theme", JSON.stringify(org.themeJson));
+  if (org) {
+    response.cookies.set(
+      "pop-theme",
+      JSON.stringify({
+        themePrimary: org.themePrimary,
+        themeAccent: org.themeAccent,
+        loginBlurb: org.loginBlurb,
+      })
+    );
   }
   return response;
 }

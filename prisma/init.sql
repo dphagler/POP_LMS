@@ -26,7 +26,9 @@ CREATE TYPE "MembershipSource" AS ENUM ('manual', 'csv', 'invite', 'sso');
 CREATE TABLE "Organization" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "themeJson" JSONB,
+    "themePrimary" TEXT,
+    "themeAccent" TEXT,
+    "loginBlurb" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Organization_pkey" PRIMARY KEY ("id")
@@ -344,13 +346,14 @@ CREATE TABLE "UserCertification" (
 );
 
 -- CreateTable
-CREATE TABLE "OrgDomain" (
+CREATE TABLE "Domain" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
-    "domain" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "verifiedAt" TIMESTAMP(3),
 
-    CONSTRAINT "OrgDomain_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Domain_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -472,10 +475,13 @@ CREATE INDEX "UserCertification_certificationId_idx" ON "UserCertification"("cer
 CREATE UNIQUE INDEX "UserCertification_userId_certificationId_key" ON "UserCertification"("userId", "certificationId");
 
 -- CreateIndex
-CREATE INDEX "OrgDomain_domain_idx" ON "OrgDomain"("domain");
+CREATE INDEX "Domain_orgId_idx" ON "Domain"("orgId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "OrgDomain_orgId_domain_key" ON "OrgDomain"("orgId", "domain");
+CREATE INDEX "Domain_value_idx" ON "Domain"("value");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Domain_value_key" ON "Domain"("value");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_orgId_idx" ON "AuditLog"("orgId");
@@ -627,7 +633,7 @@ ALTER TABLE "UserCertification" ADD CONSTRAINT "UserCertification_certificationI
 ALTER TABLE "UserCertification" ADD CONSTRAINT "UserCertification_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "OrgDomain" ADD CONSTRAINT "OrgDomain_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Domain" ADD CONSTRAINT "Domain_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;

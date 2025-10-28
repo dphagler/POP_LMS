@@ -58,17 +58,16 @@ async function main() {
     data: {
       id: DEV_ORG_ID,
       name: "Local Development Org",
-      themeJson: {
-        primary: "215 25% 25%",
-        "primary-foreground": "0 0% 100%"
-      }
+      themePrimary: "#1f2937",
+      themeAccent: "#f97316",
+      loginBlurb: "Local development access to POP LMS."
     }
   });
 
-  await prisma.orgDomain.createMany({
+  await prisma.domain.createMany({
     data: [
-      { orgId: organization.id, domain: "localdev.test" },
-      { orgId: organization.id, domain: "sandbox.local" }
+      { orgId: organization.id, value: "localdev.test" },
+      { orgId: organization.id, value: "sandbox.local" }
     ]
   });
 

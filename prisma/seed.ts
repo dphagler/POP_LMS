@@ -71,37 +71,31 @@ async function ensureGroupMembers(groupId: string, userIds: string[]) {
 }
 
 async function main() {
-  const themeJson = {
-    primary: "222.2 47.4% 11.2%",
-    "primary-foreground": "210 40% 98%"
-  } satisfies Prisma.JsonObject;
-
   const organization = await prisma.organization.upsert({
     where: { id: POP_INITIATIVE_ID },
     update: {
       name: "POP Initiative",
-      themeJson
+      themePrimary: "#1f2937",
+      themeAccent: "#f97316",
+      loginBlurb: "Choose how you’d like to sign in to your POP Initiative account. Your progress syncs across web and mobile."
     },
     create: {
       id: POP_INITIATIVE_ID,
       name: "POP Initiative",
-      themeJson
+      themePrimary: "#1f2937",
+      themeAccent: "#f97316",
+      loginBlurb: "Choose how you’d like to sign in to your POP Initiative account. Your progress syncs across web and mobile."
     }
   });
 
   const now = new Date();
 
-  await prisma.orgDomain.upsert({
-    where: {
-      orgId_domain: {
-        orgId: organization.id,
-        domain: "poplms.dev"
-      }
-    },
-    update: { verifiedAt: now },
+  await prisma.domain.upsert({
+    where: { value: "poplms.dev" },
+    update: { orgId: organization.id, verifiedAt: now },
     create: {
       orgId: organization.id,
-      domain: "poplms.dev",
+      value: "poplms.dev",
       verifiedAt: now
     }
   });

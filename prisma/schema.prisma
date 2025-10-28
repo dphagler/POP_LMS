@@ -90,10 +90,12 @@ enum ImportStatus {
 
 // ------------- Models -------------
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  themeJson Json?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  themePrimary String?
+  themeAccent  String?
+  loginBlurb   String?
+  createdAt   DateTime @default(now())
 
   // back-relations
   users          User[]
@@ -102,7 +104,7 @@ model Organization {
   assignments    Assignment[]
   memberships    OrgMembership[]
   certifications Certification[]
-  domains        OrgDomain[]
+  domains        Domain[]
   auditLogs      AuditLog[]
   invites        OrgInvite[]
   importJobs     ImportJob[]
@@ -528,16 +530,17 @@ model UserCertification {
   @@index([certificationId])
 }
 
-model OrgDomain {
-  id         String    @id @default(cuid())
-  orgId      String
-  domain     String
+model Domain {
+  id        String   @id @default(cuid())
+  orgId     String
+  value     String   @unique
+  createdAt DateTime @default(now())
   verifiedAt DateTime?
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  @@unique([orgId, domain])
-  @@index([domain])
+  @@index([orgId])
+  @@index([value])
 }
 
 model AuditLog {
