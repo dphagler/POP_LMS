@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useTransition, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -42,14 +42,30 @@ type AdminTopbarProps = {
   onMenuClick: () => void;
   showMenuButton?: boolean;
   showAdminHome?: boolean;
+  isMenuOpen?: boolean;
+  menuButtonRef?: RefObject<HTMLButtonElement>;
+  menuButtonControls?: string;
 };
 
-export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdminHome = false }: AdminTopbarProps) {
+export function AdminTopbar({
+  title,
+  onMenuClick,
+  showMenuButton = true,
+  showAdminHome = false,
+  isMenuOpen = false,
+  menuButtonRef,
+  menuButtonControls
+}: AdminTopbarProps) {
   const router = useRouter();
-  const { user, org, navItems } = useAdminShellContext();
+  const { user, org, navItems, role } = useAdminShellContext();
   const borderColor = useColorModeValue("border.subtle", "border.emphasis");
   const bg = useColorModeValue("white", "gray.900");
   const shortcutsModal = useDisclosure();
+
+  const accessibleNavItems = useMemo(
+    () => navItems.filter((item) => item.roles.includes(role)),
+    [navItems, role]
+  );
 
   const availableShortcuts = useMemo<ShortcutDefinition[]>(() => {
     const definitions: ShortcutDefinition[] = [
@@ -62,9 +78,9 @@ export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdm
     ];
 
     return definitions.filter((definition) =>
-      navItems.some((item) => item.href === definition.href)
+      accessibleNavItems.some((item) => item.href === definition.href)
     );
-  }, [navItems]);
+  }, [accessibleNavItems]);
 
   const shortcutRegistrations = useMemo(
     () =>
@@ -103,6 +119,9 @@ export function AdminTopbar({ title, onMenuClick, showMenuButton = true, showAdm
             icon={<MenuIcon size={18} />}
             onClick={onMenuClick}
             data-testid="admin-topbar-menu-button"
+            aria-controls={menuButtonControls}
+            aria-expanded={isMenuOpen}
+            ref={menuButtonRef}
           />
         ) : null}
         <Stack spacing={0}>

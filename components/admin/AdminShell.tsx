@@ -1,8 +1,17 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
-import { Box, Drawer, DrawerContent, DrawerOverlay, Flex, useBreakpointValue, useDisclosure } from "@chakra-ui/react";
+import {
+  Box,
+  Drawer,
+  DrawerContent,
+  DrawerOverlay,
+  Flex,
+  useBreakpointValue,
+  useDisclosure,
+  chakra
+} from "@chakra-ui/react";
 import { usePathname } from "next/navigation";
 
 import type { AdminNavItem } from "@/lib/admin/nav";
@@ -53,11 +62,26 @@ type AdminShellProps = {
 };
 
 export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
-  const { navItems } = useAdminShellContext();
+  const { navItems, role } = useAdminShellContext();
   const disclosure = useDisclosure();
+  const { isOpen, onOpen, onClose } = disclosure;
   const pathname = usePathname();
   const isDesktop = useBreakpointValue({ base: false, lg: true }, { fallback: "base" });
   const showAdminHome = pathname !== "/admin";
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const firstNavLinkRef = useRef<HTMLAnchorElement>(null);
+  const drawerNavigationId = "admin-mobile-navigation";
+
+  const accessibleNavItems = useMemo(
+    () => navItems.filter((item) => item.roles.includes(role)),
+    [navItems, role]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [pathname, isOpen, onClose]);
 
   const breadcrumbs = breadcrumb?.length
     ? breadcrumb
@@ -66,26 +90,59 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
     : undefined;
 
   return (
-    <Flex minH="100vh" bg="bg.canvas">
+    <Flex minH="100vh" bg="bg.canvas" position="relative">
+      <chakra.a
+        href="#admin-main-content"
+        position="absolute"
+        left="50%"
+        top={2}
+        transform="translate(-50%, -200%)"
+        px={4}
+        py={2}
+        bg="primary.500"
+        color="white"
+        borderRadius="md"
+        fontWeight="semibold"
+        zIndex={20}
+        _focusVisible={{ transform: "translate(-50%, 0)" }}
+      >
+        Skip to main content
+      </chakra.a>
       <Box display={{ base: "none", lg: "block" }} borderRightWidth="1px" borderColor="border.subtle" maxW="18rem" w="full">
-        <AdminSidebar navItems={navItems} onNavigate={disclosure.onClose} />
+        <AdminSidebar navItems={accessibleNavItems} onNavigate={onClose} />
       </Box>
 
-      <Drawer placement="left" onClose={disclosure.onClose} isOpen={disclosure.isOpen} size="xs">
+      <Drawer
+        placement="left"
+        onClose={onClose}
+        isOpen={isOpen}
+        size="xs"
+        initialFocusRef={firstNavLinkRef}
+        finalFocusRef={menuButtonRef}
+      >
         <DrawerOverlay display={{ base: "block", lg: "none" }} />
         <DrawerContent display={{ base: "block", lg: "none" }}>
-          <AdminSidebar navItems={navItems} onNavigate={disclosure.onClose} isInDrawer />
+          <AdminSidebar
+            navItems={accessibleNavItems}
+            onNavigate={onClose}
+            isInDrawer
+            initialFocusRef={firstNavLinkRef}
+            navigationId={drawerNavigationId}
+          />
         </DrawerContent>
       </Drawer>
 
       <Flex flex="1" direction="column" minH="100vh">
         <AdminTopbar
           title={title}
-          onMenuClick={disclosure.onOpen}
+          onMenuClick={onOpen}
           showMenuButton={!isDesktop}
           showAdminHome={showAdminHome}
+          isMenuOpen={isOpen}
+          menuButtonRef={menuButtonRef}
+          menuButtonControls={drawerNavigationId}
         />
-        <Box as="main" flex="1" px={{ base: 4, md: 8 }} py={{ base: 4, md: 6 }}>
+        <Box as="main" id="admin-main-content" flex="1" px={{ base: 4, md: 8 }} py={{ base: 4, md: 6 }}>
           {breadcrumbs ? (
             <Box mb={{ base: 4, md: 6 }}>
               <AdminBreadcrumbs items={breadcrumbs} />

@@ -214,6 +214,11 @@ const styles = {
     "*::selection": {
       background: "primary.200",
       color: "gray.900"
+    },
+    ":focus-visible": {
+      outline: "2px solid",
+      outlineColor: "brand.primary",
+      outlineOffset: "2px"
     }
   }
 };
