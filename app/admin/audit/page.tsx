@@ -97,7 +97,7 @@ function renderMetadata(metadata: AuditLogListItem['metadata']) {
 export default async function AdminAuditLogPage({
   searchParams,
 }: {
-  searchParams?: AuditPageSearchParams;
+  searchParams?: Promise<AuditPageSearchParams>;
 }) {
   const session = await requireRole('ADMIN');
   const orgId = session.user.orgId;
@@ -106,14 +106,16 @@ export default async function AdminAuditLogPage({
     throw new Error('Organization not found for admin user');
   }
 
-  const actionFilter = typeof searchParams?.action === 'string' && searchParams.action.length > 0
-    ? searchParams.action
+  const resolvedSearchParams = (await searchParams) ?? {};
+
+  const actionFilter = typeof resolvedSearchParams.action === 'string' && resolvedSearchParams.action.length > 0
+    ? resolvedSearchParams.action
     : undefined;
-  const actorFilter = typeof searchParams?.actor === 'string' && searchParams.actor.length > 0
-    ? searchParams.actor
+  const actorFilter = typeof resolvedSearchParams.actor === 'string' && resolvedSearchParams.actor.length > 0
+    ? resolvedSearchParams.actor
     : undefined;
-  const startFilter = parseDate(searchParams?.start);
-  const endFilter = parseDate(searchParams?.end, { endOfDay: true });
+  const startFilter = parseDate(resolvedSearchParams.start);
+  const endFilter = parseDate(resolvedSearchParams.end, { endOfDay: true });
 
   const { items, actions, actors } = await listAuditLogs({
     orgId,
@@ -126,8 +128,8 @@ export default async function AdminAuditLogPage({
     },
   });
 
-  const startValue = searchParams?.start ?? '';
-  const endValue = searchParams?.end ?? '';
+  const startValue = resolvedSearchParams.start ?? '';
+  const endValue = resolvedSearchParams.end ?? '';
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
