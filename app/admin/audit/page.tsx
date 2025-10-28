@@ -188,8 +188,8 @@ export default async function AdminAuditLogPage({
 
               <div className="flex items-end gap-2">
                 <Button type="submit">Apply filters</Button>
-                <Button asChild variant="outline">
-                  <Link href="/admin/audit">Reset</Link>
+                <Button as={Link} href="/admin/audit" variant="outline">
+                  Reset
                 </Button>
               </div>
             </form>
