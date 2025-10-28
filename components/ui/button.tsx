@@ -1,6 +1,12 @@
 "use client";
 
-import { AnchorHTMLAttributes, forwardRef, isValidElement } from "react";
+import {
+  AnchorHTMLAttributes,
+  Children,
+  forwardRef,
+  isValidElement,
+  type ReactElement
+} from "react";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Button as ChakraButton,
@@ -47,11 +53,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedVariant: ChakraButtonProps["variant"] =
       variant === "primary" ? "solid" : variant;
 
-    const child = asChild
-      ? isValidElement(children)
-        ? children
-        : <span>{children}</span>
-      : children;
+    let child = children;
+
+    if (asChild) {
+      const elements = Children.toArray(children).filter((child): child is ReactElement =>
+        isValidElement(child)
+      );
+
+      if (elements.length !== 1 && process.env.NODE_ENV !== "production") {
+        console.warn(
+          `Button with "asChild" expects exactly one React element child, but received ${elements.length}.`
+        );
+      }
+
+      child = elements[0] ?? <span>{children}</span>;
+    }
 
     return (
       <ChakraButton
