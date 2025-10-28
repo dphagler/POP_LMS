@@ -1,9 +1,7 @@
-import Link from "next/link";
 import {
   Alert,
   AlertDescription,
   AlertIcon,
-  Button,
   Card,
   CardBody,
   CardHeader,
@@ -26,6 +24,7 @@ import { Activity } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { QuickActions } from "@/components/admin/QuickActions";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { requireAdminAccess } from "@/lib/authz";
 import { listAuditLogs, type AuditLogListItem } from "@/lib/db/audit";
 import { prisma } from "@/lib/prisma";
@@ -179,9 +178,9 @@ export default async function AdminDashboard() {
         title="Admin dashboard"
         subtitle="Stay on top of assignments, learner activity, and content syncs for your organization."
         actions={
-          <Button as={Link} href="/admin/assign" colorScheme="primary">
+          <AdminNavLink href="/admin/assign" colorScheme="primary" testId="admin-dashboard-create-assignment">
             Create assignment
-          </Button>
+          </AdminNavLink>
         }
       />
 
@@ -217,9 +216,9 @@ export default async function AdminDashboard() {
                   The five most recent audit events across your organization.
                 </Text>
               </Stack>
-              <Button as={Link} href="/admin/audit" variant="outline" size="sm">
+              <AdminNavLink href="/admin/audit" variant="outline" size="sm">
                 View audit trail
-              </Button>
+              </AdminNavLink>
             </Flex>
           </CardHeader>
           <CardBody>
@@ -245,9 +244,15 @@ export default async function AdminDashboard() {
                         <Td>{log.action}</Td>
                         <Td>
                           {target.url ? (
-                            <Button as={Link} href={target.url} variant="link" size="sm" colorScheme="primary">
+                            <AdminNavLink
+                              href={target.url}
+                              variant="link"
+                              size="sm"
+                              colorScheme="primary"
+                              testId={`recent-activity-link-${log.id}`}
+                            >
                               {target.label}
-                            </Button>
+                            </AdminNavLink>
                           ) : (
                             target.label
                           )}
@@ -269,9 +274,9 @@ export default async function AdminDashboard() {
                     Activity from assignments, user management, and syncs will appear here.
                   </Text>
                 </Stack>
-                <Button as={Link} href="/admin/audit" colorScheme="primary" variant="outline">
+                <AdminNavLink href="/admin/audit" colorScheme="primary" variant="outline">
                   View audit trail
-                </Button>
+                </AdminNavLink>
               </Stack>
             )}
           </CardBody>
@@ -317,9 +322,9 @@ export default async function AdminDashboard() {
               <Text fontSize="sm" color="fg.muted">
                 Enroll learners into modules and courses with guided previews before you commit.
               </Text>
-              <Button as={Link} href="/admin/assign" size="sm" colorScheme="primary" alignSelf="flex-start">
+              <AdminNavLink href="/admin/assign" size="sm" colorScheme="primary" alignSelf="flex-start">
                 Create assignment
-              </Button>
+              </AdminNavLink>
             </Stack>
           </CardBody>
         </Card>
@@ -330,9 +335,9 @@ export default async function AdminDashboard() {
               <Text fontSize="sm" color="fg.muted">
                 Track assignments, active learners, and completion rates across your organization.
               </Text>
-              <Button as={Link} href="/admin/analytics" size="sm" variant="outline" alignSelf="flex-start">
+              <AdminNavLink href="/admin/analytics" size="sm" variant="outline" alignSelf="flex-start">
                 View analytics snapshot
-              </Button>
+              </AdminNavLink>
             </Stack>
           </CardBody>
         </Card>
@@ -343,9 +348,9 @@ export default async function AdminDashboard() {
               <Text fontSize="sm" color="fg.muted">
                 Create cohorts, manage CSV roster uploads, and keep memberships in sync.
               </Text>
-              <Button as={Link} href="/admin/groups" size="sm" colorScheme="primary" alignSelf="flex-start">
+              <AdminNavLink href="/admin/groups" size="sm" colorScheme="primary" alignSelf="flex-start">
                 Manage groups
-              </Button>
+              </AdminNavLink>
             </Stack>
           </CardBody>
         </Card>

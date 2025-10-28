@@ -34,6 +34,13 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
+  const canonicalRedirect = resolveAdminCanonicalRedirect(req.nextUrl);
+  if (canonicalRedirect) {
+    const response = NextResponse.redirect(canonicalRedirect, 308);
+    response.headers.set("x-request-id", requestId);
+    return response;
+  }
+
   const buildSignInUrl = () => {
     const signInUrl = req.nextUrl.clone();
     signInUrl.pathname = "/signin";
@@ -63,3 +70,33 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = { matcher: ["/app/:path*", "/admin/:path*", "/api/:path*"] };
+
+function resolveAdminCanonicalRedirect(url: URL): URL | null {
+  if (!url.pathname.startsWith("/admin")) {
+    return null;
+  }
+
+  const normalized = url.pathname.endsWith("/") && url.pathname !== "/admin"
+    ? url.pathname.replace(/\/+/g, "/").replace(/\/$/, "")
+    : url.pathname;
+
+  const synonymTarget = ADMIN_PATH_SYNONYMS.get(normalized.toLowerCase());
+  const targetPath = synonymTarget ?? normalized;
+
+  if (targetPath === url.pathname) {
+    return null;
+  }
+
+  const redirectUrl = new URL(url.href);
+  redirectUrl.pathname = targetPath;
+  return redirectUrl;
+}
+
+const ADMIN_PATH_SYNONYMS = new Map<string, string>([
+  ["/admin/dashboard", "/admin"],
+  ["/admin/assignments", "/admin/assign"],
+  ["/admin/assignment", "/admin/assign"],
+  ["/admin/user", "/admin/users"],
+  ["/admin/group", "/admin/groups"],
+  ["/admin/analytics/overview", "/admin/analytics"]
+]);

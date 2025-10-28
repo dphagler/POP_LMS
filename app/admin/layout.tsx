@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AdminShellProvider } from "@/components/admin/AdminShell";
 import { ADMIN_NAV } from "@/lib/admin/nav";
+import { isActive } from "@/lib/admin/nav-active";
 import { requireAdminAccess, type AdminAccessRole } from "@/lib/authz";
 import { resolveOrgName } from "@/lib/org";
 
@@ -92,23 +93,10 @@ function extractPathname(candidate: string): string | null {
 
 function matchNavItem(pathname: string): { roles: AdminAccessRole[] } | null {
   for (const item of ADMIN_NAV) {
-    if (isPathMatch(item.href, Boolean(item.exact), pathname)) {
+    if (isActive(item.href, item.exact, pathname)) {
       return { roles: item.roles };
     }
   }
 
   return null;
-}
-
-function isPathMatch(href: string, exact: boolean, pathname: string): boolean {
-  if (exact) {
-    return pathname === href;
-  }
-
-  if (pathname === href) {
-    return true;
-  }
-
-  const normalized = href.endsWith("/") ? href.slice(0, -1) : href;
-  return pathname.startsWith(`${normalized}/`);
 }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button as ChakraButton } from '@chakra-ui/react';
+import { AdminNavLink } from '@/components/admin/AdminNavLink';
 import { FileSearch } from 'lucide-react';
 
 import { AdminShell } from '@/components/admin/AdminShell';
@@ -142,9 +142,9 @@ export default async function AdminAuditLogPage({
           title="Audit trail"
           subtitle="Review recent security-sensitive actions across your organization. Filter by actor, action, or date to investigate changes."
           actions={
-            <ChakraButton as={Link} href="#audit-filters" colorScheme="primary">
+            <AdminNavLink href="#audit-filters" colorScheme="primary">
               Filter events
-            </ChakraButton>
+            </AdminNavLink>
           }
         />
 
@@ -194,9 +194,9 @@ export default async function AdminAuditLogPage({
 
               <div className="flex items-end gap-2">
                 <Button type="submit">Apply filters</Button>
-                <Button as={Link} href="/admin/audit" variant="outline">
+                <AdminNavLink href="/admin/audit" variant="outline">
                   Reset
-                </Button>
+                </AdminNavLink>
               </div>
             </form>
           </CardContent>
@@ -217,9 +217,9 @@ export default async function AdminAuditLogPage({
                   <p className="text-base font-medium">No audit events found</p>
                   <p className="text-sm text-muted-foreground">Adjust your filters or broaden the date range.</p>
                 </div>
-                <Button as={Link} href="/admin/audit" variant="outline">
+                <AdminNavLink href="/admin/audit" variant="outline">
                   Clear filters
-                </Button>
+                </AdminNavLink>
               </div>
             ) : (
               <TableContainer>

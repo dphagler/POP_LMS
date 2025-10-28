@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { Button as ChakraButton } from "@chakra-ui/react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -9,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AssignmentPlanner from "./assignment-planner";
 import { listAssignmentsForOrg } from "@/lib/db/assignment";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 
 export default async function AssignmentPage() {
   const { session } = await requireAdminAccess(["ADMIN", "MANAGER"]);
@@ -73,9 +72,9 @@ export default async function AssignmentPage() {
         title="Assignments"
         subtitle="Plan coursework, enroll learner groups, and track who has access to each module."
         actions={
-          <ChakraButton as={Link} href="#assignment-planner" colorScheme="primary">
+          <AdminNavLink href="#assignment-planner" colorScheme="primary">
             New assignment
-          </ChakraButton>
+          </AdminNavLink>
         }
       />
       <div className="space-y-6">
@@ -87,9 +86,9 @@ export default async function AssignmentPage() {
                 Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
               </CardDescription>
             </div>
-            <Button as={Link} href="/admin/groups" variant="outline" className="sm:w-auto">
+            <AdminNavLink href="/admin/groups" variant="outline" className="sm:w-auto">
               Manage groups
-            </Button>
+            </AdminNavLink>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-sm text-muted-foreground">
