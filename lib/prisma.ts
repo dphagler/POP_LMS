@@ -3,6 +3,24 @@ import { PrismaClient } from "@prisma/client";
 
 import { env } from "./env";
 
+type LogLevel = "info" | "warn";
+
+const loggedMessages = new Set<string>();
+
+function logOnce(level: LogLevel, message: string) {
+  if (loggedMessages.has(message)) {
+    return;
+  }
+
+  loggedMessages.add(message);
+
+  if (level === "info") {
+    console.info(message);
+  } else {
+    console.warn(message);
+  }
+}
+
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
@@ -46,22 +64,4 @@ function resolveDatasourceUrl(): { db: { url: string } } | undefined {
 
 function isPrismaAccelerateUrl(url: string): boolean {
   return url.startsWith("prisma://") || url.includes("prisma-data.net");
-}
-
-type LogLevel = "info" | "warn";
-
-const loggedMessages = new Set<string>();
-
-function logOnce(level: LogLevel, message: string) {
-  if (loggedMessages.has(message)) {
-    return;
-  }
-
-  loggedMessages.add(message);
-
-  if (level === "info") {
-    console.info(message);
-  } else {
-    console.warn(message);
-  }
 }
