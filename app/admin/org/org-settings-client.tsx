@@ -32,6 +32,7 @@ import {
   Tag,
   Text,
   Textarea,
+  chakra,
   extendTheme,
   useDisclosure,
   useToast,
@@ -213,75 +214,77 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
       <TabPanels>
         <TabPanel px={0}>
           <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10} mt={6} alignItems="start">
-            <Card borderRadius="2xl" as="form" onSubmit={handleBrandingSubmit}>
-              <CardHeader>
-                <Stack spacing={2}>
-                  <Heading size="md">Theme colors</Heading>
-                  <Text fontSize="sm" color="fg.muted">
-                    Adjust the colors and messaging displayed on your sign-in experience.
-                  </Text>
-                </Stack>
-              </CardHeader>
-              <CardBody>
-                <Stack spacing={6}>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <FormControl>
-                      <FormLabel>Primary color</FormLabel>
-                      <Input
-                        value={brandingValues.themePrimary}
-                        onChange={(event) =>
-                          setBrandingValues((current) => ({
-                            ...current,
-                            themePrimary: event.target.value,
-                          }))
-                        }
-                        placeholder="#1F2937"
-                      />
-                    </FormControl>
-                    <FormControl>
-                      <FormLabel>Accent color</FormLabel>
-                      <Input
-                        value={brandingValues.themeAccent}
-                        onChange={(event) =>
-                          setBrandingValues((current) => ({
-                            ...current,
-                            themeAccent: event.target.value,
-                          }))
-                        }
-                        placeholder="#F97316"
-                      />
-                    </FormControl>
-                  </SimpleGrid>
-                  <FormControl>
-                    <FormLabel>Login blurb</FormLabel>
-                    <Textarea
-                      value={brandingValues.loginBlurb}
-                      onChange={(event) =>
-                        setBrandingValues((current) => ({
-                          ...current,
-                          loginBlurb: event.target.value,
-                        }))
-                      }
-                      rows={4}
-                      placeholder="Welcome your learners and share sign-in guidance."
-                    />
-                    <Text fontSize="xs" color="fg.muted" mt={2}>
-                      Displayed beneath the sign-in buttons. 500 characters max.
+            <chakra.form onSubmit={handleBrandingSubmit} w="full">
+              <Card borderRadius="2xl">
+                <CardHeader>
+                  <Stack spacing={2}>
+                    <Heading size="md">Theme colors</Heading>
+                    <Text fontSize="sm" color="fg.muted">
+                      Adjust the colors and messaging displayed on your sign-in experience.
                     </Text>
-                  </FormControl>
-                  <Flex justify="flex-end" gap={3}>
-                    <Button
-                      type="submit"
-                      colorScheme="primary"
-                      isDisabled={!isBrandingDirty}
-                      isLoading={isBrandingPending}
-                    >
-                      Save changes
-                    </Button>
-                  </Flex>
-                </Stack>
-              </CardBody>
-            </Card>
+                  </Stack>
+                </CardHeader>
+                <CardBody>
+                  <Stack spacing={6}>
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                      <FormControl>
+                        <FormLabel>Primary color</FormLabel>
+                        <Input
+                          value={brandingValues.themePrimary}
+                          onChange={(event) =>
+                            setBrandingValues((current) => ({
+                              ...current,
+                              themePrimary: event.target.value,
+                            }))
+                          }
+                          placeholder="#1F2937"
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>Accent color</FormLabel>
+                        <Input
+                          value={brandingValues.themeAccent}
+                          onChange={(event) =>
+                            setBrandingValues((current) => ({
+                              ...current,
+                              themeAccent: event.target.value,
+                            }))
+                          }
+                          placeholder="#F97316"
+                        />
+                      </FormControl>
+                    </SimpleGrid>
+                    <FormControl>
+                      <FormLabel>Login blurb</FormLabel>
+                      <Textarea
+                        value={brandingValues.loginBlurb}
+                        onChange={(event) =>
+                          setBrandingValues((current) => ({
+                            ...current,
+                            loginBlurb: event.target.value,
+                          }))
+                        }
+                        rows={4}
+                        placeholder="Welcome your learners and share sign-in guidance."
+                      />
+                      <Text fontSize="xs" color="fg.muted" mt={2}>
+                        Displayed beneath the sign-in buttons. 500 characters max.
+                      </Text>
+                    </FormControl>
+                    <Flex justify="flex-end" gap={3}>
+                      <Button
+                        type="submit"
+                        colorScheme="primary"
+                        isDisabled={!isBrandingDirty}
+                        isLoading={isBrandingPending}
+                      >
+                        Save changes
+                      </Button>
+                    </Flex>
+                  </Stack>
+                </CardBody>
+              </Card>
+            </chakra.form>
             <Stack spacing={6}>
               <Card borderRadius="2xl" overflow="hidden">
                 <CardHeader>
