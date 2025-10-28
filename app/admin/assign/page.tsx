@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/authz";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { requireAdminAccess } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import AssignmentPlanner from "./assignment-planner";
 import { listAssignmentsForOrg } from "@/lib/db/assignment";
 
 export default async function AssignmentPage() {
-  const session = await requireRole("ADMIN");
+  const { session } = await requireAdminAccess(["ADMIN", "MANAGER"]);
   const { orgId } = session.user;
 
   if (!orgId) {
@@ -64,27 +65,29 @@ export default async function AssignmentPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle>Assign learning</CardTitle>
-            <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
-              Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
-            </CardDescription>
-          </div>
-          <Button
-            as={Link}
-            href="/admin"
-            variant="ghost"
-            className="h-9 w-full justify-start px-0 text-muted-foreground hover:text-foreground sm:w-auto"
-          >
-            ← Back to admin
-          </Button>
-        </CardHeader>
-      </Card>
+    <AdminShell title="Assignments" breadcrumb={[{ label: "Assignments" }]}> 
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle>Assign learning</CardTitle>
+              <CardDescription className="prose prose-sm text-muted-foreground max-w-none">
+                Assign courses or individual modules to learner groups with a preview of exactly who will be enrolled.
+              </CardDescription>
+            </div>
+            <Button as={Link} href="/admin/groups" variant="outline" className="sm:w-auto">
+              Manage groups
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-muted-foreground">
+              Create assignments, preview enrollment lists, and keep everyone aligned with the latest learning paths.
+            </p>
+          </CardContent>
+        </Card>
 
-      <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignments} />
-    </div>
+        <AssignmentPlanner courses={courseOptions} groups={groupOptions} assignments={assignments} />
+      </div>
+    </AdminShell>
   );
 }

@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 
-import { requireRole } from "@/lib/authz";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { requireAdminAccess } from "@/lib/authz";
 import { getOrgBranding, listOrgDomains } from "@/lib/db/org";
 
 import { OrgSettingsClient } from "./org-settings-client";
 
 export default async function OrgSettingsPage() {
-  const session = await requireRole("ADMIN");
+  const { session } = await requireAdminAccess(["ADMIN"]);
   const orgId = session.user.orgId;
 
   if (!orgId) {
@@ -26,10 +27,12 @@ export default async function OrgSettingsPage() {
   }));
 
   return (
-    <OrgSettingsClient
-      orgId={orgId}
-      initialBranding={branding}
-      initialDomains={serializedDomains}
-    />
+    <AdminShell title="Org Settings" breadcrumb={[{ label: "Org Settings" }]}> 
+      <OrgSettingsClient
+        orgId={orgId}
+        initialBranding={branding}
+        initialDomains={serializedDomains}
+      />
+    </AdminShell>
   );
 }
