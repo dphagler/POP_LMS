@@ -5,14 +5,13 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   Avatar,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
-  CardHeader,
   Flex,
   FormControl,
   FormLabel,
-  Heading,
   Input,
   Modal,
   ModalBody,
@@ -34,6 +33,9 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { UserPlus } from 'lucide-react';
+
+import { PageHeader } from '@/components/admin/PageHeader';
 
 import type { OrgUserListItem } from '@/lib/db/user';
 import { inviteUser, sendResetLink, updateUserRole } from '@/lib/server-actions/users';
@@ -102,6 +104,11 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
   useEffect(() => {
     usersSnapshot.current = users;
   }, [users]);
+
+  const handleInviteOpen = () => {
+    setInviteState(initialInviteState);
+    inviteDialog.onOpen();
+  };
 
   const handleInviteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -215,46 +222,60 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
   }, [users.length]);
 
   return (
-    <Stack spacing={8} px={{ base: 4, md: 8 }} py={{ base: 6, md: 8 }}>
+    <Stack spacing={8}>
+      <PageHeader
+        title="Users"
+        subtitle="Monitor roles, invitations, and access across your organization."
+        actions={
+          <Button colorScheme="primary" leftIcon={<UserPlus size={16} />} onClick={handleInviteOpen}>
+            Invite user
+          </Button>
+        }
+      />
+
       <Card borderRadius="xl">
-        <CardHeader>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            justify="space-between"
-            align={{ base: 'stretch', md: 'center' }}
-            gap={4}
-          >
-            <Stack spacing={1}>
-              <Heading size="lg">Organization users</Heading>
-              <Text fontSize="sm" color="fg.muted">
-                Monitor roles, access status, and group memberships. Invitations and role changes will appear here.
-              </Text>
-            </Stack>
-            <Button
-              colorScheme="primary"
-              alignSelf={{ base: 'stretch', md: 'center' }}
-              onClick={inviteDialog.onOpen}
-            >
-              Invite user
-            </Button>
-          </Flex>
-        </CardHeader>
         <CardBody>
-          <TableContainer>
-            <Table variant="simple" size="sm">
-              <Thead>
-                <Tr>
-                  <Th>User</Th>
-                  <Th>Role</Th>
-                  <Th>Status</Th>
-                  <Th>Groups</Th>
-                  <Th>Last seen</Th>
-                  <Th>Joined</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {users.map((user) => {
+          {users.length === 0 ? (
+            <Stack spacing={5} align="center" py={10} textAlign="center">
+              <Box
+                borderRadius="full"
+                bg="bg.subtle"
+                color="fg.muted"
+                w={16}
+                h={16}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <UserPlus size={28} />
+              </Box>
+              <Stack spacing={1}>
+                <Text fontWeight="medium">No users yet</Text>
+                <Text fontSize="sm" color="fg.muted">
+                  Invite your first teammate to get started.
+                </Text>
+              </Stack>
+              <Button colorScheme="primary" onClick={handleInviteOpen} leftIcon={<UserPlus size={16} />}>
+                Invite user
+              </Button>
+            </Stack>
+          ) : (
+            <Stack spacing={6}>
+              <TableContainer>
+                <Table variant="simple" size="sm">
+                  <Thead>
+                    <Tr>
+                      <Th>User</Th>
+                      <Th>Role</Th>
+                      <Th>Status</Th>
+                      <Th>Groups</Th>
+                      <Th>Last seen</Th>
+                      <Th>Joined</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {users.map((user) => {
                   const membershipCount = user.groups.length;
                   const initials = user.name
                     ? user.name
@@ -327,24 +348,28 @@ export function AdminUsersClient({ currentUserId, initialUsers }: AdminUsersClie
                       </Td>
                     </Tr>
                   );
-                })}
-              </Tbody>
-            </Table>
-          </TableContainer>
-          <Flex mt={4} justify="space-between" align="center" wrap="wrap" gap={3} fontSize="sm" color="fg.muted">
-            <Text>Showing {range.start === 0 ? 0 : `${range.start}-${range.end}`} of {users.length}</Text>
-            <Stack direction="row" spacing={2}>
-              <Button size="sm" variant="outline" isDisabled>
-                Previous
-              </Button>
-              <Button size="sm" variant="outline" isDisabled>
-                Next
-              </Button>
-              <Text fontSize="xs" alignSelf="center" color="fg.muted">
-                Page 1 of 1
-              </Text>
+                    })}
+                  </Tbody>
+                </Table>
+              </TableContainer>
+              <Flex justify="space-between" align="center" wrap="wrap" gap={3} fontSize="sm" color="fg.muted">
+                <Text>
+                  Showing {range.start === 0 ? 0 : `${range.start}-${range.end}`} of {users.length}
+                </Text>
+                <Stack direction="row" spacing={2}>
+                  <Button size="sm" variant="outline" isDisabled>
+                    Previous
+                  </Button>
+                  <Button size="sm" variant="outline" isDisabled>
+                    Next
+                  </Button>
+                  <Text fontSize="xs" alignSelf="center" color="fg.muted">
+                    Page 1 of 1
+                  </Text>
+                </Stack>
+              </Flex>
             </Stack>
-          </Flex>
+          )}
         </CardBody>
       </Card>
 
