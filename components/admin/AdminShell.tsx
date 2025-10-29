@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import {
   Box,
@@ -62,7 +62,7 @@ type AdminShellProps = {
 };
 
 export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
-  const { navItems, role } = useAdminShellContext();
+  const { role } = useAdminShellContext();
   const disclosure = useDisclosure();
   const { isOpen, onOpen, onClose } = disclosure;
   const pathname = usePathname();
@@ -71,11 +71,6 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstNavLinkRef = useRef<HTMLAnchorElement | null>(null);
   const drawerNavigationId = "admin-mobile-navigation";
-
-  const accessibleNavItems = useMemo(
-    () => navItems.filter((item) => item.roles.includes(role)),
-    [navItems, role]
-  );
 
   useEffect(() => {
     if (isOpen) {
@@ -109,7 +104,7 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
         Skip to main content
       </chakra.a>
       <Box display={{ base: "none", lg: "block" }} borderRightWidth="1px" borderColor="border.subtle" maxW="18rem" w="full">
-        <AdminSidebar navItems={accessibleNavItems} onNavigate={onClose} />
+        <AdminSidebar onNavigate={onClose} />
       </Box>
 
       <Drawer
@@ -123,7 +118,6 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
         <DrawerOverlay display={{ base: "block", lg: "none" }} />
         <DrawerContent display={{ base: "block", lg: "none" }}>
           <AdminSidebar
-            navItems={accessibleNavItems}
             onNavigate={onClose}
             isInDrawer
             initialFocusRef={firstNavLinkRef}

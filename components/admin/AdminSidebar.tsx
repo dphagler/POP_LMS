@@ -4,20 +4,19 @@ import { useMemo, type RefObject } from "react";
 import { usePathname } from "next/navigation";
 import { Box, Flex, Stack, Text, useColorModeValue } from "@chakra-ui/react";
 
-import type { AdminNavItem } from "@/lib/admin/nav";
+import { ADMIN_NAV } from "@/lib/admin/nav";
 
 import { useAdminShellContext } from "./AdminShell";
 import { AdminNavLink, isActive } from "./AdminNavLink";
 
 type AdminSidebarProps = {
-  navItems: AdminNavItem[];
   onNavigate?: () => void;
   isInDrawer?: boolean;
   initialFocusRef?: RefObject<HTMLAnchorElement | null>;
   navigationId?: string;
 };
 
-export function AdminSidebar({ navItems, onNavigate, isInDrawer, initialFocusRef, navigationId }: AdminSidebarProps) {
+export function AdminSidebar({ onNavigate, isInDrawer, initialFocusRef, navigationId }: AdminSidebarProps) {
   const pathname = usePathname();
   const { role } = useAdminShellContext();
   const borderColor = useColorModeValue("border.subtle", "border.emphasis");
@@ -26,8 +25,8 @@ export function AdminSidebar({ navItems, onNavigate, isInDrawer, initialFocusRef
   const sidebarBg = useColorModeValue("white", "gray.900");
 
   const accessibleItems = useMemo(
-    () => navItems.filter((item) => item.roles.includes(role)),
-    [navItems, role]
+    () => ADMIN_NAV.filter((item) => item.roles.includes(role)),
+    [role]
   );
 
   const handleNavigate = () => {
