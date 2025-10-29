@@ -7,7 +7,6 @@ import type {
   LessonObjective,
   LessonRuntime,
 } from '../lesson/contracts';
-import type { VideoProviderName } from '../video/provider';
 import { prisma } from '../prisma';
 
 interface GetNextLessonInput {
@@ -77,7 +76,9 @@ const normalizeOptionalString = (value: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const normalizeProvider = (value: unknown): VideoProviderName | null => {
+type VideoProvider = LessonRuntime['videoProvider'];
+
+const normalizeProvider = (value: unknown): VideoProvider | null => {
   if (value === 'youtube' || value === 'cloudflare') {
     return value;
   }
@@ -85,11 +86,144 @@ const normalizeProvider = (value: unknown): VideoProviderName | null => {
   if (typeof value === 'string') {
     const lower = value.trim().toLowerCase();
     if (lower === 'youtube' || lower === 'cloudflare') {
-      return lower as VideoProviderName;
+      return lower as VideoProvider;
     }
   }
 
   return null;
+};
+
+function parseYouTubeId(raw?: string | null): string | null {
+  const value = normalizeOptionalString(raw);
+  if (!value) {
+    return null;
+  }
+
+  const ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+
+  if (ID_PATTERN.test(value)) {
+    return value;
+  }
+
+  const toUrl = (input: string): URL | null => {
+    try {
+      return new URL(input);
+    } catch {
+      try {
+        return new URL(`https://${input}`);
+      } catch {
+        return null;
+      }
+    }
+  };
+
+  const url = toUrl(value);
+  if (!url) {
+    return null;
+  }
+
+  const host = url.hostname.toLowerCase();
+
+  const pickCandidate = (candidate: string | null | undefined): string | null => {
+    if (!candidate) {
+      return null;
+    }
+
+    const trimmed = candidate.trim();
+    return ID_PATTERN.test(trimmed) ? trimmed : null;
+  };
+
+  if (host === 'youtu.be' || host.endsWith('.youtu.be')) {
+    const [firstSegment] = url.pathname.replace(/^\/+/, '').split('/');
+    return pickCandidate(firstSegment);
+  }
+
+  if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+    const fromQuery = pickCandidate(url.searchParams.get('v'));
+    if (fromQuery) {
+      return fromQuery;
+    }
+
+    const segments = url.pathname
+      .split('/')
+      .map((segment) => segment.trim())
+      .filter((segment) => segment.length > 0);
+
+    const extractFromSegments = (): string | null => {
+      if (segments.length === 0) {
+        return null;
+      }
+
+      const markers = new Set(['embed', 'shorts', 'v']);
+      for (let index = 0; index < segments.length - 1; index += 1) {
+        if (markers.has(segments[index])) {
+          return segments[index + 1] ?? null;
+        }
+      }
+
+      return segments[segments.length - 1] ?? null;
+    };
+
+    return pickCandidate(extractFromSegments());
+  }
+
+  return null;
+}
+
+const resolveVideoSource = ({
+  lessonId,
+  provider,
+  streamId,
+  videoUrl,
+}: {
+  lessonId: string;
+  provider: VideoProvider | null;
+  streamId: string | null;
+  videoUrl: string | null;
+}): Pick<LessonRuntime, 'videoProvider' | 'videoId' | 'streamId'> => {
+  const normalizedStreamId = normalizeOptionalString(streamId);
+  const normalizedVideoUrl = normalizeOptionalString(videoUrl);
+
+  let resolvedProvider: VideoProvider | null = provider;
+  if (!resolvedProvider) {
+    resolvedProvider = normalizedVideoUrl ? 'youtube' : 'cloudflare';
+  }
+
+  if (resolvedProvider === 'youtube') {
+    const videoId = parseYouTubeId(normalizedVideoUrl);
+    if (videoId) {
+      return { videoProvider: 'youtube', videoId, streamId: null };
+    }
+
+    if (normalizedStreamId) {
+      if (process.env.NODE_ENV !== 'production') {
+        throw new Error(
+          `Lesson ${lessonId} is configured for YouTube but the video URL is missing or invalid.`,
+        );
+      }
+
+      return { videoProvider: 'cloudflare', videoId: null, streamId: normalizedStreamId };
+    }
+
+    throw new Error(
+      `Lesson ${lessonId} is configured for YouTube but the video URL is missing or invalid.`,
+    );
+  }
+
+  if (normalizedStreamId) {
+    return { videoProvider: 'cloudflare', videoId: null, streamId: normalizedStreamId };
+  }
+
+  if (normalizedVideoUrl) {
+    const videoId = parseYouTubeId(normalizedVideoUrl);
+    if (videoId) {
+      return { videoProvider: 'youtube', videoId, streamId: null };
+    }
+  }
+
+  throw new Error(
+    `Lesson ${lessonId} is missing both a Cloudflare stream ID and a valid YouTube video URL.`,
+  );
 };
 
 const normalizeAugmentations = (value: unknown): AugmentationRule[] => {
@@ -215,10 +349,9 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
       (snapshot.videoUrl ?? snapshot.youtubeUrl ?? snapshot.videoURL ?? null) as unknown,
     );
     const posterUrl = normalizeOptionalString(snapshot.posterUrl);
-    const provider =
-      normalizeProvider(
-        (snapshot.provider ?? snapshot.videoProvider ?? snapshot.providerName ?? null) as unknown,
-      ) ?? (streamId ? 'cloudflare' : null);
+    const provider = normalizeProvider(
+      (snapshot.provider ?? snapshot.videoProvider ?? snapshot.providerName ?? null) as unknown,
+    );
     const durationSec = typeof snapshot.durationSec === 'number' ? snapshot.durationSec : 0;
     const assessmentType = typeof snapshot.assessmentType === 'string'
       ? snapshot.assessmentType
@@ -228,13 +361,20 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
       return null;
     }
 
+    const { videoProvider, videoId, streamId: resolvedStreamId } = resolveVideoSource({
+      lessonId,
+      provider,
+      streamId,
+      videoUrl,
+    });
+
     return {
       id,
       title,
       objectives,
-      provider,
-      streamId,
-      videoUrl,
+      streamId: resolvedStreamId,
+      videoId,
+      videoProvider,
       posterUrl,
       durationSec,
       assessmentType,
@@ -296,14 +436,22 @@ export const getLessonRuntime = async ({
   const streamId = normalizeOptionalString(lesson.streamId);
   const videoUrl = normalizeOptionalString(lesson.videoUrl);
   const posterUrl = normalizeOptionalString(lesson.posterUrl);
+  const provider = normalizeProvider(lesson.provider);
+
+  const { videoProvider, videoId, streamId: resolvedStreamId } = resolveVideoSource({
+    lessonId: lesson.id,
+    provider,
+    streamId,
+    videoUrl,
+  });
 
   return {
     id: lesson.id,
     title: lesson.title,
     objectives: [],
-    provider: (lesson.provider as VideoProviderName | null) ?? (streamId ? 'cloudflare' : null),
-    streamId,
-    videoUrl,
+    streamId: resolvedStreamId,
+    videoId,
+    videoProvider,
     posterUrl,
     durationSec: lesson.durationS,
     assessmentType: lesson.quiz ? 'QUIZ' : NO_ASSESSMENT_TYPE,
