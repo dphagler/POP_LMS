@@ -8,6 +8,32 @@ type SanityClient = ReturnType<typeof createClient>;
 let cachedClient: SanityClient | null = null;
 let cachedBuilder: ReturnType<typeof imageUrlBuilder> | null = null;
 
+export type SanityLessonDocument = {
+  _id?: string;
+  _ref?: string;
+  title?: string;
+  streamId?: string;
+  youtubeId?: string;
+  durationS?: number;
+  requiresFullWatch?: boolean;
+};
+
+export type SanityModuleDocument = {
+  _id?: string;
+  _ref?: string;
+  title?: string;
+  order?: number;
+  lessons?: SanityLessonDocument[];
+};
+
+export type SanityCourseDocument = {
+  _id?: string;
+  _ref?: string;
+  title?: string;
+  description?: string;
+  modules?: SanityModuleDocument[];
+};
+
 function getSanityConfig() {
   return {
     projectId: process.env.SANITY_PROJECT_ID,
@@ -100,7 +126,9 @@ type FetchCoursesOptions = {
   limit?: number;
 };
 
-export async function fetchPublishedCourses(options: FetchCoursesOptions = {}) {
+export async function fetchPublishedCourses(
+  options: FetchCoursesOptions = {}
+): Promise<SanityCourseDocument[]> {
   const client = getSanityClient();
   const sanitizedLimit =
     typeof options.limit === "number" && Number.isFinite(options.limit)
@@ -108,5 +136,5 @@ export async function fetchPublishedCourses(options: FetchCoursesOptions = {}) {
       : undefined;
   const rangeClause = sanitizedLimit !== undefined ? `[0...${sanitizedLimit}]` : "";
   const query = `*[_type == "course"]${rangeClause}{..., modules[]->{..., lessons[]->}}`;
-  return client.fetch(query);
+  return client.fetch<SanityCourseDocument[]>(query);
 }
