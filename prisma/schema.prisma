@@ -109,6 +109,7 @@ model Organization {
   invites        OrgInvite[]
   importJobs     ImportJob[]
   runtimeSnapshots LessonRuntimeSnapshot[]
+  progressDaily   ProgressDaily[]
 }
 
 model User {
@@ -187,6 +188,7 @@ model Lesson {
   assessments Assessment[]
   augmentations AugmentationServed[]
   runtimeSnapshots LessonRuntimeSnapshot[]
+  progressDaily   ProgressDaily[]
 }
 
 model LessonRuntimeSnapshot {
@@ -265,6 +267,25 @@ model Progress {
 
   @@unique([userId, lessonId])
   @@index([userId, lessonId])
+}
+
+model ProgressDaily {
+  id               String       @id @default(cuid())
+  orgId            String
+  lessonId         String
+  date             DateTime
+  viewers          Int          @default(0)
+  avgPercent       Float        @default(0)
+  completes        Int          @default(0)
+  uniqueSecondsSum Int          @default(0)
+  createdAt        DateTime     @default(now())
+
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  lesson Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, lessonId, date])
+  @@index([date])
+  @@index([orgId, date])
 }
 
 model AugmentationServed {
