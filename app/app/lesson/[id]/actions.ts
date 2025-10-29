@@ -3,6 +3,7 @@
 import { Prisma } from "@prisma/client";
 
 import { requireUser } from "@/lib/authz";
+import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import type { DiagnosticResult, LessonRuntime, ProgressState } from "@/lib/lesson/contracts";
 import type { Segment } from "@/lib/lesson/progress";
@@ -256,6 +257,43 @@ export const saveProgress = async (
     ratio: result.ratio,
     reachedThreshold: result.reachedThreshold,
     progress,
+  };
+};
+
+type GetProgressInput = {
+  lessonId: string;
+};
+
+type GetProgressResult = {
+  uniqueSeconds: number;
+  segmentCount: number;
+};
+
+export const getProgress = async ({ lessonId }: GetProgressInput): Promise<GetProgressResult> => {
+  if (!env.telemetryDebugEnabled) {
+    return { uniqueSeconds: 0, segmentCount: 0 };
+  }
+
+  const session = await requireUser();
+  const userId = session.user.id;
+
+  const record = await prisma.progress.findUnique({
+    where: { userId_lessonId: { userId, lessonId } },
+    select: {
+      uniqueSeconds: true,
+      segments: true,
+    },
+  });
+
+  const uniqueSeconds =
+    typeof record?.uniqueSeconds === "number" && Number.isFinite(record.uniqueSeconds)
+      ? Math.max(0, Math.round(record.uniqueSeconds))
+      : 0;
+  const segments = parseSegments(record?.segments ?? null);
+
+  return {
+    uniqueSeconds,
+    segmentCount: segments.length,
   };
 };
 

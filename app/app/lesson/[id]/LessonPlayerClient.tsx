@@ -24,6 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { PostHogClient } from "@/analytics/posthog-client";
+import { TelemetryOverlay } from "@/components/lesson/TelemetryOverlay";
 import { initPosthogClient, type PosthogClientHandle } from "@/lib/analytics/posthog.client";
 import { env } from "@/lib/env";
 import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
@@ -32,6 +33,7 @@ import {
   type YouTubePlayer,
   type YouTubePlayerEvent,
 } from "@/types/youtube";
+import { getProgress } from "./actions";
 
 const formatPercent = (value: number): string => `${value}%`;
 
@@ -257,6 +259,14 @@ export function LessonPlayerClient({
     typeof initialUniqueSeconds === "number" && Number.isFinite(initialUniqueSeconds)
       ? Math.max(0, Math.round(initialUniqueSeconds))
       : 0;
+  const telemetryDebugEnabled = env.NEXT_PUBLIC_TELEMETRY_DEBUG;
+  const [telemetryState, setTelemetryState] = useState(() => ({
+    currentTime: 0,
+    lastPostStatus: "idle",
+    uniqueSeconds: initialUniqueSecondsValue,
+    segmentCount: 0,
+  }));
+  const [isForceTickPending, setIsForceTickPending] = useState(false);
   const posthogClientRef = useRef<PosthogClientHandle | null>(null);
   const [posthogReady, setPosthogReady] = useState(false);
   const lastProgressSecondRef = useRef<number | null>(null);
@@ -271,6 +281,56 @@ export function LessonPlayerClient({
     completionEmittedRef.current =
       initialUniqueSecondsValue / durationSeconds >= COMPLETION_THRESHOLD_RATIO;
   }, [durationSeconds, initialUniqueSecondsValue, lessonId]);
+
+  useEffect(() => {
+    if (!telemetryDebugEnabled || !isYouTube) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const updateTime = () => {
+      const player = playerRef.current;
+      let nextTime = 0;
+
+      if (player) {
+        try {
+          const value = player.getCurrentTime?.();
+          if (typeof value === "number" && Number.isFinite(value)) {
+            nextTime = value;
+          }
+        } catch {
+          nextTime = 0;
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const normalized = Number.isFinite(nextTime) ? Math.max(0, nextTime) : 0;
+
+      setTelemetryState((previous) => {
+        if (Math.abs(previous.currentTime - normalized) < 0.05) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          currentTime: normalized,
+        };
+      });
+    };
+
+    updateTime();
+
+    const interval = setInterval(updateTime, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isYouTube, telemetryDebugEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,6 +387,54 @@ export function LessonPlayerClient({
     userOrgId,
     userRole,
   ]);
+
+  useEffect(() => {
+    if (!telemetryDebugEnabled) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const result = await getProgress({ lessonId });
+        if (cancelled) {
+          return;
+        }
+
+        const uniqueSecondsValue = Math.max(0, Math.round(result.uniqueSeconds ?? 0));
+        const segmentCountValue = Math.max(0, result.segmentCount ?? 0);
+        const statusLabel = `poll ok @ ${new Date().toLocaleTimeString()}`;
+
+        setTelemetryState((previous) => ({
+          ...previous,
+          lastPostStatus: statusLabel,
+          uniqueSeconds: uniqueSecondsValue,
+          segmentCount: segmentCountValue,
+        }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "unknown";
+        setTelemetryState((previous) => ({
+          ...previous,
+          lastPostStatus: `poll error: ${message}`,
+        }));
+      }
+    };
+
+    void poll();
+    const interval = setInterval(() => {
+      void poll();
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [lessonId, telemetryDebugEnabled]);
 
   const emitProgressTick = useCallback(
     (force = false) => {
@@ -497,6 +605,54 @@ export function LessonPlayerClient({
     },
     [durationSeconds, fetchProgressSnapshot, lessonId, posthogReady],
   );
+
+  const handleForceTelemetryTick = useCallback(async () => {
+    if (!telemetryDebugEnabled) {
+      return;
+    }
+
+    setIsForceTickPending(true);
+
+    try {
+      const player = playerRef.current;
+      let currentTime = 0;
+
+      if (player) {
+        try {
+          currentTime = player.getCurrentTime?.() ?? 0;
+        } catch {
+          currentTime = 0;
+        }
+      }
+
+      const payload = {
+        lessonId,
+        provider,
+        t: Math.max(0, Math.floor(Number.isFinite(currentTime) ? currentTime : 0)),
+      };
+
+      const response = await fetch("/api/progress/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const statusLabel = `heartbeat ${response.ok ? "ok" : "error"} (${response.status}) @ ${new Date().toLocaleTimeString()}`;
+
+      setTelemetryState((previous) => ({
+        ...previous,
+        lastPostStatus: statusLabel,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      setTelemetryState((previous) => ({
+        ...previous,
+        lastPostStatus: `heartbeat error: ${message}`,
+      }));
+    } finally {
+      setIsForceTickPending(false);
+    }
+  }, [lessonId, provider, telemetryDebugEnabled]);
 
   useEffect(() => {
     return () => {
@@ -707,155 +863,173 @@ export function LessonPlayerClient({
     primaryCtaRef,
   });
 
+  const telemetryPercent =
+    durationSeconds > 0
+      ? Math.min(100, Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100))
+      : 0;
+
   return (
     <>
       <PostHogClient />
       <Flex
-      ref={containerRef}
-      minH="100dvh"
-      justify="center"
-      bgGradient={{ base: "linear(to-b, gray.900, gray.950)", md: undefined }}
-      data-lesson-shortcuts-root
-    >
-      <Container
-        maxW={{ base: "full", md: "540px" }}
-        px={{ base: 4, md: 0 }}
-        py={{ base: 6, md: 12 }}
-        display="flex"
-        flexDirection="column"
-        flex="1"
+        ref={containerRef}
+        minH="100dvh"
+        justify="center"
+        bgGradient={{ base: "linear(to-b, gray.900, gray.950)", md: undefined }}
+        data-lesson-shortcuts-root
       >
-        <Stack spacing={6} flex="1">
-          <HStack spacing={3} justify="space-between" align="center">
-            <Button
-              onClick={() => router.push("/app")}
-              variant="ghost"
-              leftIcon={<Icon as={ArrowLeft} boxSize={4} />}
-              size="sm"
-            >
-              Back
-            </Button>
-            <Text fontWeight="semibold" fontSize="lg" flex="1" textAlign="center" noOfLines={2}>
-              {lessonTitle}
-            </Text>
-            <Badge
-              colorScheme="primary"
-              borderRadius="full"
-              px={3}
-              py={1}
-              fontSize="xs"
-              aria-label={
-                badgeLabel
-                  ? `Lesson ${badgeLabel}. ${augmentationCount} augmentation options available.`
-                  : `${augmentationCount} augmentation options available.`
-              }
-            >
-              {badgeLabel ?? `${augmentationCount} available`}
-            </Badge>
-          </HStack>
-
-          <Flex flex="1" align="center" justify="center">
-            <AspectRatio ratio={9 / 16} w="full" maxW="full">
-              <Box
-                borderRadius="2xl"
-                overflow="hidden"
-                position="relative"
-                bg={posterUrl ? undefined : "gray.800"}
-                backgroundImage={posterUrl ? `url(${posterUrl})` : undefined}
-                backgroundSize="cover"
-                backgroundPosition="center"
-                boxShadow="2xl"
-              >
-                <Box
-                  ref={playerContainerRef}
-                  position="absolute"
-                  inset={0}
-                  w="full"
-                  h="full"
-                  zIndex={1}
-                  data-video-provider={provider}
-                  aria-hidden={!showPlayer}
-                />
-                <Box
-                  position="absolute"
-                  inset={0}
-                  bg="blackAlpha.500"
-                  opacity={isPlaying ? 0 : 1}
-                  transition="opacity 0.3s ease"
-                  pointerEvents="none"
-                  zIndex={2}
-                />
-                <Flex
-                  position="absolute"
-                  inset={0}
-                  align="center"
-                  justify="center"
-                  pointerEvents="none"
-                  zIndex={3}
-                >
-                  <IconButton
-                    aria-label={isPlaying ? "Pause lesson" : "Play lesson"}
-                    icon={<Icon as={isPlaying ? Pause : Play} boxSize={7} />}
-                    size="lg"
-                    borderRadius="full"
-                    colorScheme="whiteAlpha"
-                    bg="whiteAlpha.300"
-                    _hover={{ bg: "whiteAlpha.400" }}
-                    aria-pressed={isPlaying}
-                    onClick={handleTogglePlayback}
-                    pointerEvents={showPlayer && isPlaying ? "none" : "auto"}
-                    opacity={showPlayer ? (isPlaying ? 0 : 1) : 1}
-                    transition="opacity 0.2s ease"
-                    isDisabled={!showPlayer}
-                  />
-                </Flex>
-              </Box>
-            </AspectRatio>
-          </Flex>
-
-          <Stack spacing={4} pb={{ base: 8, md: 0 }}>
-            <HStack justify="space-between">
+        <Container
+          maxW={{ base: "full", md: "540px" }}
+          px={{ base: 4, md: 0 }}
+          py={{ base: 6, md: 12 }}
+          display="flex"
+          flexDirection="column"
+          flex="1"
+        >
+          <Stack spacing={6} flex="1">
+            <HStack spacing={3} justify="space-between" align="center">
               <Button
+                onClick={() => router.push("/app")}
+                variant="ghost"
+                leftIcon={<Icon as={ArrowLeft} boxSize={4} />}
                 size="sm"
-                variant="outline"
-                leftIcon={<Icon as={MuteIcon} boxSize={4} />}
-                isDisabled
               >
-                {muteLabel}
+                Back
               </Button>
+              <Text fontWeight="semibold" fontSize="lg" flex="1" textAlign="center" noOfLines={2}>
+                {lessonTitle}
+              </Text>
               <Badge
-                display="flex"
-                alignItems="center"
-                gap={2}
+                colorScheme="primary"
                 borderRadius="full"
                 px={3}
                 py={1}
-                colorScheme="gray"
+                fontSize="xs"
+                aria-label={
+                  badgeLabel
+                    ? `Lesson ${badgeLabel}. ${augmentationCount} augmentation options available.`
+                    : `${augmentationCount} augmentation options available.`
+                }
               >
-                <Icon as={Captions} boxSize={3} />
-                Captions
+                {badgeLabel ?? `${augmentationCount} available`}
               </Badge>
             </HStack>
-            <Stack spacing={1}>
-              <Flex justify="space-between" fontSize="sm">
-                <Text color="fg.muted">Progress</Text>
-                <Text fontWeight="medium">{formatPercent(progressPercent)}</Text>
-              </Flex>
-              <Progress value={progressPercent} borderRadius="full" />
+
+            <Flex flex="1" align="center" justify="center">
+              <AspectRatio ratio={9 / 16} w="full" maxW="full">
+                <Box
+                  borderRadius="2xl"
+                  overflow="hidden"
+                  position="relative"
+                  bg={posterUrl ? undefined : "gray.800"}
+                  backgroundImage={posterUrl ? `url(${posterUrl})` : undefined}
+                  backgroundSize="cover"
+                  backgroundPosition="center"
+                  boxShadow="2xl"
+                >
+                  <Box
+                    ref={playerContainerRef}
+                    position="absolute"
+                    inset={0}
+                    w="full"
+                    h="full"
+                    zIndex={1}
+                    data-video-provider={provider}
+                    aria-hidden={!showPlayer}
+                  />
+                  <Box
+                    position="absolute"
+                    inset={0}
+                    bg="blackAlpha.500"
+                    opacity={isPlaying ? 0 : 1}
+                    transition="opacity 0.3s ease"
+                    pointerEvents="none"
+                    zIndex={2}
+                  />
+                  <Flex
+                    position="absolute"
+                    inset={0}
+                    align="center"
+                    justify="center"
+                    pointerEvents="none"
+                    zIndex={3}
+                  >
+                    <IconButton
+                      aria-label={isPlaying ? "Pause lesson" : "Play lesson"}
+                      icon={<Icon as={isPlaying ? Pause : Play} boxSize={7} />}
+                      size="lg"
+                      borderRadius="full"
+                      colorScheme="whiteAlpha"
+                      bg="whiteAlpha.300"
+                      _hover={{ bg: "whiteAlpha.400" }}
+                      aria-pressed={isPlaying}
+                      onClick={handleTogglePlayback}
+                      pointerEvents={showPlayer && isPlaying ? "none" : "auto"}
+                      opacity={showPlayer ? (isPlaying ? 0 : 1) : 1}
+                      transition="opacity 0.2s ease"
+                      isDisabled={!showPlayer}
+                    />
+                  </Flex>
+                </Box>
+              </AspectRatio>
+            </Flex>
+
+            <Stack spacing={4} pb={{ base: 8, md: 0 }}>
+              <HStack justify="space-between">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<Icon as={MuteIcon} boxSize={4} />}
+                  isDisabled
+                >
+                  {muteLabel}
+                </Button>
+                <Badge
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  borderRadius="full"
+                  px={3}
+                  py={1}
+                  colorScheme="gray"
+                >
+                  <Icon as={Captions} boxSize={3} />
+                  Captions
+                </Badge>
+              </HStack>
+              <Stack spacing={1}>
+                <Flex justify="space-between" fontSize="sm">
+                  <Text color="fg.muted">Progress</Text>
+                  <Text fontWeight="medium">{formatPercent(progressPercent)}</Text>
+                </Flex>
+                <Progress value={progressPercent} borderRadius="full" />
+              </Stack>
+              <Button
+                ref={primaryCtaRef}
+                size="lg"
+                colorScheme="primary"
+                borderRadius="full"
+                isDisabled={!canStartAssessment}
+              >
+                Start assessment
+              </Button>
             </Stack>
-            <Button
-              ref={primaryCtaRef}
-              size="lg"
-              colorScheme="primary"
-              borderRadius="full"
-              isDisabled={!canStartAssessment}
-            >
-              Start assessment
-            </Button>
           </Stack>
-        </Stack>
-      </Container>
+        </Container>
       </Flex>
+      {telemetryDebugEnabled ? (
+        <TelemetryOverlay
+          provider={provider}
+          currentTime={telemetryState.currentTime}
+          duration={durationSeconds}
+          lastPostStatus={telemetryState.lastPostStatus}
+          uniqueSeconds={telemetryState.uniqueSeconds}
+          percent={telemetryPercent}
+          segmentCount={telemetryState.segmentCount}
+          onForceTick={handleForceTelemetryTick}
+          isForceTickPending={isForceTickPending}
+        />
+      ) : null}
     </>
   );
 }
