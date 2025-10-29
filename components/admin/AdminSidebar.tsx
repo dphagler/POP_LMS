@@ -2,9 +2,10 @@
 
 import { useMemo, type RefObject } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Flex, Stack, Text, useColorModeValue } from "@chakra-ui/react";
+import Link from "next/link";
+import { Box, Flex, Stack, Text, useColorModeValue, chakra } from "@chakra-ui/react";
 
-import { ADMIN_NAV } from "@/lib/admin/nav";
+import { ADMIN_NAV, ADMIN_ROOT_LABEL, ADMIN_ROOT_PATH } from "@/lib/admin/nav";
 
 import { useAdminShellContext } from "./AdminShell";
 import { AdminNavLink, isActive } from "./AdminNavLink";
@@ -46,9 +47,20 @@ export function AdminSidebar({ onNavigate, isInDrawer, initialFocusRef, navigati
       maxW="18rem"
     >
       <Box px={6} pt={6} pb={4} borderBottomWidth="1px" borderColor={borderColor}>
-        <Text fontWeight="bold" fontSize="lg">
-          Admin
-        </Text>
+        <chakra.a
+          as={Link}
+          href={ADMIN_ROOT_PATH}
+          fontWeight="bold"
+          fontSize="lg"
+          color="fg.emphasized"
+          _hover={{ color: "primary.600" }}
+          _active={{ color: "primary.700" }}
+          aria-label={`Go to ${ADMIN_ROOT_LABEL} dashboard`}
+          role="link"
+          data-testid="admin-sidebar-brand-link"
+        >
+          {ADMIN_ROOT_LABEL}
+        </chakra.a>
         <Text fontSize="sm" color="fg.muted">
           Manage your organization
         </Text>

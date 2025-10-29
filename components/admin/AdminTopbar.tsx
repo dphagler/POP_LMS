@@ -25,17 +25,19 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Tag,
   Text,
   useDisclosure,
-  useColorModeValue
+  useColorModeValue,
+  chakra
 } from "@chakra-ui/react";
 import { Menu as MenuIcon } from "lucide-react";
 
 import { signOutAction } from "@/app/actions/sign-out";
 import { useShortcutSequences, type ShortcutDefinition } from "@/lib/shortcuts";
+import { ADMIN_ROOT_LABEL, ADMIN_ROOT_PATH } from "@/lib/admin/nav";
 
 import { useAdminShellContext } from "./AdminShell";
-import { AdminNavLink } from "./AdminNavLink";
 
 type AdminTopbarProps = {
   title?: string;
@@ -69,7 +71,7 @@ export function AdminTopbar({
 
   const availableShortcuts = useMemo<ShortcutDefinition[]>(() => {
     const definitions: ShortcutDefinition[] = [
-      { id: "dashboard", label: "Dashboard", keys: ["g", "d"], href: "/admin" },
+      { id: "dashboard", label: "Dashboard", keys: ["g", "d"], href: ADMIN_ROOT_PATH },
       { id: "users", label: "Users", keys: ["g", "u"], href: "/admin/users" },
       { id: "groups", label: "Groups", keys: ["g", "g"], href: "/admin/groups" },
       { id: "assign", label: "Assignments", keys: ["g", "a"], href: "/admin/assign" },
@@ -124,20 +126,41 @@ export function AdminTopbar({
             ref={menuButtonRef}
           />
         ) : null}
-        <Stack spacing={0}>
-          <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.24em" color="fg.muted">
-            Admin
-          </Text>
-          <Heading size="md">{title ?? "Dashboard"}</Heading>
+        <Stack spacing={1}>
+          <chakra.a
+            as={Link}
+            href={ADMIN_ROOT_PATH}
+            data-testid="admin-brand-link"
+            role="link"
+            aria-label={`Go to ${ADMIN_ROOT_LABEL} dashboard`}
+            fontSize="xs"
+            fontWeight="semibold"
+            textTransform="uppercase"
+            letterSpacing="0.24em"
+            color="fg.muted"
+            _hover={{ color: "fg.emphasized" }}
+            _active={{ color: "fg.emphasized" }}
+          >
+            {ADMIN_ROOT_LABEL}
+          </chakra.a>
+          <HStack spacing={2} align="center">
+            {showAdminHome ? (
+              <Button
+                as={Link}
+                href={ADMIN_ROOT_PATH}
+                variant="ghost"
+                size="sm"
+                data-testid="admin-topbar-back-button"
+              >
+                {ADMIN_ROOT_LABEL}
+              </Button>
+            ) : null}
+            <Heading size="md">{title ?? "Dashboard"}</Heading>
+          </HStack>
         </Stack>
       </HStack>
 
       <HStack spacing={3} align="center">
-        {showAdminHome ? (
-          <AdminNavLink href="/admin" variant="ghost" size="sm" testId="admin-topbar-home-link">
-            Admin Home
-          </AdminNavLink>
-        ) : null}
         <Button
           variant="ghost"
           size="sm"
@@ -148,6 +171,9 @@ export function AdminTopbar({
           ?
         </Button>
         <OrgMenu orgName={org.name} options={org.options} />
+        <Button as={Link} href="/app" variant="outline" size="sm">
+          Return to app
+        </Button>
         <UserMenu name={user.name} email={user.email} image={user.image} />
       </HStack>
 
@@ -162,8 +188,16 @@ type OrgMenuProps = {
 };
 
 function OrgMenu({ orgName, options }: OrgMenuProps) {
+  const router = useRouter();
   const isMultiOrg = options.length > 1;
-  const menuLabel = isMultiOrg ? "Switch organization" : "Current organization";
+
+  if (!isMultiOrg) {
+    return (
+      <Tag size="sm" variant="subtle" colorScheme="primary">
+        {orgName}
+      </Tag>
+    );
+  }
 
   return (
     <Menu isLazy placement="bottom-end">
@@ -171,13 +205,22 @@ function OrgMenu({ orgName, options }: OrgMenuProps) {
         {orgName}
       </MenuButton>
       <MenuList>
-        <MenuItem isDisabled>{menuLabel}</MenuItem>
-        <MenuDivider />
-        {options.map((option) => (
-          <MenuItem key={option.id} isDisabled={!isMultiOrg || option.name === orgName}>
-            {option.name}
-          </MenuItem>
-        ))}
+        {options.map((option) => {
+          const isCurrent = option.name === orgName;
+
+          return (
+            <MenuItem
+              key={option.id}
+              onClick={() => {
+                router.push(`${ADMIN_ROOT_PATH}?org=${option.id}`);
+              }}
+              fontWeight={isCurrent ? "semibold" : "normal"}
+              aria-current={isCurrent ? "page" : undefined}
+            >
+              {option.name}
+            </MenuItem>
+          );
+        })}
       </MenuList>
     </Menu>
   );

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, Icon, chakra } from "@chakra-ui/react";
 import { ChevronRight } from "lucide-react";
 
+import { ADMIN_ROOT_LABEL, ADMIN_ROOT_PATH } from "@/lib/admin/nav";
+
 export type AdminBreadcrumbItem = {
   label: string;
   href?: string;
@@ -14,21 +16,22 @@ type AdminBreadcrumbsProps = {
 };
 
 export function AdminBreadcrumbs({ items }: AdminBreadcrumbsProps) {
-  const baseCrumb: AdminBreadcrumbItem = { label: "Admin", href: "/admin" };
+  const baseCrumb: AdminBreadcrumbItem = { label: ADMIN_ROOT_LABEL, href: ADMIN_ROOT_PATH };
 
   const trail: AdminBreadcrumbItem[] = (() => {
-    if (!items.length) {
+    if (items.length === 0) {
       return [baseCrumb];
     }
 
     const [first, ...rest] = items;
-    const normalizedFirst = first.label === baseCrumb.label ? { ...baseCrumb, ...first } : first;
+    const firstIsAdmin = first.label === baseCrumb.label;
 
-    if (normalizedFirst.label !== baseCrumb.label || normalizedFirst.href !== baseCrumb.href) {
-      return [baseCrumb, normalizedFirst, ...rest];
+    if (firstIsAdmin) {
+      const mergedFirst = { ...baseCrumb, ...first, href: baseCrumb.href };
+      return [mergedFirst, ...rest];
     }
 
-    return [normalizedFirst, ...rest];
+    return [baseCrumb, first, ...rest];
   })();
 
   return (
@@ -46,12 +49,11 @@ export function AdminBreadcrumbs({ items }: AdminBreadcrumbsProps) {
             );
           }
 
-          const href = item.href ?? "#";
           return (
             <BreadcrumbItem key={`${item.label}-${index}`}>
               <BreadcrumbLink
                 as={Link}
-                href={href}
+                href={item.href!}
                 color="fg.muted"
                 _hover={{ color: "fg.emphasized" }}
                 aria-current={undefined}
