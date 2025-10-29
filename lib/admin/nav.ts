@@ -8,12 +8,20 @@ export type AdminNavItem = {
   exact?: boolean;
 };
 
-export const ADMIN_NAV: AdminNavItem[] = [
-  { label: "Dashboard", href: "/admin", roles: ["ADMIN", "MANAGER"], exact: true },
-  { label: "Users", href: "/admin/users", roles: ["ADMIN"] },
-  { label: "Groups", href: "/admin/groups", roles: ["ADMIN", "MANAGER"] },
-  { label: "Assignments", href: "/admin/assign", roles: ["ADMIN", "MANAGER"] },
-  { label: "Org Settings", href: "/admin/org", roles: ["ADMIN"] },
-  { label: "Audit", href: "/admin/audit", roles: ["ADMIN"] },
-  { label: "Analytics", href: "/admin/analytics", roles: ["ADMIN", "MANAGER"] }
-];
+export const ADMIN_NAV: AdminNavItem[] = [];
+
+export function registerAdminPage(item: AdminNavItem) {
+  if (ADMIN_NAV.some((entry) => entry.href === item.href)) {
+    throw new Error(`Admin nav item with href "${item.href}" is already registered.`);
+  }
+
+  ADMIN_NAV.push(item);
+}
+
+registerAdminPage({ label: "Dashboard", href: "/admin", roles: ["ADMIN", "MANAGER"], exact: true });
+registerAdminPage({ label: "Users", href: "/admin/users", roles: ["ADMIN"] });
+registerAdminPage({ label: "Groups", href: "/admin/groups", roles: ["ADMIN", "MANAGER"] });
+registerAdminPage({ label: "Assignments", href: "/admin/assign", roles: ["ADMIN", "MANAGER"] });
+registerAdminPage({ label: "Org Settings", href: "/admin/org", roles: ["ADMIN"] });
+registerAdminPage({ label: "Audit", href: "/admin/audit", roles: ["ADMIN"] });
+registerAdminPage({ label: "Analytics", href: "/admin/analytics", roles: ["ADMIN", "MANAGER"] });
