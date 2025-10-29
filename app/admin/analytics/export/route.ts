@@ -137,7 +137,8 @@ export async function GET(request: Request) {
 
           for (const record of batch) {
             const lessonDuration = record.lesson?.durationS ?? 0;
-            const percent = lessonDuration > 0 ? Math.min(1, record.uniqueSeconds / lessonDuration) : 0;
+            const uniqueSeconds = record.uniqueSeconds ?? 0;
+            const percent = lessonDuration > 0 ? Math.min(1, uniqueSeconds / lessonDuration) : 0;
             const groups = record.user.groupMemberships
               .filter((membership) => membership.group?.orgId === orgId)
               .map((membership) => membership.groupId);
@@ -149,7 +150,7 @@ export async function GET(request: Request) {
               record.lesson?.title ?? '',
               record.createdAt.toISOString(),
               record.isComplete ? record.updatedAt.toISOString() : '',
-              record.uniqueSeconds,
+              uniqueSeconds,
               lessonDuration,
               percent.toFixed(4),
               orgId,
