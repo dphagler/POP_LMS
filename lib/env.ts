@@ -110,6 +110,15 @@ export const env = {
   get NEXT_PUBLIC_TELEMETRY_DEBUG() {
     return readBooleanEnv("NEXT_PUBLIC_TELEMETRY_DEBUG", false);
   },
+  get NEXT_PUBLIC_POSTHOG_KEY() {
+    return readOptionalEnv("NEXT_PUBLIC_POSTHOG_KEY");
+  },
+  get NEXT_PUBLIC_POSTHOG_HOST() {
+    return readOptionalEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://us.i.posthog.com");
+  },
+  get POSTHOG_SERVER_KEY() {
+    return readOptionalEnv("POSTHOG_SERVER_KEY");
+  },
   get NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT() {
     return readOptionalEnv("NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT", "youtube");
   },

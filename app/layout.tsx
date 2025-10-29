@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Suspense } from "react";
 import type { ReactNode } from "react";
-import { PostHogClient } from "@/analytics/posthog-client";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 
@@ -37,12 +35,7 @@ export default function RootLayout({
         className={cn(sans.variable, heading.variable)}
         suppressHydrationWarning
       >
-        <Providers>
-          <Suspense fallback={null}>
-            <PostHogClient />
-          </Suspense>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

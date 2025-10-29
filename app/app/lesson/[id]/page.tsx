@@ -118,11 +118,16 @@ export default async function LessonPage({ params }: LessonPageProps) {
       lessonTitle={runtime.title}
       posterUrl={posterUrl}
       progressPercent={progressPercent}
+      initialUniqueSeconds={progress?.uniqueSeconds ?? 0}
       canStartAssessment={canStartAssessmentFlag}
       augmentationCount={augmentationCount}
       badgeLabel={badgeLabel}
       previousLessonHref={previousLessonHref}
       nextLessonHref={nextLessonHref}
+      userId={session.user.id}
+      userEmail={session.user.email ?? null}
+      userOrgId={orgId}
+      userRole={session.user.role ?? null}
     />
   );
 }

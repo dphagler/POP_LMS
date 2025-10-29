@@ -23,6 +23,8 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { PostHogClient } from "@/analytics/posthog-client";
+import { initPosthogClient, type PosthogClientHandle } from "@/lib/analytics/posthog.client";
 import { env } from "@/lib/env";
 import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
 import {
@@ -83,11 +85,16 @@ type LessonPlayerClientProps = {
   lessonTitle: string;
   posterUrl?: string;
   progressPercent: number;
+  initialUniqueSeconds: number;
   canStartAssessment: boolean;
   augmentationCount: number;
   badgeLabel?: string | null;
   previousLessonHref?: string | null;
   nextLessonHref?: string | null;
+  userId: string;
+  userEmail?: string | null;
+  userOrgId: string;
+  userRole?: string | null;
 };
 
 type ShortcutsConfig = {
@@ -113,6 +120,8 @@ const INTERACTIVE_SELECTOR = [
   '[contenteditable="true"]',
   '[data-lesson-shortcuts="ignore"]',
 ].join(",");
+
+const COMPLETION_THRESHOLD_RATIO = 0.92;
 
 function useLessonPlayerKeyboardShortcuts({
   containerRef,
@@ -213,11 +222,16 @@ export function LessonPlayerClient({
   lessonTitle,
   posterUrl,
   progressPercent,
+  initialUniqueSeconds,
   canStartAssessment,
   augmentationCount,
   badgeLabel,
   previousLessonHref,
   nextLessonHref,
+  userId,
+  userEmail,
+  userOrgId,
+  userRole,
 }: LessonPlayerClientProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -235,6 +249,260 @@ export function LessonPlayerClient({
   const MuteIcon = isMuted ? VolumeX : Volume2;
   const muteLabel = isMuted ? "Unmute" : "Mute";
   const showPlayer = isYouTube && Boolean(videoId);
+  const durationSeconds =
+    typeof videoDuration === "number" && Number.isFinite(videoDuration)
+      ? Math.max(0, Math.round(videoDuration))
+      : 0;
+  const initialUniqueSecondsValue =
+    typeof initialUniqueSeconds === "number" && Number.isFinite(initialUniqueSeconds)
+      ? Math.max(0, Math.round(initialUniqueSeconds))
+      : 0;
+  const posthogClientRef = useRef<PosthogClientHandle | null>(null);
+  const [posthogReady, setPosthogReady] = useState(false);
+  const lastProgressSecondRef = useRef<number | null>(null);
+  const completionEmittedRef = useRef(false);
+
+  useEffect(() => {
+    if (durationSeconds <= 0) {
+      completionEmittedRef.current = false;
+      return;
+    }
+
+    completionEmittedRef.current =
+      initialUniqueSecondsValue / durationSeconds >= COMPLETION_THRESHOLD_RATIO;
+  }, [durationSeconds, initialUniqueSecondsValue, lessonId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    posthogClientRef.current = null;
+    setPosthogReady(false);
+    lastProgressSecondRef.current = null;
+
+    if (!userId) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void initPosthogClient({
+      userId,
+      email: userEmail ?? null,
+      orgId: userOrgId ?? null,
+      role: userRole ?? null,
+    }).then((result) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (!result?.client) {
+        setPosthogReady(false);
+        return;
+      }
+
+      posthogClientRef.current = result.client;
+      setPosthogReady(true);
+
+      result.client.capture("lesson_view_start", {
+        lessonId,
+        title: lessonTitle,
+        provider,
+        durationS: durationSeconds,
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      posthogClientRef.current = null;
+      setPosthogReady(false);
+      lastProgressSecondRef.current = null;
+    };
+  }, [
+    durationSeconds,
+    lessonId,
+    lessonTitle,
+    provider,
+    userEmail,
+    userId,
+    userOrgId,
+    userRole,
+  ]);
+
+  const emitProgressTick = useCallback(
+    (force = false) => {
+      if (!posthogReady) {
+        return;
+      }
+
+      const client = posthogClientRef.current;
+      if (!client) {
+        return;
+      }
+
+      const player = playerRef.current;
+      let currentTime = 0;
+
+      if (player) {
+        try {
+          currentTime = player.getCurrentTime?.() ?? 0;
+        } catch {
+          currentTime = 0;
+        }
+      }
+
+      const currentSecond = Math.max(0, Math.floor(currentTime));
+
+      if (!force && lastProgressSecondRef.current === currentSecond) {
+        return;
+      }
+
+      lastProgressSecondRef.current = currentSecond;
+
+      const percent =
+        durationSeconds > 0
+          ? Math.min(100, Math.round((currentSecond / durationSeconds) * 100))
+          : 0;
+
+      client.capture("lesson_progress_tick", {
+        lessonId,
+        t: currentSecond,
+        percent,
+      });
+    },
+    [durationSeconds, lessonId, posthogReady],
+  );
+
+  useEffect(() => {
+    if (!posthogReady || !isYouTube) {
+      return;
+    }
+
+    emitProgressTick(true);
+  }, [emitProgressTick, isYouTube, posthogReady]);
+
+  useEffect(() => {
+    if (!posthogReady || !isYouTube || !isPlaying) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const tick = (force = false) => {
+      if (cancelled) {
+        return;
+      }
+
+      emitProgressTick(force);
+    };
+
+    tick(true);
+
+    const interval = setInterval(() => tick(false), 2000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [emitProgressTick, isPlaying, isYouTube, posthogReady]);
+
+  const fetchProgressSnapshot = useCallback(
+    async (timeOverride?: number) => {
+      if (!posthogReady) {
+        return null;
+      }
+
+      try {
+        const response = await fetch("/api/progress/heartbeat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lessonId,
+            provider,
+            t:
+              typeof timeOverride === "number" && Number.isFinite(timeOverride)
+                ? Math.max(0, Math.round(timeOverride))
+                : 0,
+          }),
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = (await response.json()) as {
+          uniqueSeconds?: number;
+          completed?: boolean;
+        };
+
+        return {
+          uniqueSeconds:
+            typeof data.uniqueSeconds === "number" ? data.uniqueSeconds : 0,
+          completed: Boolean(data.completed),
+        };
+      } catch (error) {
+        if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
+          console.warn("Failed to fetch progress snapshot", error);
+        }
+
+        return null;
+      }
+    },
+    [lessonId, posthogReady, provider],
+  );
+
+  const emitCompletionEvent = useCallback(
+    async (reason: "ended" | "cleanup" = "cleanup") => {
+      if (!posthogReady || completionEmittedRef.current) {
+        return;
+      }
+
+      const client = posthogClientRef.current;
+      if (!client) {
+        return;
+      }
+
+      const player = playerRef.current;
+      let currentTime = 0;
+
+      if (player) {
+        try {
+          currentTime = player.getCurrentTime?.() ?? 0;
+        } catch {
+          currentTime = 0;
+        }
+      }
+
+      if (reason === "ended") {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
+      const snapshot = await fetchProgressSnapshot(currentTime);
+
+      if (!snapshot?.completed) {
+        return;
+      }
+
+      const uniqueSecondsValue = Math.max(
+        0,
+        Math.round(snapshot.uniqueSeconds ?? 0),
+      );
+
+      client.capture("lesson_view_complete", {
+        lessonId,
+        uniqueSeconds: uniqueSecondsValue,
+        durationS: durationSeconds,
+      });
+
+      completionEmittedRef.current = true;
+    },
+    [durationSeconds, fetchProgressSnapshot, lessonId, posthogReady],
+  );
+
+  useEffect(() => {
+    return () => {
+      void emitCompletionEvent("cleanup");
+    };
+  }, [emitCompletionEvent]);
 
   const handleTogglePlayback = useCallback(() => {
     if (isYouTube) {
@@ -366,14 +634,18 @@ export function LessonPlayerClient({
                 isPlayingRef.current = true;
                 setIsPlaying(true);
                 telemetryRef.current?.start();
+                emitProgressTick(true);
               } else if (state === YT.PlayerState.PAUSED) {
                 isPlayingRef.current = false;
                 setIsPlaying(false);
                 telemetryRef.current?.stop();
+                emitProgressTick(true);
               } else if (state === YT.PlayerState.ENDED) {
                 isPlayingRef.current = false;
                 setIsPlaying(false);
                 telemetryRef.current?.stop();
+                emitProgressTick(true);
+                void emitCompletionEvent("ended");
               }
             },
           },
@@ -392,6 +664,8 @@ export function LessonPlayerClient({
       mounted = false;
       telemetryRef.current?.stop();
       isPlayingRef.current = false;
+      emitProgressTick(true);
+      void emitCompletionEvent("cleanup");
 
       const player = localPlayer ?? playerRef.current;
       if (player) {
@@ -403,7 +677,7 @@ export function LessonPlayerClient({
 
       containerNode.innerHTML = "";
     };
-  }, [isYouTube, videoId, lessonId]);
+  }, [emitCompletionEvent, emitProgressTick, isYouTube, lessonId, videoId]);
 
   useEffect(() => {
     if (!isYouTube) {
@@ -434,7 +708,9 @@ export function LessonPlayerClient({
   });
 
   return (
-    <Flex
+    <>
+      <PostHogClient />
+      <Flex
       ref={containerRef}
       minH="100dvh"
       justify="center"
@@ -579,7 +855,8 @@ export function LessonPlayerClient({
           </Stack>
         </Stack>
       </Container>
-    </Flex>
+      </Flex>
+    </>
   );
 }
 
