@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+export const ADMIN_ROOT_PATH = "/admin";
+export const ADMIN_ROOT_LABEL = "Admin";
+
 export type AdminNavItem = {
   label: string;
   href: string;
@@ -18,7 +21,7 @@ export function registerAdminPage(item: AdminNavItem) {
   ADMIN_NAV.push(item);
 }
 
-registerAdminPage({ label: "Dashboard", href: "/admin", roles: ["ADMIN", "MANAGER"], exact: true });
+registerAdminPage({ label: "Dashboard", href: ADMIN_ROOT_PATH, roles: ["ADMIN", "MANAGER"], exact: true });
 registerAdminPage({ label: "Users", href: "/admin/users", roles: ["ADMIN"] });
 registerAdminPage({ label: "Groups", href: "/admin/groups", roles: ["ADMIN", "MANAGER"] });
 registerAdminPage({ label: "Assignments", href: "/admin/assign", roles: ["ADMIN", "MANAGER"] });
