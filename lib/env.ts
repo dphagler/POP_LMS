@@ -106,5 +106,14 @@ export const env = {
   },
   get STREAM_WEBHOOK_SECRET() {
     return readOptionalEnv("STREAM_WEBHOOK_SECRET", "stream_webhook_secret_placeholder");
-  }
+  },
+  get NEXT_PUBLIC_TELEMETRY_DEBUG() {
+    return readBooleanEnv("NEXT_PUBLIC_TELEMETRY_DEBUG", false);
+  },
+  get NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT() {
+    return readOptionalEnv("NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT", "youtube");
+  },
+  get STREAM_ENABLED() {
+    return readBooleanEnv("STREAM_ENABLED", false);
+  },
 };

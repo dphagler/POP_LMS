@@ -2,16 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { captureError } from "@/lib/client-error-reporting";
-
-type YouTubePlayerEvent = {
-  data: number;
-};
-
-type YouTubePlayerInstance = {
-  getCurrentTime: () => number;
-  destroy: () => void;
-  pauseVideo?: () => void;
-};
+import { type YouTubePlayer, type YouTubePlayerEvent } from "@/types/youtube";
 
 type HeartbeatPayload = {
   lessonId: string;
@@ -28,31 +19,8 @@ interface YouTubeLessonPlayerProps {
   duration: number;
 }
 
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (
-        element: HTMLElement,
-        options: {
-          videoId: string;
-          playerVars?: Record<string, unknown>;
-          events?: {
-            onStateChange?: (event: YouTubePlayerEvent) => void;
-          };
-        }
-      ) => YouTubePlayerInstance;
-      PlayerState: {
-        PLAYING: number;
-        PAUSED: number;
-        ENDED: number;
-      };
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
 export function YouTubeLessonPlayer({ lessonId, streamId, duration }: YouTubeLessonPlayerProps) {
-  const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatQueueRef = useRef<HeartbeatPayload[]>([]);
