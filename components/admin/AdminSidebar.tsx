@@ -65,8 +65,17 @@ export function AdminSidebar({ onNavigate, isInDrawer, initialFocusRef, navigati
           Manage your organization
         </Text>
       </Box>
-      <Box flex="1" overflowY="auto">
-        <Stack as="nav" spacing={1} px={2} py={4} aria-label="Admin navigation" id={navigationId}>
+      <Box flex="1" overflowY="auto" display="flex" flexDirection="column" minH={0}>
+        <Stack
+          as="nav"
+          spacing={1}
+          px={2}
+          pt={4}
+          pb={6}
+          aria-label="Admin navigation"
+          id={navigationId}
+          flex="1"
+        >
           {accessibleItems.map((item, index) => {
             const active = isActive(item.href, item.exact, pathname);
             const leftIcon =
@@ -90,18 +99,27 @@ export function AdminSidebar({ onNavigate, isInDrawer, initialFocusRef, navigati
             );
           })}
         </Stack>
-      </Box>
-      <Box px={4} py={6} borderTopWidth="1px" borderColor={borderColor}>
-        <AdminNavLink
-          href="/app"
-          variant="ghost"
-          w="full"
-          justifyContent="flex-start"
-          onClick={handleNavigate}
-          testId="admin-sidebar-link-app"
+        <Box
+          position="sticky"
+          bottom={0}
+          px={4}
+          py={6}
+          borderTopWidth="1px"
+          borderColor={borderColor}
+          bg={sidebarBg}
+          mt="auto"
         >
-          ← Back to POP LMS
-        </AdminNavLink>
+          <AdminNavLink
+            href="/app"
+            variant="ghost"
+            w="full"
+            justifyContent="flex-start"
+            onClick={handleNavigate}
+            testId="admin-sidebar-link-app"
+          >
+            ← Back to POP LMS
+          </AdminNavLink>
+        </Box>
       </Box>
     </Flex>
   );

@@ -169,6 +169,10 @@ const components = {
         bg: "surface.elevated",
         color: "fg.default"
       }
+    },
+    defaultProps: {
+      blockScrollOnMount: true,
+      preserveScrollBarGap: true
     }
   },
   Drawer: {
@@ -184,6 +188,10 @@ const components = {
       dialogContainer: {
         alignItems: { base: "stretch", md: "center" }
       }
+    },
+    defaultProps: {
+      blockScrollOnMount: true,
+      preserveScrollBarGap: true
     }
   },
   Progress: {
