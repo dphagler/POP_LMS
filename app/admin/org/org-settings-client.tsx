@@ -8,20 +8,12 @@ import {
   CardBody,
   CardHeader,
   ChakraProvider,
-  Code,
   Flex,
   FormControl,
   FormLabel,
   Heading,
   HStack,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   SimpleGrid,
   Stack,
   Tab,
@@ -34,7 +26,6 @@ import {
   Textarea,
   chakra,
   extendTheme,
-  useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 
@@ -46,6 +37,8 @@ import {
 } from "@/lib/domain-utils";
 import { removeDomain, updateBranding, verifyDomain } from "@/lib/server-actions/org";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { DomainVerificationModal } from "@/components/admin/modals/DomainVerificationModal";
+import { useModalState } from "@/lib/hooks/useModalState";
 
 const fallbackPrimary = "#4f46e5";
 const fallbackAccent = "#f97316";
@@ -77,7 +70,7 @@ type OrgSettingsClientProps = {
 
 export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: OrgSettingsClientProps) {
   const toast = useToast();
-  const verificationDialog = useDisclosure();
+  const verificationDialog = useModalState();
   const [brandingValues, setBrandingValues] = useState<BrandingState>({
     themePrimary: initialBranding.themePrimary ?? "",
     themeAccent: initialBranding.themeAccent ?? "",
@@ -158,6 +151,11 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
     }
   };
 
+  const handleCloseVerificationDialog = () => {
+    setPendingDomain(null);
+    verificationDialog.onClose();
+  };
+
   const handleVerifyDomain = () => {
     if (!pendingDomain) return;
     startDomainTransition(async () => {
@@ -169,8 +167,7 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
           )
         );
         setDomainInput("");
-        setPendingDomain(null);
-        verificationDialog.onClose();
+        handleCloseVerificationDialog();
         toast({
           title: "Domain verified",
           description: `${result.domain.value} is ready for SSO sign-ins.`,
@@ -432,42 +429,14 @@ export function OrgSettingsClient({ orgId, initialBranding, initialDomains }: Or
         </TabPanels>
       </Tabs>
 
-      <Modal isOpen={verificationDialog.isOpen} onClose={verificationDialog.onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Verify domain</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {verificationToken ? (
-              <Stack spacing={4}>
-                <Text>
-                  Add the following TXT record to your DNS provider, then click <strong>Verify</strong>.
-                </Text>
-                <Stack spacing={2}>
-                  <Text fontWeight="semibold">Host</Text>
-                  <Code>{verificationToken.recordName}</Code>
-                </Stack>
-                <Stack spacing={2}>
-                  <Text fontWeight="semibold">Value</Text>
-                  <Code>{verificationToken.token}</Code>
-                </Stack>
-              </Stack>
-            ) : null}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={verificationDialog.onClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="primary"
-              onClick={handleVerifyDomain}
-              isLoading={isDomainPending}
-            >
-              Verify
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <DomainVerificationModal
+        isOpen={verificationDialog.isOpen}
+        onClose={handleCloseVerificationDialog}
+        onVerify={handleVerifyDomain}
+        isVerifying={isDomainPending}
+        verificationToken={verificationToken}
+        domain={pendingDomain}
+      />
     </Stack>
   );
 }
