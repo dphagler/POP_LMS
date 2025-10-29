@@ -105,7 +105,7 @@ export const env = {
     );
   },
   get STREAM_WEBHOOK_SECRET() {
-    return readOptionalEnv("STREAM_WEBHOOK_SECRET", "stream_webhook_secret_placeholder");
+    return readOptionalEnv("STREAM_WEBHOOK_SECRET");
   },
   get NEXT_PUBLIC_TELEMETRY_DEBUG() {
     return readBooleanEnv("NEXT_PUBLIC_TELEMETRY_DEBUG", false);
