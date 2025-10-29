@@ -11,9 +11,7 @@ const eventSchema = z.object({
   streamId: z.string().min(1),
   lessonId: z.string().min(1),
   userId: z.string().min(1),
-  at: z.coerce
-    .number({ invalid_type_error: "at must be a number" })
-    .refine(Number.isFinite, "at must be a finite number"),
+  at: z.coerce.number().refine(Number.isFinite, "at must be a finite number"),
 });
 
 const payloadSchema = z.union([
