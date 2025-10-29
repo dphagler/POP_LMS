@@ -21,6 +21,23 @@ function ensureSession(session: Session | null): asserts session is SessionWithU
   }
 }
 
+export async function getSessionUser(): Promise<BaseSessionUser | null> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const user = session.user as BaseSessionUser;
+
+  return {
+    ...session.user,
+    id: user.id,
+    orgId: user.orgId ?? null,
+    role: user.role ?? UserRole.LEARNER,
+  } satisfies BaseSessionUser;
+}
+
 export async function requireUser(): Promise<SessionWithUser> {
   const session = await auth();
   ensureSession(session);

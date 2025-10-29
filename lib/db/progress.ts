@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient, type Progress } from "@prisma/client";
 
 import { prisma } from "../prisma";
-import { computeUniqueSeconds, type Segment } from "../lesson/progress";
+import { coerceSegments, computeUniqueSeconds } from "../lesson/progress";
 
 type ClientOrTx = PrismaClient | Prisma.TransactionClient;
 
@@ -109,26 +109,8 @@ export async function saveSegments({
   });
 }
 
-export function calcUniqueSeconds(rawSegments: number[][]): number {
-  if (!Array.isArray(rawSegments) || rawSegments.length === 0) {
-    return 0;
-  }
-
-  const segments: Segment[] = [];
-
-  for (const entry of rawSegments) {
-    if (!Array.isArray(entry) || entry.length < 2) {
-      continue;
-    }
-
-    const [start, end] = entry;
-
-    if (typeof start !== "number" || typeof end !== "number") {
-      continue;
-    }
-
-    segments.push([start, end]);
-  }
+export function calcUniqueSeconds(rawSegments: unknown): number {
+  const segments = coerceSegments(rawSegments);
 
   if (segments.length === 0) {
     return 0;
