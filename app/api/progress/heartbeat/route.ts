@@ -139,7 +139,7 @@ export async function POST(request: Request) {
 
     const hasStoredUnique =
       typeof progress.uniqueSeconds === "number" && Number.isFinite(progress.uniqueSeconds);
-    let uniqueSeconds = hasStoredUnique ? progress.uniqueSeconds : 0;
+    let uniqueSeconds = hasStoredUnique ? Number(progress.uniqueSeconds) : 0;
 
     if (segmentsChanged || !hasStoredUnique) {
       uniqueSeconds = Math.round(computeUniqueSeconds(nextSegments, duration));
