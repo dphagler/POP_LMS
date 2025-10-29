@@ -112,6 +112,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
   return (
     <LessonPlayerClient
+      lessonId={runtime.id}
+      videoId={runtime.streamId}
+      videoDuration={runtime.durationSec}
       lessonTitle={runtime.title}
       posterUrl={posterUrl}
       progressPercent={progressPercent}

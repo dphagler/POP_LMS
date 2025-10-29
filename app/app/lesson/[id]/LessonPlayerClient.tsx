@@ -23,10 +23,108 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { env } from "@/lib/env";
+import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
 
 const formatPercent = (value: number): string => `${value}%`;
 
+const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
+
+type YouTubePlayerState = {
+  UNSTARTED: number;
+  ENDED: number;
+  PLAYING: number;
+  PAUSED: number;
+  BUFFERING: number;
+  CUED: number;
+};
+
+type YouTubePlayerEvent = {
+  data: number;
+};
+
+type YouTubePlayerReadyEvent = {
+  target: YouTubePlayer;
+};
+
+type YouTubePlayer = {
+  playVideo?: () => void;
+  pauseVideo?: () => void;
+  stopVideo?: () => void;
+  destroy: () => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  mute?: () => void;
+  unMute?: () => void;
+  isMuted?: () => boolean;
+};
+
+type YouTubePlayerOptions = {
+  videoId: string;
+  playerVars?: Record<string, unknown>;
+  events?: {
+    onReady?: (event: YouTubePlayerReadyEvent) => void;
+    onStateChange?: (event: YouTubePlayerEvent) => void;
+  };
+};
+
+type YouTubeNamespace = {
+  Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer;
+  PlayerState: YouTubePlayerState;
+};
+
+declare global {
+  interface Window {
+    YT?: YouTubeNamespace;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
+
+function loadYouTubeIframeAPI(): Promise<YouTubeNamespace> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("YouTube API unavailable"));
+  }
+
+  if (window.YT && typeof window.YT.Player === "function") {
+    return Promise.resolve(window.YT);
+  }
+
+  if (!youtubeApiPromise) {
+    youtubeApiPromise = new Promise((resolve, reject) => {
+      const previous = window.onYouTubeIframeAPIReady;
+
+      window.onYouTubeIframeAPIReady = () => {
+        previous?.();
+
+        if (window.YT && typeof window.YT.Player === "function") {
+          resolve(window.YT);
+        } else {
+          reject(new Error("YouTube API failed to load"));
+        }
+      };
+
+      const script = document.createElement("script");
+      script.src = YOUTUBE_IFRAME_API_SRC;
+      script.async = true;
+      script.onerror = () => {
+        youtubeApiPromise = null;
+        reject(new Error("Failed to load YouTube IFrame API"));
+      };
+
+      document.head.appendChild(script);
+    });
+  }
+
+  return youtubeApiPromise;
+}
+
 type LessonPlayerClientProps = {
+  lessonId: string;
+  videoId: string;
+  videoDuration: number;
+  videoProvider?: VideoProviderName | null;
   lessonTitle: string;
   posterUrl?: string;
   progressPercent: number;
@@ -153,6 +251,10 @@ function useLessonPlayerKeyboardShortcuts({
 }
 
 export function LessonPlayerClient({
+  lessonId,
+  videoId,
+  videoDuration,
+  videoProvider,
   lessonTitle,
   posterUrl,
   progressPercent,
@@ -165,14 +267,38 @@ export function LessonPlayerClient({
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
+  const provider: VideoProviderName = (
+    videoProvider ?? env.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ?? "youtube"
+  ) as VideoProviderName;
+  const isYouTube = provider === "youtube";
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
+  const telemetryRef = useRef<ReturnType<typeof createYouTubeSink> | null>(null);
+  const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const isMuted = false;
   const MuteIcon = isMuted ? VolumeX : Volume2;
   const muteLabel = isMuted ? "Unmute" : "Mute";
+  const showPlayer = isYouTube && Boolean(videoId);
 
   const handleTogglePlayback = useCallback(() => {
+    if (isYouTube) {
+      const player = playerRef.current;
+      if (!player) {
+        return;
+      }
+
+      if (isPlayingRef.current) {
+        player.pauseVideo?.();
+      } else {
+        player.playVideo?.();
+      }
+
+      return;
+    }
+
     setIsPlaying((previous) => !previous);
-  }, []);
+  }, [isYouTube]);
 
   const handleGoToPrevious = useCallback(() => {
     if (!previousLessonHref) {
@@ -189,6 +315,160 @@ export function LessonPlayerClient({
 
     router.push(nextLessonHref);
   }, [nextLessonHref, router]);
+
+  useEffect(() => {
+    if (!isYouTube || !lessonId || !videoId) {
+      telemetryRef.current = null;
+      return;
+    }
+
+    const sink = createYouTubeSink({
+      lessonId,
+      videoId,
+      getPlayerTime: () => {
+        const player = playerRef.current;
+        if (player) {
+          try {
+            return player.getCurrentTime();
+          } catch {
+            return 0;
+          }
+        }
+        return 0;
+      },
+      getDuration: () => {
+        const player = playerRef.current;
+        if (player) {
+          try {
+            const playerDuration = player.getDuration();
+            if (typeof playerDuration === "number" && Number.isFinite(playerDuration)) {
+              return playerDuration;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        return Number.isFinite(videoDuration) ? videoDuration : 0;
+      },
+    });
+
+    telemetryRef.current = sink;
+
+    return () => {
+      sink.stop();
+      if (telemetryRef.current === sink) {
+        telemetryRef.current = null;
+      }
+    };
+  }, [isYouTube, lessonId, videoDuration, videoId]);
+
+  useEffect(() => {
+    if (!isYouTube || !videoId) {
+      return;
+    }
+
+    const containerNode = playerContainerRef.current;
+    if (!containerNode) {
+      return;
+    }
+
+    let mounted = true;
+    let localPlayer: YouTubePlayer | null = null;
+
+    loadYouTubeIframeAPI()
+      .then((YT) => {
+        if (!mounted) {
+          return;
+        }
+
+        containerNode.innerHTML = "";
+
+        const player = new YT.Player(containerNode, {
+          videoId,
+          playerVars: {
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            controls: 1,
+          },
+          events: {
+            onReady: () => {
+              if (!mounted) {
+                return;
+              }
+              isPlayingRef.current = false;
+              setIsPlaying(false);
+            },
+            onStateChange: (event: YouTubePlayerEvent) => {
+              if (!mounted) {
+                return;
+              }
+
+              const state = event.data;
+
+              if (state === YT.PlayerState.PLAYING) {
+                isPlayingRef.current = true;
+                setIsPlaying(true);
+                telemetryRef.current?.start();
+              } else if (state === YT.PlayerState.PAUSED) {
+                isPlayingRef.current = false;
+                setIsPlaying(false);
+                telemetryRef.current?.stop();
+              } else if (state === YT.PlayerState.ENDED) {
+                isPlayingRef.current = false;
+                setIsPlaying(false);
+                telemetryRef.current?.stop();
+              }
+            },
+          },
+        });
+
+        localPlayer = player;
+        playerRef.current = player;
+      })
+      .catch((error) => {
+        if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
+          console.warn("Failed to initialise YouTube player", error);
+        }
+      });
+
+    return () => {
+      mounted = false;
+      telemetryRef.current?.stop();
+      isPlayingRef.current = false;
+
+      const player = localPlayer ?? playerRef.current;
+      if (player) {
+        player.stopVideo?.();
+        player.destroy();
+      }
+
+      playerRef.current = null;
+
+      containerNode.innerHTML = "";
+    };
+  }, [isYouTube, videoId, lessonId]);
+
+  useEffect(() => {
+    if (!isYouTube) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        telemetryRef.current?.stop();
+      } else if (isPlayingRef.current) {
+        telemetryRef.current?.start();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isYouTube]);
 
   useLessonPlayerKeyboardShortcuts({
     containerRef,
@@ -255,8 +535,33 @@ export function LessonPlayerClient({
                 backgroundPosition="center"
                 boxShadow="2xl"
               >
-                <Box position="absolute" inset={0} bg="blackAlpha.500" />
-                <Flex position="absolute" inset={0} align="center" justify="center">
+                <Box
+                  ref={playerContainerRef}
+                  position="absolute"
+                  inset={0}
+                  w="full"
+                  h="full"
+                  zIndex={1}
+                  data-video-provider={provider}
+                  aria-hidden={!showPlayer}
+                />
+                <Box
+                  position="absolute"
+                  inset={0}
+                  bg="blackAlpha.500"
+                  opacity={isPlaying ? 0 : 1}
+                  transition="opacity 0.3s ease"
+                  pointerEvents="none"
+                  zIndex={2}
+                />
+                <Flex
+                  position="absolute"
+                  inset={0}
+                  align="center"
+                  justify="center"
+                  pointerEvents="none"
+                  zIndex={3}
+                >
                   <IconButton
                     aria-label={isPlaying ? "Pause lesson" : "Play lesson"}
                     icon={<Icon as={isPlaying ? Pause : Play} boxSize={7} />}
@@ -267,6 +572,10 @@ export function LessonPlayerClient({
                     _hover={{ bg: "whiteAlpha.400" }}
                     aria-pressed={isPlaying}
                     onClick={handleTogglePlayback}
+                    pointerEvents={showPlayer && isPlaying ? "none" : "auto"}
+                    opacity={showPlayer ? (isPlaying ? 0 : 1) : 1}
+                    transition="opacity 0.2s ease"
+                    isDisabled={!showPlayer}
                   />
                 </Flex>
               </Box>
