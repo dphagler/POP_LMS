@@ -18,7 +18,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
-    "sanity:cors": "node scripts/ensure-sanity-cors.mjs"
+    "sanity:cors": "node scripts/ensure-sanity-cors.mjs",
+    "backfill:youtube": "tsx scripts/backfill-youtube.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
