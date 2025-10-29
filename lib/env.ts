@@ -125,4 +125,7 @@ export const env = {
   get STREAM_ENABLED() {
     return readBooleanEnv("STREAM_ENABLED", false);
   },
+  get telemetryDebugEnabled() {
+    return this.NEXT_PUBLIC_TELEMETRY_DEBUG;
+  },
 };
