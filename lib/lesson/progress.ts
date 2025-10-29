@@ -1,6 +1,69 @@
 const ZERO = 0;
 
 export type Segment = [number, number];
+export type Seg = { s: number; e: number };
+
+const normalizeSeg = (segment: Seg): Seg | null => {
+  if (!Number.isFinite(segment.s) || !Number.isFinite(segment.e)) {
+    return null;
+  }
+
+  const start = Math.min(segment.s, segment.e);
+  const end = Math.max(segment.s, segment.e);
+
+  if (end <= start) {
+    return null;
+  }
+
+  return { s: start, e: end };
+};
+
+const mergeNormalizedSegments = (segments: Seg[]): Seg[] => {
+  if (segments.length === ZERO) {
+    return [];
+  }
+
+  const sorted = [...segments].sort((a, b) => {
+    if (a.s === b.s) {
+      return a.e - b.e;
+    }
+
+    return a.s - b.s;
+  });
+
+  const merged: Seg[] = [{ ...sorted[0] }];
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const current = sorted[index];
+    const last = merged[merged.length - 1];
+
+    if (current.s <= last.e) {
+      last.e = Math.max(last.e, current.e);
+      continue;
+    }
+
+    merged.push({ ...current });
+  }
+
+  return merged;
+};
+
+const normalizeSegList = (segments: Seg[]): Seg[] => {
+  const normalized: Seg[] = [];
+
+  for (const segment of segments) {
+    const normalizedSeg = normalizeSeg(segment);
+
+    if (normalizedSeg) {
+      normalized.push(normalizedSeg);
+    }
+  }
+
+  return normalized;
+};
+
+const tupleToSeg = (segment: Segment): Seg => ({ s: segment[0], e: segment[1] });
+const segToTuple = (segment: Seg): Segment => [segment.s, segment.e];
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
@@ -70,39 +133,36 @@ export const coerceSegments = (value: unknown): Segment[] => {
   return segments;
 };
 
-export const mergeSegments = (segments: Segment[]): Segment[] => {
-  if (segments.length === ZERO) {
-    return [];
-  }
-
-  const sorted = [...segments].sort((a, b) => {
-    if (a[0] === b[0]) {
-      return a[1] - b[1];
+export function mergeSegments(segments: Segment[]): Segment[];
+export function mergeSegments(existing: Seg[], incoming: Seg): Seg[];
+export function mergeSegments(
+  segmentsOrExisting: Segment[] | Seg[],
+  maybeIncoming?: Seg,
+): Segment[] | Seg[] {
+  if (maybeIncoming === undefined) {
+    const tupleSegments = segmentsOrExisting as Segment[];
+    if (tupleSegments.length === ZERO) {
+      return [];
     }
 
-    return a[0] - b[0];
-  });
+    const normalized = normalizeSegList(tupleSegments.map(tupleToSeg));
+    const merged = mergeNormalizedSegments(normalized);
 
-  const merged: Segment[] = [];
-  let [currentStart, currentEnd] = sorted[0];
-
-  for (let index = 1; index < sorted.length; index += 1) {
-    const [nextStart, nextEnd] = sorted[index];
-
-    if (nextStart <= currentEnd) {
-      currentEnd = Math.max(currentEnd, nextEnd);
-      continue;
-    }
-
-    merged.push([currentStart, currentEnd]);
-    currentStart = nextStart;
-    currentEnd = nextEnd;
+    return merged.map(segToTuple);
   }
 
-  merged.push([currentStart, currentEnd]);
+  const existingSegments = normalizeSegList(segmentsOrExisting as Seg[]);
+  const normalizedIncoming = normalizeSeg(maybeIncoming);
 
-  return merged;
-};
+  if (normalizedIncoming) {
+    existingSegments.push(normalizedIncoming);
+  }
+
+  return mergeNormalizedSegments(existingSegments);
+}
+
+export const sumSegments = (segments: Seg[]): number =>
+  segments.reduce((total, segment) => total + (segment.e - segment.s), ZERO);
 
 export const computeUniqueSeconds = (
   segments: Segment[],
