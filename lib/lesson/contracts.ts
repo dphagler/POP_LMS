@@ -1,5 +1,3 @@
-import type { VideoProviderName } from "../video/provider";
-
 export interface LessonObjective {
   id: string;
   summary: string;
@@ -15,9 +13,9 @@ export interface LessonRuntime {
   id: string;
   title: string;
   objectives: LessonObjective[];
-  provider: VideoProviderName | null;
   streamId: string | null;
-  videoUrl: string | null;
+  videoId: string | null;
+  videoProvider: "youtube" | "cloudflare";
   posterUrl: string | null;
   durationSec: number;
   assessmentType: string;
