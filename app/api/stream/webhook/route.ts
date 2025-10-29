@@ -1,179 +1,128 @@
-import { createHmac, timingSafeEqual } from "crypto";
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { verifyStreamSignature } from "@/lib/cloudflare/signature";
 import { env } from "@/lib/env";
 import { createRequestLogger, serializeError } from "@/lib/logger";
-import type { Segment } from "@/lib/lesson/progress";
+import { mergeSegments } from "@/lib/lesson/progress";
 
-const SIGNATURE_HEADER = "x-stream-signature";
-
-const rawStreamEventSchema = z.object({
-  type: z.enum(["play", "pause", "ended"]),
-  streamId: z.string().min(1, "streamId is required"),
-  lessonId: z.string().min(1, "lessonId is required"),
-  userId: z.string().min(1, "userId is required"),
-  position: z.coerce
-    .number({ message: "position must be a number" })
-    .refine(Number.isFinite, "position must be a finite number")
-    .min(0, "position must be non-negative"),
-  occurredAt: z.coerce.date().optional(),
-  sessionId: z.string().optional(),
-  requestId: z.string().optional(),
-  raw: z.unknown().optional()
+const eventSchema = z.object({
+  type: z.enum(["play", "paused", "ended"]),
+  streamId: z.string().min(1),
+  lessonId: z.string().min(1),
+  userId: z.string().min(1),
+  at: z.coerce.number().refine(Number.isFinite, "at must be a finite number"),
 });
 
 const payloadSchema = z.union([
-  rawStreamEventSchema,
-  z.array(rawStreamEventSchema).min(1, "events array must contain at least one event"),
-  z.object({
-    events: z.array(rawStreamEventSchema).min(1, "events array must contain at least one event")
-  })
+  eventSchema,
+  z.array(eventSchema).min(1),
+  z.object({ events: z.array(eventSchema).min(1) }),
 ]);
 
-type RawStreamEvent = z.infer<typeof rawStreamEventSchema>;
+type StreamEvent = z.infer<typeof eventSchema>;
 
-type NormalizedEvent = RawStreamEvent & { segments: Segment[] };
+type ParsedPayload = z.infer<typeof payloadSchema>;
 
-type RecordProgressJob = {
-  userId: string;
-  lessonId: string;
-  segments: Segment[];
-  streamId: string;
-  eventType: RawStreamEvent["type"];
-};
-
-function verifySignature(signatureHeader: string | null, payload: string): boolean {
-  const secret = env.STREAM_WEBHOOK_SECRET;
-  if (!secret) {
-    return false;
+function extractEvents(value: ParsedPayload): StreamEvent[] {
+  if (Array.isArray(value)) {
+    return value;
   }
 
-  const signature = signatureHeader?.trim();
-  if (!signature || !/^[0-9a-f]+$/i.test(signature)) {
-    return false;
+  if (Array.isArray((value as { events?: StreamEvent[] }).events)) {
+    return (value as { events: StreamEvent[] }).events;
   }
 
-  const expected = createHmac("sha256", secret).update(payload).digest("hex");
-  const signatureBuffer = Buffer.from(signature, "hex");
-  const expectedBuffer = Buffer.from(expected, "hex");
-
-  if (signatureBuffer.length !== expectedBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(signatureBuffer, expectedBuffer);
+  return [value as StreamEvent];
 }
 
-function normalizePayload(payload: unknown): NormalizedEvent[] {
-  const parsed = payloadSchema.safeParse(payload);
-
-  if (!parsed.success) {
-    throw parsed.error;
+function normalizeSecond(at: number): number {
+  if (!Number.isFinite(at)) {
+    return 0;
   }
 
-  const value = parsed.data;
-
-  const rawEvents: RawStreamEvent[] = Array.isArray(value)
-    ? value
-    : Array.isArray((value as { events?: RawStreamEvent[] }).events)
-      ? (value as { events: RawStreamEvent[] }).events
-      : [value as RawStreamEvent];
-
-  return rawEvents.map((event) => ({
-    ...event,
-    segments: translateEventToSegments(event)
-  }));
-}
-
-function translateEventToSegments(event: RawStreamEvent): Segment[] {
-  // TODO: Implement full segment math in Phase 4.
-  return [];
-}
-
-async function enqueueRecordProgress(job: RecordProgressJob): Promise<void> {
-  // TODO: Wire up actual queueing logic in Phase 4.
-  void job;
+  return Math.max(0, Math.floor(at));
 }
 
 export async function POST(request: Request) {
   const { logger, requestId } = createRequestLogger(request, { route: "stream.webhook" });
 
+  const streamEnabled = env.STREAM_ENABLED;
+  const webhookSecret = env.STREAM_WEBHOOK_SECRET;
+
+  if (!streamEnabled || !webhookSecret) {
+    logger.debug({
+      event: "stream.webhook.disabled",
+      requestId,
+    });
+    return NextResponse.json({ ok: true, disabled: true });
+  }
+
   try {
     const rawBody = await request.text();
 
-    const signatureHeader = request.headers.get(SIGNATURE_HEADER);
-    const isSignatureValid = verifySignature(signatureHeader, rawBody);
+    const signatureHeader =
+      request.headers.get("x-webhook-signature") ?? request.headers.get("x-signature");
 
-    if (!isSignatureValid) {
+    const signatureValid = verifyStreamSignature({
+      payload: rawBody,
+      signature: signatureHeader,
+      secret: webhookSecret,
+    });
+
+    if (!signatureValid) {
       logger.warn({
         event: "stream.webhook.invalid_signature",
         requestId,
-        signatureHeader
       });
-      return NextResponse.json({ error: "Invalid signature", requestId }, { status: 401 });
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    let payload: unknown;
+    let parsedBody: unknown;
+
     try {
-      payload = rawBody.length > 0 ? JSON.parse(rawBody) : {};
+      parsedBody = rawBody.length > 0 ? JSON.parse(rawBody) : {};
     } catch (error) {
       logger.warn({
         event: "stream.webhook.invalid_json",
         requestId,
-        error: serializeError(error)
+        error: serializeError(error),
       });
-      return NextResponse.json({ error: "Invalid JSON body", requestId }, { status: 400 });
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    let events: NormalizedEvent[];
-    try {
-      events = normalizePayload(payload);
-    } catch (error) {
+    const parsed = payloadSchema.safeParse(parsedBody);
+
+    if (!parsed.success) {
       logger.warn({
         event: "stream.webhook.invalid_payload",
         requestId,
-        error: serializeError(error)
+        issues: parsed.error.issues,
       });
-      return NextResponse.json({ error: "Invalid payload", requestId }, { status: 400 });
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const events = extractEvents(parsed.data);
+
+    for (const event of events) {
+      const second = normalizeSecond(event.at);
+      void mergeSegments([[second, second + 1]]);
     }
 
     logger.info({
-      event: "stream.webhook.received",
+      event: "stream.webhook.accepted",
       requestId,
-      eventCount: events.length,
-      events
+      count: events.length,
     });
 
-    const jobs: RecordProgressJob[] = events
-      .filter((event) => event.segments.length > 0)
-      .map((event) => ({
-        userId: event.userId,
-        lessonId: event.lessonId,
-        segments: event.segments,
-        streamId: event.streamId,
-        eventType: event.type
-      }));
-
-    if (jobs.length > 0) {
-      await Promise.all(jobs.map((job) => enqueueRecordProgress(job)));
-      logger.info({
-        event: "stream.webhook.enqueued",
-        requestId,
-        jobCount: jobs.length
-      });
-    }
-
-    return NextResponse.json({ ok: true, requestId });
+    return NextResponse.json({ ok: true, received: events.length });
   } catch (error) {
     logger.error({
       event: "stream.webhook.error",
       requestId,
-      error: serializeError(error)
+      error: serializeError(error),
     });
-    return NextResponse.json({ error: "An unexpected error occurred.", requestId }, { status: 500 });
+
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
-export const dynamic = "force-dynamic";
