@@ -235,15 +235,20 @@ model Progress {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   watchedSeconds  Int       @default(0)
-  uniqueSeconds   Float     @default(0)
+  provider        String?   // 'youtube' | 'cloudflare'
+  segments        Json?     // [{s:number,e:number}] seconds
+  uniqueSeconds   Int?      // computed from segments
+  lastTickAt      DateTime?
   lastHeartbeatAt DateTime?
+  completedAt     DateTime?
+  heartbeatVer    Int       @default(1)
   isComplete      Boolean   @default(false)
-  segments        Json?
   thresholdPct    Decimal   @default(0.95)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@unique([userId, lessonId])
+  @@index([userId, lessonId])
 }
 
 model AugmentationServed {
