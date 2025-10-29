@@ -83,7 +83,7 @@ type LessonPlayerClientProps = {
   lessonId: string;
   videoId: string | null;
   videoDuration: number;
-  videoProvider?: VideoProviderName | null;
+  videoProvider?: "youtube" | "cloudflare";
   lessonTitle: string;
   posterUrl?: string;
   progressPercent: number;

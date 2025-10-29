@@ -23,46 +23,41 @@ export default async function LessonPage({ params }: LessonPageProps) {
     notFound();
   }
 
-  const { id } = await params;
-  if (!id) {
+  const { id: lessonId } = await params;
+  if (!lessonId) {
     notFound();
   }
 
   let lessonPayload;
   try {
-    lessonPayload = await loadLesson(id);
+    lessonPayload = await loadLesson(lessonId);
   } catch (error) {
     notFound();
   }
 
-  const augmentations = await loadAugmentations(id);
+  const augmentations = await loadAugmentations(lessonId);
   const { runtime, progress, diagnostics } = lessonPayload ?? {};
 
   if (!runtime) {
     notFound();
   }
 
-  const duration = Math.max(runtime.durationSec ?? 0, 1);
+  const { id, title, durationSec, videoProvider, videoId, streamId } = runtime;
+
+  const posterUrl =
+    runtime.posterUrl ??
+    (videoProvider === "youtube" && videoId
+      ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+      : streamId
+        ? `https://image.mux.com/${streamId}/thumbnail.jpg?time=0`
+        : undefined);
+
+  const duration = Math.max(durationSec ?? 0, 1);
   const watchedSeconds = Math.max(progress?.watchedSeconds ?? 0, 0);
   const progressPercent = Math.min(
     100,
     Math.round((watchedSeconds / duration) * 100),
   );
-
-  const resolvedProvider = runtime.videoProvider;
-  let videoId: string | null = null;
-  let posterUrl = runtime.posterUrl ?? undefined;
-
-  if (resolvedProvider === "youtube") {
-    videoId = runtime.videoId ?? null;
-  } else if (resolvedProvider === "cloudflare") {
-    videoId = runtime.streamId ?? null;
-    if (!posterUrl && runtime.streamId) {
-      posterUrl = `https://image.mux.com/${runtime.streamId}/thumbnail.jpg?time=0`;
-    }
-  } else {
-    videoId = runtime.videoId ?? runtime.streamId ?? null;
-  }
   const augmentationCount = augmentations.items.length;
 
   let badgeLabel: string | null = null;
@@ -75,9 +70,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
     notFound();
   }
 
-  if (runtime.id) {
+  if (id) {
     const lessonRecord = await prisma.lesson.findFirst({
-      where: { id: runtime.id, module: { course: { orgId } } },
+      where: { id, module: { course: { orgId } } },
       select: { moduleId: true },
     });
 
@@ -88,7 +83,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
         select: { id: true },
       });
 
-      const currentIndex = siblingLessons.findIndex((lesson) => lesson.id === runtime.id);
+      const currentIndex = siblingLessons.findIndex((lesson) => lesson.id === id);
       if (currentIndex >= 0) {
         const total = siblingLessons.length;
         badgeLabel = `${currentIndex + 1} of ${total}`;
@@ -109,7 +104,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
   const engineContext = {
     runtime: {
-      durationSec: runtime.durationSec,
+      durationSec,
       augmentations: runtime.augmentations ?? [],
     },
     progress: {
@@ -123,11 +118,15 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
   return (
     <LessonPlayerClient
-      lessonId={runtime.id}
-      videoId={videoId}
-      videoDuration={runtime.durationSec}
-      videoProvider={resolvedProvider}
-      lessonTitle={runtime.title}
+      lessonId={id}
+      videoId={
+        videoProvider === "youtube"
+          ? (videoId ?? "")
+          : (streamId ?? "")
+      }
+      videoDuration={durationSec}
+      videoProvider={videoProvider}
+      lessonTitle={title}
       posterUrl={posterUrl}
       progressPercent={progressPercent}
       initialUniqueSeconds={progress?.uniqueSeconds ?? 0}
