@@ -25,60 +25,15 @@ import {
 import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { env } from "@/lib/env";
 import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
+import {
+  type YouTubeNamespace,
+  type YouTubePlayer,
+  type YouTubePlayerEvent,
+} from "@/types/youtube";
 
 const formatPercent = (value: number): string => `${value}%`;
 
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
-
-type YouTubePlayerState = {
-  UNSTARTED: number;
-  ENDED: number;
-  PLAYING: number;
-  PAUSED: number;
-  BUFFERING: number;
-  CUED: number;
-};
-
-type YouTubePlayerEvent = {
-  data: number;
-};
-
-type YouTubePlayerReadyEvent = {
-  target: YouTubePlayer;
-};
-
-type YouTubePlayer = {
-  playVideo?: () => void;
-  pauseVideo?: () => void;
-  stopVideo?: () => void;
-  destroy: () => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  mute?: () => void;
-  unMute?: () => void;
-  isMuted?: () => boolean;
-};
-
-type YouTubePlayerOptions = {
-  videoId: string;
-  playerVars?: Record<string, unknown>;
-  events?: {
-    onReady?: (event: YouTubePlayerReadyEvent) => void;
-    onStateChange?: (event: YouTubePlayerEvent) => void;
-  };
-};
-
-type YouTubeNamespace = {
-  Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer;
-  PlayerState: YouTubePlayerState;
-};
-
-declare global {
-  interface Window {
-    YT?: YouTubeNamespace;
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
 
 let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
 
