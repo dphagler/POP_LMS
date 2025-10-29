@@ -15,6 +15,9 @@ const CSV_HEADER = [
   'uniqueSeconds',
   'durationS',
   'percent',
+  'provider',
+  'lastTickAt',
+  'sessionCount',
   'orgId',
   'groupIds',
 ].join(',');
@@ -83,9 +86,19 @@ export async function GET(request: Request) {
 
   const encoder = new TextEncoder();
   const pageSize = 200;
+  const sessionCountRowsPromise = prisma.progress.groupBy({
+    where,
+    by: ['lessonId'],
+    _count: { lessonId: true },
+  });
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      const sessionCountRows = await sessionCountRowsPromise;
+      const lessonSessionCountMap = new Map(
+        sessionCountRows.map((row) => [row.lessonId, row._count?.lessonId ?? 0])
+      );
+
       controller.enqueue(encoder.encode(`${CSV_HEADER}\n`));
 
       let cursor: string | undefined;
@@ -105,6 +118,8 @@ export async function GET(request: Request) {
               createdAt: true,
               updatedAt: true,
               isComplete: true,
+              provider: true,
+              lastTickAt: true,
               lesson: {
                 select: {
                   id: true,
@@ -143,6 +158,8 @@ export async function GET(request: Request) {
               .filter((membership) => membership.group?.orgId === orgId)
               .map((membership) => membership.groupId);
 
+            const sessionCount = lessonSessionCountMap.get(record.lessonId) ?? 0;
+
             const values: Array<string | number> = [
               record.userId,
               record.user.email ?? '',
@@ -153,6 +170,9 @@ export async function GET(request: Request) {
               uniqueSeconds,
               lessonDuration,
               percent.toFixed(4),
+              record.provider ?? '',
+              record.lastTickAt ? record.lastTickAt.toISOString() : '',
+              sessionCount,
               orgId,
               groups.join(';'),
             ];

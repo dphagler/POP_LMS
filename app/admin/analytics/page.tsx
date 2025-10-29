@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminNavLink } from "@/components/admin/AdminNavLink";
+import {
+  fetchCompletionFunnel,
+  fetchGroupCohorts,
+  fetchNowPlayingLessons
+} from "@/lib/db/analytics";
+import { cn } from "@/lib/utils";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const percentFormatter = new Intl.NumberFormat("en-US", {
@@ -18,6 +24,31 @@ const percentFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 1
 });
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric"
+});
+
+function parseDateParam(value: string, options?: { endOfDay?: boolean }): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  if (options?.endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  } else {
+    parsed.setHours(0, 0, 0, 0);
+  }
+
+  return parsed;
+}
 
 type AnalyticsSearchParams = {
   groupId?: string;
@@ -43,7 +74,20 @@ export default async function AdminAnalyticsPage({
   const startFilter = typeof resolvedSearchParams.start === "string" ? resolvedSearchParams.start : "";
   const endFilter = typeof resolvedSearchParams.end === "string" ? resolvedSearchParams.end : "";
 
-  const snapshot = await loadOrgAnalyticsSnapshot(orgId);
+  const startDate = parseDateParam(startFilter);
+  const endDate = parseDateParam(endFilter, { endOfDay: true });
+
+  const [snapshot, nowPlayingLessons, completionFunnel, cohortGroups] = await Promise.all([
+    loadOrgAnalyticsSnapshot(orgId),
+    fetchNowPlayingLessons({ orgId, groupId: groupFilter || undefined }),
+    fetchCompletionFunnel({
+      orgId,
+      groupId: groupFilter || undefined,
+      startDate,
+      endDate
+    }),
+    fetchGroupCohorts({ orgId, startDate, endDate })
+  ]);
 
   await capturePosthogEvent({
     event: "admin.analytics_snapshot_viewed",
@@ -58,6 +102,9 @@ export default async function AdminAnalyticsPage({
 
   const completionRateLabel = percentFormatter.format(snapshot.completionRate || 0);
   const hasAssignments = snapshot.assignments.length > 0;
+  const funnelCompletionRate =
+    completionFunnel.starts === 0 ? 0 : completionFunnel.completes / completionFunnel.starts;
+  const funnelCompletionRateLabel = percentFormatter.format(funnelCompletionRate || 0);
 
   const downloadParams = new URLSearchParams();
   if (groupFilter) {
@@ -69,6 +116,41 @@ export default async function AdminAnalyticsPage({
   if (endFilter) {
     downloadParams.set("end", endFilter);
   }
+
+  const baseQueryParams = new URLSearchParams();
+  if (startFilter) {
+    baseQueryParams.set("start", startFilter);
+  }
+  if (endFilter) {
+    baseQueryParams.set("end", endFilter);
+  }
+
+  const groupHref = (value: string | null) => {
+    const params = new URLSearchParams(baseQueryParams);
+    if (value) {
+      params.set("groupId", value);
+    } else {
+      params.delete("groupId");
+    }
+
+    const query = params.toString();
+    return query ? `/admin/analytics?${query}` : "/admin/analytics";
+  };
+
+  const dateRangeDescription = (() => {
+    if (startDate && endDate) {
+      return `${dateFormatter.format(startDate)} – ${dateFormatter.format(endDate)}`;
+    }
+    if (startDate) {
+      return `Since ${dateFormatter.format(startDate)}`;
+    }
+    if (endDate) {
+      return `Until ${dateFormatter.format(endDate)}`;
+    }
+    return "All time";
+  })();
+
+  const selectedCohort = cohortGroups.find((group) => group.groupId === groupFilter);
 
   const exportHref = downloadParams.toString()
     ? `/admin/analytics/export?${downloadParams.toString()}`
@@ -150,6 +232,161 @@ export default async function AdminAnalyticsPage({
             Download CSV
           </Button>
         </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Now playing</CardTitle>
+              <CardDescription>Lessons with active viewers in the last 5 minutes.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {nowPlayingLessons.length > 0 ? (
+                <div className="divide-y">
+                  {nowPlayingLessons.map((lesson) => (
+                    <div
+                      key={lesson.lessonId}
+                      className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{lesson.lessonTitle}</p>
+                        <p className="text-xs text-muted-foreground">Lesson</p>
+                      </div>
+                      <div className="text-left sm:text-right">
+                        <p className="text-lg font-semibold">
+                          {numberFormatter.format(lesson.activeViewers)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Active viewers</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No learners are actively watching lessons right now.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Completion funnel</CardTitle>
+              <CardDescription>Lesson starts vs completions ({dateRangeDescription}).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Lesson starts</dt>
+                  <dd className="text-2xl font-semibold">
+                    {numberFormatter.format(completionFunnel.starts)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Completions</dt>
+                  <dd className="text-2xl font-semibold">
+                    {numberFormatter.format(completionFunnel.completes)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Completion rate</dt>
+                  <dd className="text-2xl font-semibold">{funnelCompletionRateLabel}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Cohort breakdown</CardTitle>
+            <CardDescription>
+              Compare lesson engagement by group. Use the chips to filter the analytics across the page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                as="a"
+                href={groupHref(null)}
+                size="sm"
+                variant={groupFilter ? "outline" : "solid"}
+                colorScheme={groupFilter ? "gray" : "primary"}
+              >
+                All cohorts
+              </Button>
+              {cohortGroups.map((group) => {
+                const isActive = group.groupId === groupFilter;
+                return (
+                  <Button
+                    key={group.groupId}
+                    as="a"
+                    href={groupHref(group.groupId)}
+                    size="sm"
+                    variant={isActive ? "solid" : "outline"}
+                    colorScheme={isActive ? "primary" : "gray"}
+                  >
+                    {group.name}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Filtering analytics for {selectedCohort ? selectedCohort.name : "all cohorts"}.
+            </p>
+
+            {cohortGroups.length > 0 ? (
+              <div className="space-y-3">
+                {cohortGroups.map((group) => {
+                  const isActive = group.groupId === groupFilter;
+                  const conversion = group.starts === 0 ? 0 : group.completes / group.starts;
+                  const conversionLabel = percentFormatter.format(conversion || 0);
+                  const memberLabel =
+                    group.memberCount === 1
+                      ? "1 member"
+                      : `${numberFormatter.format(group.memberCount)} members`;
+
+                  return (
+                    <div
+                      key={group.groupId}
+                      className={cn(
+                        "flex flex-col gap-3 rounded-lg border border-muted-foreground/30 p-4 sm:flex-row sm:items-center sm:justify-between",
+                        isActive && "border-primary/40 bg-primary/5"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{group.name}</p>
+                        <p className="text-xs text-muted-foreground">{memberLabel}</p>
+                      </div>
+                      <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                        <div>
+                          <dt className="text-xs font-medium uppercase text-muted-foreground">Starts</dt>
+                          <dd className="font-semibold">
+                            {numberFormatter.format(group.starts)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-medium uppercase text-muted-foreground">Completions</dt>
+                          <dd className="font-semibold">
+                            {numberFormatter.format(group.completes)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-medium uppercase text-muted-foreground">Conversion</dt>
+                          <dd className="font-semibold">{conversionLabel}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Create cohorts to compare performance across groups.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
