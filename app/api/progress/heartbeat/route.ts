@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { serverCapture, type ServerCaptureIdentity } from "@/lib/analytics/posthog.server";
 import { assertSameOrg, getSessionUser } from "@/lib/authz";
 import { getOrCreate, saveSegments } from "@/lib/db/progress";
 import { coerceSegments, computeUniqueSeconds, mergeSegments, type Segment } from "@/lib/lesson/progress";
@@ -89,6 +90,13 @@ export async function POST(request: Request) {
 
     const progress = await getOrCreate(user.id, lessonId, { provider });
 
+    const posthogIdentity: ServerCaptureIdentity = {
+      userId: user.id,
+      email: user.email ?? null,
+      orgId: user.orgId ?? null,
+      role: user.role ?? null,
+    };
+
     const now = new Date();
 
     if (progress.lastTickAt && now.getTime() < progress.lastTickAt.getTime() - MAX_BACKDATE_MS) {
@@ -161,10 +169,41 @@ export async function POST(request: Request) {
       maybeCompletedAt: completedAt && !progress.completedAt ? completedAt : undefined,
     });
 
+    const latestUniqueSeconds = saved.uniqueSeconds ?? uniqueSeconds ?? 0;
+    const completed = Boolean(saved.completedAt ?? completedAt);
+
+    void serverCapture(
+      "lesson_progress_tick_server",
+      {
+        lessonId,
+        lessonTitle: lesson.title,
+        provider,
+        t: safeT,
+        durationS: duration,
+        uniqueSeconds: latestUniqueSeconds,
+        completed,
+      },
+      posthogIdentity,
+    );
+
+    if (completed) {
+      void serverCapture(
+        "lesson_view_complete_server",
+        {
+          lessonId,
+          lessonTitle: lesson.title,
+          provider,
+          uniqueSeconds: latestUniqueSeconds,
+          durationS: duration,
+        },
+        posthogIdentity,
+      );
+    }
+
     return NextResponse.json({
       ok: true,
-      uniqueSeconds: saved.uniqueSeconds ?? uniqueSeconds ?? 0,
-      completed: Boolean(saved.completedAt ?? completedAt),
+      uniqueSeconds: latestUniqueSeconds,
+      completed,
       requestId,
     });
   } catch (error) {
