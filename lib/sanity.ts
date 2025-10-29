@@ -14,6 +14,9 @@ export type SanityLessonDocument = {
   title?: string;
   streamId?: string;
   youtubeId?: string;
+  videoUrl?: string;
+  posterUrl?: string;
+  provider?: string;
   durationS?: number;
   requiresFullWatch?: boolean;
 };

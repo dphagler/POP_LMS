@@ -30,6 +30,11 @@ enum EnrollmentStatus {
   WITHDRAWN
 }
 
+enum VideoProvider {
+  youtube
+  cloudflare
+}
+
 enum OrgRole {
   OWNER
   ADMIN
@@ -173,7 +178,13 @@ model Lesson {
   moduleId          String
   module            Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title             String
-  streamId          String
+  // Cloud provider id (Mux/Cloudflare) stays but becomes optional for YouTube-only lessons
+  streamId          String?
+
+  // NEW: YouTube support
+  provider          VideoProvider?
+  videoUrl          String?
+  posterUrl         String?
   durationS         Int
   requiresFullWatch Boolean  @default(true)
   createdAt         DateTime @default(now())
