@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -10,18 +10,8 @@ import {
   CardBody,
   Circle,
   Flex,
-  FormControl,
-  FormLabel,
   Heading,
   Icon,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   SimpleGrid,
   Stack,
   Table,
@@ -32,7 +22,6 @@ import {
   Th,
   Thead,
   Tr,
-  useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 import { Plus, Users } from "lucide-react";
@@ -41,6 +30,8 @@ import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { PageHeader } from "@/components/admin/PageHeader";
 import type { GroupListItem } from "@/lib/db/group";
 import { createGroup } from "@/lib/server-actions/groups";
+import { NewGroupModal, type NewGroupFormValues } from "@/components/admin/modals/NewGroupModal";
+import { useModalState } from "@/lib/hooks/useModalState";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -52,21 +43,11 @@ type AdminGroupsClientProps = {
   autoOpenCreate?: boolean;
 };
 
-type CreateGroupForm = {
-  name: string;
-  description: string;
-};
-
-const initialFormState: CreateGroupForm = {
-  name: "",
-  description: "",
-};
-
 export function AdminGroupsClient({ initialGroups, autoOpenCreate = false }: AdminGroupsClientProps) {
   const [groups, setGroups] = useState<GroupListItem[]>(() => [...initialGroups]);
-  const [form, setForm] = useState<CreateGroupForm>(initialFormState);
   const [isPending, startTransition] = useTransition();
-  const dialog = useDisclosure();
+  const dialog = useModalState();
+  const hasAutoOpenedCreateRef = useRef(false);
   const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,31 +82,36 @@ export function AdminGroupsClient({ initialGroups, autoOpenCreate = false }: Adm
   );
 
   const handleOpenModal = useCallback(() => {
-    setForm(initialFormState);
     dialog.onOpen();
     updateModalParam("new");
   }, [dialog, updateModalParam]);
 
   const handleCloseModal = useCallback(() => {
-    setForm(initialFormState);
     dialog.onClose();
-    updateModalParam(null);
+    setTimeout(() => {
+      updateModalParam(null);
+    }, 0);
   }, [dialog, updateModalParam]);
 
   useEffect(() => {
     if (autoOpenCreate) {
-      handleOpenModal();
+      if (!hasAutoOpenedCreateRef.current) {
+        hasAutoOpenedCreateRef.current = true;
+        if (!dialog.isOpenRef.current) {
+          dialog.onOpen();
+        }
+      }
+    } else {
+      hasAutoOpenedCreateRef.current = false;
     }
-  }, [autoOpenCreate, handleOpenModal]);
+  }, [autoOpenCreate, dialog]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const handleCreateGroup = (values: NewGroupFormValues) => {
     startTransition(async () => {
       try {
         const result = await createGroup({
-          name: form.name,
-          description: form.description ? form.description : undefined,
+          name: values.name,
+          description: values.description ? values.description : undefined,
         });
 
         if (!result.ok) {
@@ -272,44 +258,12 @@ export function AdminGroupsClient({ initialGroups, autoOpenCreate = false }: Adm
         </CardBody>
       </Card>
 
-      <Modal isOpen={dialog.isOpen} onClose={handleCloseModal} isCentered size="lg">
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleSubmit}>
-          <ModalHeader>Create a new group</ModalHeader>
-          <ModalCloseButton disabled={isPending} />
-          <ModalBody>
-            <Stack spacing={4}>
-              <FormControl isRequired>
-                <FormLabel htmlFor="group-name">Group name</FormLabel>
-                <Input
-                  id="group-name"
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="Regional managers"
-                  autoFocus
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel htmlFor="group-description">Description (optional)</FormLabel>
-                <Input
-                  id="group-description"
-                  value={form.description}
-                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-                  placeholder="Quarterly onboarding cohort"
-                />
-              </FormControl>
-            </Stack>
-          </ModalBody>
-          <ModalFooter gap={3}>
-            <Button variant="ghost" onClick={handleCloseModal} isDisabled={isPending}>
-              Cancel
-            </Button>
-            <Button colorScheme="primary" type="submit" isLoading={isPending}>
-              Create group
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <NewGroupModal
+        isOpen={dialog.isOpen}
+        onClose={handleCloseModal}
+        isSubmitting={isPending}
+        onSubmit={handleCreateGroup}
+      />
     </Stack>
   );
 }

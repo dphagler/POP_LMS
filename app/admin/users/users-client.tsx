@@ -11,18 +11,8 @@ import {
   CardBody,
   Circle,
   Flex,
-  FormControl,
-  FormLabel,
   Heading,
   Icon,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
   Stack,
   Table,
@@ -33,7 +23,6 @@ import {
   Th,
   Thead,
   Tr,
-  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { Users } from 'lucide-react';
@@ -41,6 +30,8 @@ import { Users } from 'lucide-react';
 import { PageHeader } from '@/components/admin/PageHeader';
 import type { OrgUserListItem } from '@/lib/db/user';
 import { inviteUser, sendResetLink, updateUserRole } from '@/lib/server-actions/users';
+import { InviteUserModal, type InviteUserFormValues, type RoleOption } from '@/components/admin/modals/InviteUserModal';
+import { useModalState } from '@/lib/hooks/useModalState';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
@@ -54,18 +45,10 @@ const statusColorMap: Record<OrgUserListItem['status'], string> = {
   deactivated: 'gray',
 };
 
-type RoleOption = 'LEARNER' | 'MANAGER' | 'ADMIN';
-
 type AdminUsersClientProps = {
   currentUserId: string;
   initialUsers: OrgUserListItem[];
   autoOpenInvite?: boolean;
-};
-
-type InviteFormState = {
-  email: string;
-  name: string;
-  role: RoleOption;
 };
 
 const roleOptions: { label: string; value: RoleOption }[] = [
@@ -86,23 +69,17 @@ function toRoleOption(role: OrgUserListItem['role']): RoleOption {
   }
 }
 
-const initialInviteState: InviteFormState = {
-  email: '',
-  name: '',
-  role: 'LEARNER',
-};
-
 export function AdminUsersClient({ currentUserId, initialUsers, autoOpenInvite = false }: AdminUsersClientProps) {
   const [users, setUsers] = useState(initialUsers);
-  const [inviteState, setInviteState] = useState<InviteFormState>(initialInviteState);
   const [rolePendingId, setRolePendingId] = useState<string | null>(null);
   const [resetPendingId, setResetPendingId] = useState<string | null>(null);
   const [isInvitePending, startInviteTransition] = useTransition();
   const [isRolePending, startRoleTransition] = useTransition();
   const [isResetPending, startResetTransition] = useTransition();
   const usersSnapshot = useRef(initialUsers);
+  const hasAutoOpenedInviteRef = useRef(false);
   const toast = useToast();
-  const inviteDialog = useDisclosure();
+  const inviteDialog = useModalState();
   const router = useRouter();
   const searchParams = useSearchParams();
   const basePath = '/admin/users';
@@ -133,32 +110,37 @@ export function AdminUsersClient({ currentUserId, initialUsers, autoOpenInvite =
   }, [users]);
 
   const openInviteModal = useCallback(() => {
-    setInviteState(initialInviteState);
     inviteDialog.onOpen();
     updateModalParam('invite');
   }, [inviteDialog, updateModalParam]);
 
   const closeInviteModal = useCallback(() => {
-    setInviteState(initialInviteState);
     inviteDialog.onClose();
-    updateModalParam(null);
+    setTimeout(() => {
+      updateModalParam(null);
+    }, 0);
   }, [inviteDialog, updateModalParam]);
 
   useEffect(() => {
     if (autoOpenInvite) {
-      openInviteModal();
+      if (!hasAutoOpenedInviteRef.current) {
+        hasAutoOpenedInviteRef.current = true;
+        if (!inviteDialog.isOpenRef.current) {
+          inviteDialog.onOpen();
+        }
+      }
+    } else {
+      hasAutoOpenedInviteRef.current = false;
     }
-  }, [autoOpenInvite, openInviteModal]);
+  }, [autoOpenInvite, inviteDialog]);
 
-  const handleInviteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const handleInviteSubmit = (values: InviteUserFormValues) => {
     startInviteTransition(async () => {
       try {
         const result = await inviteUser({
-          email: inviteState.email,
-          name: inviteState.name || undefined,
-          role: inviteState.role,
+          email: values.email,
+          name: values.name || undefined,
+          role: values.role,
         });
 
         if (!result.ok || !('user' in result)) {
@@ -245,10 +227,6 @@ export function AdminUsersClient({ currentUserId, initialUsers, autoOpenInvite =
         setResetPendingId(null);
       }
     });
-  };
-
-  const handleModalClose = () => {
-    closeInviteModal();
   };
 
   const range = useMemo(() => {
@@ -403,60 +381,13 @@ export function AdminUsersClient({ currentUserId, initialUsers, autoOpenInvite =
         </CardBody>
       </Card>
 
-      <Modal isOpen={inviteDialog.isOpen} onClose={handleModalClose} size="md">
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleInviteSubmit}>
-          <ModalHeader>Invite a user</ModalHeader>
-          <ModalCloseButton isDisabled={isInvitePending} />
-          <ModalBody pb={4}>
-            <Stack spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>Email address</FormLabel>
-                <Input
-                  type="email"
-                  autoFocus
-                  value={inviteState.email}
-                  onChange={(event) =>
-                    setInviteState((prev) => ({ ...prev, email: event.target.value.trim() }))
-                  }
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Name</FormLabel>
-                <Input
-                  value={inviteState.name}
-                  onChange={(event) =>
-                    setInviteState((prev) => ({ ...prev, name: event.target.value }))
-                  }
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Role</FormLabel>
-                <Select
-                  value={inviteState.role}
-                  onChange={(event) =>
-                    setInviteState((prev) => ({ ...prev, role: event.target.value as RoleOption }))
-                  }
-                >
-                  {roleOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-          </ModalBody>
-          <ModalFooter gap={3}>
-            <Button variant="outline" onClick={handleModalClose} isDisabled={isInvitePending}>
-              Cancel
-            </Button>
-            <Button colorScheme="primary" type="submit" isLoading={isInvitePending}>
-              Send invite
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <InviteUserModal
+        isOpen={inviteDialog.isOpen}
+        onClose={closeInviteModal}
+        isSubmitting={isInvitePending}
+        roleOptions={roleOptions}
+        onSubmit={handleInviteSubmit}
+      />
     </Stack>
   );
 }
