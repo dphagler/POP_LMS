@@ -36,14 +36,6 @@ type LessonAnalyticsHandlers = {
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
-declare global {
-  interface Window {
-    posthog?: {
-      capture: (event: string, properties?: Record<string, unknown>) => void;
-    };
-  }
-}
-
 export function useLessonAnalytics({
   lessonId,
   isDone,
