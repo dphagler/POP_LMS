@@ -9,8 +9,7 @@ CREATE TABLE "LessonRuntimeSnapshot" (
     CONSTRAINT "LessonRuntimeSnapshot_pkey" PRIMARY KEY ("orgId", "lessonId", "version")
 );
 
--- CreateIndex
-CREATE INDEX "LessonRuntimeSnapshot_org_lesson_version_idx" ON "LessonRuntimeSnapshot"("orgId", "lessonId", "version" DESC);
+CREATE INDEX "LessonRuntimeSnapshot_orgId_lessonId_version_idx" ON "LessonRuntimeSnapshot"("orgId", "lessonId", "version" DESC);
 
 -- AddForeignKey
 ALTER TABLE "LessonRuntimeSnapshot" ADD CONSTRAINT "LessonRuntimeSnapshot_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
