@@ -103,7 +103,14 @@ export function AdminShell({ title, breadcrumb, children }: AdminShellProps) {
       >
         Skip to main content
       </chakra.a>
-      <Box display={{ base: "none", lg: "block" }} borderRightWidth="1px" borderColor="border.subtle" maxW="18rem" w="full">
+      <Box
+        display={{ base: "none", lg: "block" }}
+        borderRightWidth="1px"
+        borderColor="border.subtle"
+        maxW="18rem"
+        w="full"
+        minH="100vh"
+      >
         <AdminSidebar onNavigate={onClose} />
       </Box>
 
