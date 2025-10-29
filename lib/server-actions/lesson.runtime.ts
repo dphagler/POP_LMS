@@ -7,6 +7,7 @@ import type {
   LessonObjective,
   LessonRuntime,
 } from '../lesson/contracts';
+import type { VideoProviderName } from '../video/provider';
 import { prisma } from '../prisma';
 
 interface GetNextLessonInput {
@@ -65,6 +66,30 @@ const normalizeObjectives = (value: unknown): LessonObjective[] => {
       return { id, summary } satisfies LessonObjective;
     })
     .filter((objective): objective is LessonObjective => objective !== null);
+};
+
+const normalizeOptionalString = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const normalizeProvider = (value: unknown): VideoProviderName | null => {
+  if (value === 'youtube' || value === 'cloudflare') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const lower = value.trim().toLowerCase();
+    if (lower === 'youtube' || lower === 'cloudflare') {
+      return lower as VideoProviderName;
+    }
+  }
+
+  return null;
 };
 
 const normalizeAugmentations = (value: unknown): AugmentationRule[] => {
@@ -185,13 +210,21 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
     const augmentations = normalizeAugmentations(snapshot.augmentations);
     const id = typeof snapshot.id === 'string' ? snapshot.id : lessonId;
     const title = typeof snapshot.title === 'string' ? snapshot.title : '';
-    const streamId = typeof snapshot.streamId === 'string' ? snapshot.streamId : '';
+    const streamId = normalizeOptionalString(snapshot.streamId);
+    const videoUrl = normalizeOptionalString(
+      (snapshot.videoUrl ?? snapshot.youtubeUrl ?? snapshot.videoURL ?? null) as unknown,
+    );
+    const posterUrl = normalizeOptionalString(snapshot.posterUrl);
+    const provider =
+      normalizeProvider(
+        (snapshot.provider ?? snapshot.videoProvider ?? snapshot.providerName ?? null) as unknown,
+      ) ?? (streamId ? 'cloudflare' : null);
     const durationSec = typeof snapshot.durationSec === 'number' ? snapshot.durationSec : 0;
     const assessmentType = typeof snapshot.assessmentType === 'string'
       ? snapshot.assessmentType
       : DEFAULT_ASSESSMENT_TYPE;
 
-    if (!title || !streamId) {
+    if (!title || (!streamId && !videoUrl)) {
       return null;
     }
 
@@ -199,7 +232,10 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
       id,
       title,
       objectives,
+      provider,
       streamId,
+      videoUrl,
+      posterUrl,
       durationSec,
       assessmentType,
       augmentations,
@@ -245,6 +281,9 @@ export const getLessonRuntime = async ({
       id: true,
       title: true,
       streamId: true,
+      provider: true,
+      videoUrl: true,
+      posterUrl: true,
       durationS: true,
       quiz: { select: { id: true } },
     },
@@ -254,11 +293,18 @@ export const getLessonRuntime = async ({
     throw new Error('Lesson not found');
   }
 
+  const streamId = normalizeOptionalString(lesson.streamId);
+  const videoUrl = normalizeOptionalString(lesson.videoUrl);
+  const posterUrl = normalizeOptionalString(lesson.posterUrl);
+
   return {
     id: lesson.id,
     title: lesson.title,
     objectives: [],
-    streamId: lesson.streamId,
+    provider: (lesson.provider as VideoProviderName | null) ?? (streamId ? 'cloudflare' : null),
+    streamId,
+    videoUrl,
+    posterUrl,
     durationSec: lesson.durationS,
     assessmentType: lesson.quiz ? 'QUIZ' : NO_ASSESSMENT_TYPE,
     augmentations: [],

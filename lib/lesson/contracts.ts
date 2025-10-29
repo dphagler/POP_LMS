@@ -1,3 +1,5 @@
+import type { VideoProviderName } from "../video/provider";
+
 export interface LessonObjective {
   id: string;
   summary: string;
@@ -13,7 +15,10 @@ export interface LessonRuntime {
   id: string;
   title: string;
   objectives: LessonObjective[];
-  streamId: string;
+  provider: VideoProviderName | null;
+  streamId: string | null;
+  videoUrl: string | null;
+  posterUrl: string | null;
   durationSec: number;
   assessmentType: string;
   augmentations: AugmentationRule[];

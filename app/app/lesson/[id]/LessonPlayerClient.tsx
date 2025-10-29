@@ -81,7 +81,7 @@ function loadYouTubeIframeAPI(): Promise<YouTubeNamespace> {
 
 type LessonPlayerClientProps = {
   lessonId: string;
-  videoId: string;
+  videoId: string | null;
   videoDuration: number;
   videoProvider?: VideoProviderName | null;
   lessonTitle: string;

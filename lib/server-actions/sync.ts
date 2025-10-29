@@ -22,6 +22,7 @@ import {
   getMissingSanityEnvVars,
   type SanityLessonDocument
 } from "@/lib/sanity";
+import type { VideoProviderName } from "@/lib/video/provider";
 
 const RunSanitySyncSchema = z
   .object({
@@ -401,15 +402,51 @@ function resolveDocId(doc: { _id?: string; _ref?: string } | null | undefined): 
   return undefined;
 }
 
+function normalizeOptionalString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function resolveLessonProvider(lessonDoc: SanityLessonDocument): VideoProviderName | null {
+  const explicit = normalizeOptionalString(lessonDoc.provider);
+  if (explicit === "youtube" || explicit === "cloudflare") {
+    return explicit;
+  }
+
+  if (normalizeOptionalString(lessonDoc.youtubeId) || normalizeOptionalString(lessonDoc.videoUrl)) {
+    return "youtube";
+  }
+
+  if (normalizeOptionalString(lessonDoc.streamId)) {
+    return "cloudflare";
+  }
+
+  return null;
+}
+
 function buildLessonData(
   moduleId: string,
   lessonDoc: SanityLessonDocument,
   lessonTitle: string
 ) {
+  const streamId = normalizeOptionalString(lessonDoc?.streamId);
+  const youtubeId = normalizeOptionalString(lessonDoc?.youtubeId);
+  const explicitVideoUrl = normalizeOptionalString(lessonDoc?.videoUrl);
+  const provider = resolveLessonProvider(lessonDoc);
+  const videoUrl = explicitVideoUrl ?? (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
+  const posterUrl = normalizeOptionalString(lessonDoc?.posterUrl);
+
   return {
     moduleId,
     title: lessonTitle,
-    streamId: lessonDoc?.streamId ?? lessonDoc?.youtubeId ?? "",
+    streamId,
+    provider,
+    videoUrl,
+    posterUrl,
     durationS:
       typeof lessonDoc?.durationS === "number" && Number.isFinite(lessonDoc.durationS)
         ? lessonDoc.durationS

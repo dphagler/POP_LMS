@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { INITIAL_STATE, canStartAssessment } from "@/lib/lesson/engine";
+import { parseYouTubeVideoId } from "@/lib/video/provider";
 
 import { LessonPlayerClient } from "./LessonPlayerClient";
 import { loadLesson, loadAugmentations } from "./actions";
@@ -49,9 +50,21 @@ export default async function LessonPage({ params }: LessonPageProps) {
     Math.round((watchedSeconds / duration) * 100),
   );
 
-  const posterUrl = runtime.streamId
-    ? `https://image.mux.com/${runtime.streamId}/thumbnail.jpg?time=0`
-    : undefined;
+  const resolvedProvider = runtime.provider ?? (runtime.streamId ? "cloudflare" : null);
+  let videoId: string | null = null;
+  let posterUrl = runtime.posterUrl ?? undefined;
+
+  if (resolvedProvider === "youtube") {
+    videoId =
+      parseYouTubeVideoId(runtime.streamId) ?? parseYouTubeVideoId(runtime.videoUrl) ?? null;
+  } else if (resolvedProvider === "cloudflare") {
+    videoId = runtime.streamId ?? null;
+    if (!posterUrl && runtime.streamId) {
+      posterUrl = `https://image.mux.com/${runtime.streamId}/thumbnail.jpg?time=0`;
+    }
+  } else {
+    videoId = runtime.streamId ?? null;
+  }
   const augmentationCount = augmentations.items.length;
 
   let badgeLabel: string | null = null;
@@ -113,8 +126,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
   return (
     <LessonPlayerClient
       lessonId={runtime.id}
-      videoId={runtime.streamId}
+      videoId={videoId}
       videoDuration={runtime.durationSec}
+      videoProvider={resolvedProvider}
       lessonTitle={runtime.title}
       posterUrl={posterUrl}
       progressPercent={progressPercent}

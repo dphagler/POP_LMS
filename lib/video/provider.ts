@@ -196,3 +196,47 @@ export function createCloudflareSink(_: CloudflareSinkOptions = {}): TelemetrySi
 
   return noopSink;
 }
+
+const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+export function parseYouTubeVideoId(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (YOUTUBE_VIDEO_ID_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const host = url.hostname.toLowerCase();
+    const segments = url.pathname.split("/").filter(Boolean);
+
+    if (host === "youtu.be" || host.endsWith(".youtu.be")) {
+      const candidate = segments[0] ?? "";
+      return YOUTUBE_VIDEO_ID_PATTERN.test(candidate) ? candidate : null;
+    }
+
+    if (host.endsWith("youtube.com")) {
+      const searchId = url.searchParams.get("v");
+      if (searchId && YOUTUBE_VIDEO_ID_PATTERN.test(searchId)) {
+        return searchId;
+      }
+
+      if (segments[0] === "embed" || segments[0] === "shorts" || segments[0] === "live") {
+        const candidate = segments[1] ?? "";
+        return YOUTUBE_VIDEO_ID_PATTERN.test(candidate) ? candidate : null;
+      }
+    }
+  } catch {
+    // ignore invalid URLs
+  }
+
+  return null;
+}
