@@ -95,12 +95,3 @@ export const env = {
 } as const;
 
 export type ServerEnv = typeof env;
-
-export function assertRequiredForProd() {
-  const missing: string[] = [];
-  if (!env.DATABASE_URL) missing.push("DATABASE_URL");
-  if (!env.NEXTAUTH_SECRET) missing.push("NEXTAUTH_SECRET");
-  if (missing.length) {
-    throw new Error("Missing required envs in production: " + missing.join(", "));
-  }
-}
