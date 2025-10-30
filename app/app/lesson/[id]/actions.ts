@@ -33,10 +33,8 @@ const isFiniteNumber = (value: unknown): value is number =>
 type EngineProgress = ProgressState & { segments: Segment[] };
 
 type ProgressRow = {
-  watchedSeconds: number;
-  uniqueSeconds: number;
-  isComplete: boolean;
-  thresholdPct: unknown;
+  uniqueSeconds: number | null;
+  completedAt: Date | null;
   segments: unknown;
 };
 
@@ -85,31 +83,6 @@ type LoadAugmentationsResult = {
     completedAt: string | null;
   }>;
   trace: string[];
-};
-
-const parseThresholdPct = (value: unknown): number => {
-  if (isFiniteNumber(value)) {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
-  if (value && typeof value === "object") {
-    const candidate = value as { toNumber?: () => number };
-    if (typeof candidate.toNumber === "function") {
-      const parsed = candidate.toNumber();
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-  }
-
-  return DEFAULT_THRESHOLD;
 };
 
 const parseSegments = (value: unknown): Segment[] => {
@@ -184,28 +157,43 @@ const parseDiagnostics = (value: unknown): DiagnosticResult[] => {
   return [];
 };
 
-const toEngineProgress = (lessonId: string, row: ProgressRow | null): EngineProgress => ({
-  lessonId,
-  watchedSeconds: row?.watchedSeconds ?? 0,
-  uniqueSeconds: row?.uniqueSeconds ?? 0,
-  isComplete: row?.isComplete ?? false,
-  thresholdPct: parseThresholdPct(row?.thresholdPct),
-  segments: parseSegments(row?.segments),
-});
+const toEngineProgress = (
+  lessonId: string,
+  runtime: LessonRuntime,
+  row: ProgressRow | null,
+): EngineProgress => {
+  const duration = Math.max(runtime.durationSec ?? 0, 0);
+  const uniqueSeconds = Number.isFinite(row?.uniqueSeconds ?? NaN)
+    ? Math.max(0, Math.round(row?.uniqueSeconds ?? 0))
+    : 0;
+  const watchedSeconds = Math.max(0, Math.min(uniqueSeconds, duration));
+  const thresholdPct = runtime.requiresFullWatch ? DEFAULT_THRESHOLD : 0;
 
-const loadProgress = async (userId: string, lessonId: string): Promise<EngineProgress> => {
+  return {
+    lessonId,
+    watchedSeconds,
+    uniqueSeconds,
+    isComplete: Boolean(row?.completedAt),
+    thresholdPct,
+    segments: parseSegments(row?.segments),
+  };
+};
+
+const loadProgress = async (
+  userId: string,
+  lessonId: string,
+  runtime: LessonRuntime,
+): Promise<EngineProgress> => {
   const row = (await prisma.progress.findFirst({
     where: { userId, lessonId },
     select: {
-      watchedSeconds: true,
       uniqueSeconds: true,
-      isComplete: true,
-      thresholdPct: true,
+      completedAt: true,
       segments: true,
     },
   })) as ProgressRow | null;
 
-  return toEngineProgress(lessonId, row);
+  return toEngineProgress(lessonId, runtime, row);
 };
 
 const loadDiagnostics = async (
@@ -233,9 +221,9 @@ export const loadLesson = async (lessonId: string): Promise<LessonEnginePayload>
   const session = await requireUser();
   const userId = session.user.id;
 
-  const [runtime, progress, diagnostics] = await Promise.all([
-    getLessonRuntime({ userId, lessonId }),
-    loadProgress(userId, lessonId),
+  const runtime = await getLessonRuntime({ userId, lessonId });
+  const [progress, diagnostics] = await Promise.all([
+    loadProgress(userId, lessonId, runtime),
     loadDiagnostics(userId, lessonId),
   ]);
 

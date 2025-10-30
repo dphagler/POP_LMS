@@ -142,14 +142,14 @@ export async function summarizeProgressDaily(
 
   const progressBounds = await client.progress.aggregate({
     _min: {
-      lastHeartbeatAt: true,
+      lastTickAt: true,
       completedAt: true,
     },
   });
 
   const earliestCandidates: Date[] = [];
-  if (progressBounds._min.lastHeartbeatAt) {
-    earliestCandidates.push(startOfUtcDay(new Date(progressBounds._min.lastHeartbeatAt)));
+  if (progressBounds._min.lastTickAt) {
+    earliestCandidates.push(startOfUtcDay(new Date(progressBounds._min.lastTickAt)));
   }
   if (progressBounds._min.completedAt) {
     earliestCandidates.push(startOfUtcDay(new Date(progressBounds._min.completedAt)));
@@ -197,7 +197,7 @@ export async function summarizeProgressDaily(
     SELECT
       c."orgId" AS "orgId",
       p."lessonId" AS "lessonId",
-      (p."lastHeartbeatAt" AT TIME ZONE 'UTC')::date AS "date",
+      (p."lastTickAt" AT TIME ZONE 'UTC')::date AS "date",
       COUNT(DISTINCT p."userId") AS "viewers",
       SUM(
         LEAST(
@@ -218,11 +218,11 @@ export async function summarizeProgressDaily(
     JOIN "Lesson" l ON l."id" = p."lessonId"
     JOIN "Module" m ON m."id" = l."moduleId"
     JOIN "Course" c ON c."id" = m."courseId"
-    WHERE p."lastHeartbeatAt" IS NOT NULL
-      AND p."lastHeartbeatAt" >= ${startDate}
-      AND p."lastHeartbeatAt" < ${endDateExclusive}
+    WHERE p."lastTickAt" IS NOT NULL
+      AND p."lastTickAt" >= ${startDate}
+      AND p."lastTickAt" < ${endDateExclusive}
       AND COALESCE(p."uniqueSeconds", 0) > 0
-    GROUP BY c."orgId", p."lessonId", (p."lastHeartbeatAt" AT TIME ZONE 'UTC')::date
+    GROUP BY c."orgId", p."lessonId", (p."lastTickAt" AT TIME ZONE 'UTC')::date
   `);
 
   const completionRows = await client.$queryRaw<CompletionRow[]>(Prisma.sql`

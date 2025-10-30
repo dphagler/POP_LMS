@@ -86,7 +86,7 @@ The script updates the matching `User` record to `role = "ADMIN"` and prints the
 1. Sign in as the seeded admin (`admin@poplms.dev`).
 2. Navigate to `/app/lesson/seed-lesson`.
 3. Start the embedded video; the client posts a heartbeat every 5 seconds to `/api/progress/heartbeat`.
-4. Watch to at least 95% completion (or wait for the end event) to trigger `isComplete=true` and streak badge computation.
+4. Watch to at least 95% completion (or wait for the end event) to record a `completedAt` timestamp and streak badge computation.
 
 ## Sanity content sync
 

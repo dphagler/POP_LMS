@@ -120,38 +120,43 @@ async function resolveProgressDuplicates() {
       where: { id: { in: duplicate.ids } },
       select: {
         id: true,
-        watchedSeconds: true,
+        uniqueSeconds: true,
         segments: true,
-        lastHeartbeatAt: true,
+        lastTickAt: true,
         updatedAt: true,
         createdAt: true,
-        isComplete: true
+        completedAt: true
       }
     });
 
     const keptRecord = records.find((record) => record.id === keepId)!;
-    const mergedWatchedSeconds = Math.max(...records.map((record) => record.watchedSeconds));
+    const mergedUniqueSeconds = Math.max(
+      ...records.map((record) => Number(record.uniqueSeconds ?? 0)),
+    );
     const mergedSegments = mergeSegments(records);
     const mergedSegmentsInput =
       mergedSegments === null ? Prisma.JsonNull : (mergedSegments as Prisma.InputJsonValue);
-    const mergedLastHeartbeatAt = records
-      .map((record) => record.lastHeartbeatAt)
+    const mergedLastTickAt = records
+      .map((record) => record.lastTickAt)
       .filter((value): value is Date => value != null)
-      .sort((a, b) => b.getTime() - a.getTime())[0] ?? keptRecord.lastHeartbeatAt ?? null;
-    const mergedIsComplete = records.some((record) => record.isComplete);
+      .sort((a, b) => b.getTime() - a.getTime())[0] ?? keptRecord.lastTickAt ?? null;
+    const mergedCompletedAt = records
+      .map((record) => record.completedAt)
+      .filter((value): value is Date => value != null)
+      .sort((a, b) => b.getTime() - a.getTime())[0] ?? keptRecord.completedAt ?? null;
 
     console.warn(
-      `  userId=${duplicate.userId} lessonId=${duplicate.lessonId} keep=${keepId} mergeSeconds=${mergedWatchedSeconds} remove=${extraIds.join(",")}`
+      `  userId=${duplicate.userId} lessonId=${duplicate.lessonId} keep=${keepId} mergeSeconds=${mergedUniqueSeconds} remove=${extraIds.join(",")}`
     );
 
     if (applyFixes) {
       await prisma.progress.update({
         where: { id: keepId },
         data: {
-          watchedSeconds: mergedWatchedSeconds,
+          uniqueSeconds: mergedUniqueSeconds,
           segments: mergedSegmentsInput,
-          lastHeartbeatAt: mergedLastHeartbeatAt,
-          isComplete: mergedIsComplete
+          lastTickAt: mergedLastTickAt,
+          completedAt: mergedCompletedAt
         }
       });
 

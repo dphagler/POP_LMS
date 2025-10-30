@@ -20,6 +20,7 @@ export interface LessonRuntime {
   durationSec: number;
   assessmentType: string;
   augmentations: AugmentationRule[];
+  requiresFullWatch: boolean;
 }
 
 export interface ProgressState {

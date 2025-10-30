@@ -356,6 +356,10 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
     const assessmentType = typeof snapshot.assessmentType === 'string'
       ? snapshot.assessmentType
       : DEFAULT_ASSESSMENT_TYPE;
+    const requiresFullWatch =
+      typeof snapshot.requiresFullWatch === 'boolean'
+        ? snapshot.requiresFullWatch
+        : true;
 
     if (!title || (!streamId && !videoUrl)) {
       return null;
@@ -379,6 +383,7 @@ async function loadLessonRuntimeSnapshot(orgId: string, lessonId: string): Promi
       durationSec,
       assessmentType,
       augmentations,
+      requiresFullWatch,
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
@@ -426,6 +431,7 @@ export const getLessonRuntime = async ({
         videoUrl: true,
         posterUrl: true,
         durationS: true,
+        requiresFullWatch: true,
         quiz: { select: { id: true } },
       },
     });
@@ -457,6 +463,7 @@ export const getLessonRuntime = async ({
       durationSec: lesson.durationS,
       assessmentType: lesson.quiz ? 'QUIZ' : NO_ASSESSMENT_TYPE,
       augmentations: [],
+      requiresFullWatch: lesson.requiresFullWatch,
     };
   }
 
@@ -511,11 +518,13 @@ export const getNextLesson = async ({
     },
     select: {
       lessonId: true,
-      isComplete: true,
+      completedAt: true,
     },
   });
 
-  const completionByLesson = new Map(progresses.map((progress) => [progress.lessonId, progress.isComplete]));
+  const completionByLesson = new Map(
+    progresses.map((progress) => [progress.lessonId, Boolean(progress.completedAt)]),
+  );
   const nextLessonId = lessonIds.find((lessonId) => completionByLesson.get(lessonId) !== true);
 
   if (!nextLessonId) {

@@ -1,6 +1,6 @@
 'use server';
 
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 
 import { computeUniqueSeconds, getCompletionRatio, mergeSegments, type Segment } from '../lesson/progress';
 import { prisma } from '../prisma';
@@ -65,45 +65,6 @@ const clampAndMergeSegments = (segments: Segment[], durationSec: number): Segmen
   return mergeSegments(sanitized);
 };
 
-const toNumber = (value: unknown, fallback: number): number => {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : fallback;
-  }
-
-  if (typeof value === 'string') {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  if (value instanceof Decimal) {
-    const parsed = value.toNumber();
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  if (value && typeof value === 'object' && 'toNumber' in value) {
-    try {
-      const parsed = (value as { toNumber: () => number }).toNumber();
-      return Number.isFinite(parsed) ? parsed : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  return fallback;
-};
-
-const roundSeconds = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return ZERO;
-  }
-
-  if (value <= ZERO) {
-    return ZERO;
-  }
-
-  return Math.round(value);
-};
-
 interface RecordProgressInput {
   userId: string;
   lessonId: string;
@@ -138,6 +99,7 @@ export async function recordProgress({
     select: {
       id: true,
       durationS: true,
+      requiresFullWatch: true,
       quiz: { select: { id: true } },
     },
   });
@@ -163,8 +125,7 @@ export async function recordProgress({
       select: {
         id: true,
         segments: true,
-        thresholdPct: true,
-        isComplete: true,
+        completedAt: true,
       },
     });
 
@@ -175,7 +136,7 @@ export async function recordProgress({
     );
 
     const uniqueSeconds = computeUniqueSeconds(mergedSegments, durationSec);
-    const thresholdPct = toNumber(existing?.thresholdPct, DEFAULT_THRESHOLD);
+    const thresholdPct = lesson.requiresFullWatch ? DEFAULT_THRESHOLD : 0;
     const ratio = getCompletionRatio({
       durationSec,
       uniqueSeconds,
@@ -193,13 +154,16 @@ export async function recordProgress({
       })) > 0;
     const shouldMarkComplete =
       reachedThreshold && (!requiresAssessment ? !augmentationsPending : false);
-    const nextIsComplete = existing?.isComplete ? true : shouldMarkComplete;
+    const nextCompletedAt = existing?.completedAt
+      ? existing.completedAt
+      : shouldMarkComplete
+        ? new Date()
+        : null;
 
-    const data = {
+    const data: Prisma.ProgressUpdateInput = {
       segments: mergedSegments,
       uniqueSeconds,
-      watchedSeconds: roundSeconds(Math.min(uniqueSeconds, durationSec)),
-      isComplete: nextIsComplete,
+      completedAt: nextCompletedAt ?? undefined,
     };
 
     if (existing) {
@@ -222,7 +186,7 @@ export async function recordProgress({
       ratio,
       reachedThreshold,
       isNew: !existing,
-      becameComplete: !existing?.isComplete && nextIsComplete,
+      becameComplete: !existing?.completedAt && Boolean(nextCompletedAt),
     };
   });
 

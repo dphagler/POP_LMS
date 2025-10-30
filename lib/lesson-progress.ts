@@ -11,6 +11,8 @@ type ProgressState = {
   lesson: LessonWithQuiz | null;
 };
 
+const COMPLETION_THRESHOLD = 0.95;
+
 async function loadLessonAndProgress(userId: string, lessonId: string): Promise<ProgressState> {
   const [lesson, progress] = await Promise.all([
     prisma.lesson.findUnique({
@@ -35,8 +37,12 @@ function computeWatchRequirementMet(lesson: LessonWithQuiz, progress: Progress):
   }
 
   const duration = Math.max(lesson.durationS, 1);
-  const threshold = Math.round(duration * 0.95);
-  return progress.watchedSeconds >= threshold;
+  const threshold = Math.round(duration * COMPLETION_THRESHOLD);
+  const uniqueSeconds = Number.isFinite(progress.uniqueSeconds)
+    ? Math.max(0, progress.uniqueSeconds)
+    : 0;
+  const watched = Math.min(uniqueSeconds, duration);
+  return watched >= threshold;
 }
 
 async function computeQuizPassed(userId: string, lesson: LessonWithQuiz): Promise<boolean> {
@@ -99,16 +105,20 @@ export async function syncLessonCompletion({
     }
   });
   const nextIsComplete = watchRequirementMet && quizPassed && augmentationsPending === 0;
+  const alreadyComplete = Boolean(progress.completedAt);
 
-  if (progress.isComplete !== nextIsComplete) {
+  if (nextIsComplete && !alreadyComplete) {
     await prisma.progress.update({
       where: { id: progress.id },
-      data: { isComplete: nextIsComplete }
+      data: { completedAt: new Date() }
     });
 
-    if (nextIsComplete) {
-      await computeStreak(userId);
-    }
+    await computeStreak(userId);
+  } else if (!nextIsComplete && alreadyComplete) {
+    await prisma.progress.update({
+      where: { id: progress.id },
+      data: { completedAt: null }
+    });
   }
 
   return {

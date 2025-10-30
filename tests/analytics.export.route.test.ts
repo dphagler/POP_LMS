@@ -59,7 +59,8 @@ describe('analytics export route', () => {
           uniqueSeconds: 180,
           createdAt,
           updatedAt,
-          isComplete: true,
+          completedAt: updatedAt,
+          lastTickAt: updatedAt,
           lesson: { id: 'lesson-1', title: 'Lesson One', durationS: 300 },
           user: {
             id: 'user-1',
@@ -77,7 +78,8 @@ describe('analytics export route', () => {
           uniqueSeconds: 45,
           createdAt,
           updatedAt,
-          isComplete: false,
+          completedAt: null,
+          lastTickAt: null,
           lesson: { id: 'lesson-2', title: 'Lesson Two', durationS: 200 },
           user: {
             id: 'user-2',
@@ -93,12 +95,12 @@ describe('analytics export route', () => {
 
     const [header, rowOne, rowTwo, ...rest] = csv.trim().split('\n');
     expect(header).toBe(
-      'userId,userEmail,lessonId,lessonTitle,startedAt,completedAt,uniqueSeconds,durationS,percent,orgId,groupIds',
+      'userId,userEmail,lessonId,lessonTitle,startedAt,completedAt,uniqueSeconds,durationS,percent,lastTickAt,sessionCount,orgId,groupIds',
     );
     expect(rowOne).toContain('user-1,user1@example.com,lesson-1,Lesson One');
     expect(rowOne).toContain('group-a');
     expect(rowTwo).toContain('user-2,,lesson-2,Lesson Two');
-    expect(rowTwo).toContain(',0.2250,org-1,');
+    expect(rowTwo).toContain(',0.2250,,0,org-1,');
     expect(rest.every((line) => line.length === 0)).toBe(true);
   });
 
