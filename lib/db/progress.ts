@@ -42,7 +42,6 @@ export async function getOrCreate(
 export type SaveSegmentsParams = {
   userId: string;
   lessonId: string;
-  provider?: string | null;
   tickAt?: Date | null;
   segments?: number[][] | null;
   uniqueSeconds?: number | null;
@@ -53,7 +52,6 @@ export type SaveSegmentsParams = {
 export async function saveSegments({
   userId,
   lessonId,
-  provider,
   tickAt,
   segments,
   uniqueSeconds,
@@ -64,13 +62,8 @@ export async function saveSegments({
 
   const updateData: Prisma.ProgressUpdateInput = {};
 
-  if (provider !== undefined) {
-    updateData.provider = provider;
-  }
-
   if (tickAt !== undefined) {
     updateData.lastTickAt = tickAt;
-    updateData.lastHeartbeatAt = tickAt;
   }
 
   if (segments !== undefined) {
@@ -81,7 +74,7 @@ export async function saveSegments({
   }
 
   if (uniqueSeconds !== undefined) {
-    updateData.uniqueSeconds = uniqueSeconds;
+    updateData.uniqueSeconds = uniqueSeconds ?? undefined;
   }
 
   if (maybeCompletedAt !== undefined) {
@@ -94,9 +87,7 @@ export async function saveSegments({
     create: {
       userId,
       lessonId,
-      provider: provider ?? undefined,
       lastTickAt: tickAt ?? undefined,
-      lastHeartbeatAt: tickAt ?? undefined,
       segments:
         segments === undefined
           ? undefined

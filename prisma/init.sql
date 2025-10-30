@@ -2,7 +2,13 @@
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'INSTRUCTOR', 'LEARNER');
 
 -- CreateEnum
+CREATE TYPE "UserSource" AS ENUM ('invite', 'csv', 'sso');
+
+-- CreateEnum
 CREATE TYPE "EnrollmentStatus" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'WITHDRAWN');
+
+-- CreateEnum
+CREATE TYPE "VideoProvider" AS ENUM ('youtube', 'cloudflare');
 
 -- CreateEnum
 CREATE TYPE "OrgMembershipRole" AS ENUM ('OWNER', 'ADMIN', 'INSTRUCTOR', 'LEARNER');
@@ -14,13 +20,13 @@ CREATE TYPE "QuestionType" AS ENUM ('MCQ');
 CREATE TYPE "AssessmentType" AS ENUM ('quiz', 'chat');
 
 -- CreateEnum
-CREATE TYPE "ChatRole" AS ENUM ('user', 'assistant', 'system');
-
--- CreateEnum
-CREATE TYPE "UserCertificationStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
-
--- CreateEnum
 CREATE TYPE "MembershipSource" AS ENUM ('manual', 'csv', 'invite', 'sso');
+
+-- CreateEnum
+CREATE TYPE "ImportSource" AS ENUM ('csv', 'scorm', 'xapi', 'lrs');
+
+-- CreateEnum
+CREATE TYPE "ImportStatus" AS ENUM ('queued', 'running', 'succeeded', 'failed', 'cancelled');
 
 -- CreateTable
 CREATE TABLE "Organization" (
@@ -43,6 +49,7 @@ CREATE TABLE "User" (
     "image" TEXT,
     "passwordHash" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'LEARNER',
+    "source" "UserSource" DEFAULT 'sso',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -74,7 +81,10 @@ CREATE TABLE "Lesson" (
     "id" TEXT NOT NULL,
     "moduleId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "streamId" TEXT NOT NULL,
+    "streamId" TEXT,
+    "provider" "VideoProvider",
+    "videoUrl" TEXT,
+    "posterUrl" TEXT,
     "durationS" INTEGER NOT NULL,
     "requiresFullWatch" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -91,15 +101,18 @@ CREATE TABLE "LessonRuntimeSnapshot" (
     "runtimeJson" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "LessonRuntimeSnapshot_pkey" PRIMARY KEY ("orgId", "lessonId", "version")
+    CONSTRAINT "LessonRuntimeSnapshot_pkey" PRIMARY KEY ("orgId","lessonId","version")
 );
 
 -- CreateTable
 CREATE TABLE "Assignment" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
     "courseId" TEXT,
     "moduleId" TEXT,
+    "dueAt" TIMESTAMP(3),
+    "label" TEXT,
     "createdBy" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -126,16 +139,29 @@ CREATE TABLE "Progress" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "lessonId" TEXT NOT NULL,
-    "watchedSeconds" INTEGER NOT NULL DEFAULT 0,
-    "uniqueSeconds" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "lastHeartbeatAt" TIMESTAMP(3),
-    "isComplete" BOOLEAN NOT NULL DEFAULT false,
     "segments" JSONB,
-    "thresholdPct" DECIMAL(65,30) NOT NULL DEFAULT 0.95,
+    "uniqueSeconds" INTEGER NOT NULL DEFAULT 0,
+    "lastTickAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Progress_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProgressDaily" (
+    "id" TEXT NOT NULL,
+    "orgId" TEXT NOT NULL,
+    "lessonId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "viewers" INTEGER NOT NULL DEFAULT 0,
+    "avgPercent" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "completes" INTEGER NOT NULL DEFAULT 0,
+    "uniqueSecondsSum" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProgressDaily_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -206,39 +232,6 @@ CREATE TABLE "Assessment" (
 );
 
 -- CreateTable
-CREATE TABLE "ChatTurn" (
-    "id" TEXT NOT NULL,
-    "assessmentId" TEXT NOT NULL,
-    "role" "ChatRole" NOT NULL,
-    "content" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ChatTurn_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Reflection" (
-    "id" TEXT NOT NULL,
-    "lessonId" TEXT NOT NULL,
-    "prompt" TEXT NOT NULL,
-
-    CONSTRAINT "Reflection_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ReflectionResponse" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "reflectionId" TEXT NOT NULL,
-    "text" TEXT NOT NULL,
-    "score" INTEGER,
-    "aiScored" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ReflectionResponse_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Badge" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
@@ -264,6 +257,7 @@ CREATE TABLE "OrgGroup" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -282,25 +276,6 @@ CREATE TABLE "OrgMembership" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "OrgMembership_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "AssignmentGroup" (
-    "id" TEXT NOT NULL,
-    "assignmentId" TEXT NOT NULL,
-    "groupId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "AssignmentGroup_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "GroupMember" (
-    "id" TEXT NOT NULL,
-    "groupId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-
-    CONSTRAINT "GroupMember_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -331,29 +306,33 @@ CREATE TABLE "OrgInviteGroup" (
 );
 
 -- CreateTable
-CREATE TABLE "Certification" (
+CREATE TABLE "GroupMember" (
     "id" TEXT NOT NULL,
-    "orgId" TEXT,
-    "name" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "criteriaJson" JSONB NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "groupId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "groupManager" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "Certification_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "GroupMember_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "UserCertification" (
+CREATE TABLE "ImportJob" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "certificationId" TEXT NOT NULL,
-    "status" "UserCertificationStatus" NOT NULL DEFAULT 'PENDING',
-    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "approvedAt" TIMESTAMP(3),
-    "approvedBy" TEXT,
+    "orgId" TEXT NOT NULL,
+    "source" "ImportSource" NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileData" BYTEA,
+    "status" "ImportStatus" NOT NULL DEFAULT 'queued',
+    "processedCount" INTEGER NOT NULL DEFAULT 0,
+    "successCount" INTEGER NOT NULL DEFAULT 0,
+    "errorCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
+    "lastError" TEXT,
+    "resultsJson" JSONB,
 
-    CONSTRAINT "UserCertification_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ImportJob_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -372,13 +351,10 @@ CREATE TABLE "AuditLog" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
     "actorId" TEXT,
-    "actorRole" TEXT,
     "action" TEXT NOT NULL,
-    "entity" TEXT NOT NULL,
-    "entityId" TEXT NOT NULL,
-    "meta" JSONB,
+    "targetId" TEXT,
+    "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
@@ -423,20 +399,37 @@ CREATE TABLE "VerificationToken" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "LessonRuntimeSnapshot_orgId_lessonId_version_idx" ON "LessonRuntimeSnapshot"("orgId", "lessonId", "version" DESC);
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Enrollment_assignmentId_userId_key" ON "Enrollment"("assignmentId", "userId");
+
+-- CreateIndex
+CREATE INDEX "Progress_userId_lessonId_idx" ON "Progress"("userId", "lessonId");
+
+-- CreateIndex
+CREATE INDEX "Progress_lessonId_completedAt_idx" ON "Progress"("lessonId", "completedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Progress_userId_lessonId_key" ON "Progress"("userId", "lessonId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AugmentationServed_userId_lessonId_augmentationId_key" ON "AugmentationServed"("userId", "lessonId", "augmentationId");
+CREATE INDEX "ProgressDaily_date_idx" ON "ProgressDaily"("date");
+
+-- CreateIndex
+CREATE INDEX "ProgressDaily_orgId_date_idx" ON "ProgressDaily"("orgId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProgressDaily_orgId_lessonId_date_key" ON "ProgressDaily"("orgId", "lessonId", "date");
 
 -- CreateIndex
 CREATE INDEX "AugmentationServed_userId_lessonId_idx" ON "AugmentationServed"("userId", "lessonId");
 
 -- CreateIndex
 CREATE INDEX "AugmentationServed_lessonId_idx" ON "AugmentationServed"("lessonId");
-CREATE INDEX "LessonRuntimeSnapshot_org_lesson_version_idx" ON "LessonRuntimeSnapshot"("orgId", "lessonId", "version" DESC);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AugmentationServed_userId_lessonId_augmentationId_key" ON "AugmentationServed"("userId", "lessonId", "augmentationId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Quiz_lessonId_key" ON "Quiz"("lessonId");
@@ -451,40 +444,31 @@ CREATE INDEX "Assessment_lessonId_idx" ON "Assessment"("lessonId");
 CREATE UNIQUE INDEX "Assessment_userId_lessonId_type_key" ON "Assessment"("userId", "lessonId", "type");
 
 -- CreateIndex
-CREATE INDEX "ChatTurn_assessmentId_idx" ON "ChatTurn"("assessmentId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Reflection_lessonId_key" ON "Reflection"("lessonId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Badge_code_key" ON "Badge"("code");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "OrgMembership_userId_orgId_key" ON "OrgMembership"("userId", "orgId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssignmentGroup_assignmentId_groupId_key" ON "AssignmentGroup"("assignmentId", "groupId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "GroupMember_groupId_userId_key" ON "GroupMember"("groupId", "userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "OrgInvite_tokenHash_key" ON "OrgInvite"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "OrgInvite_orgId_email_idx" ON "OrgInvite"("orgId", "email");
+
+-- CreateIndex
+CREATE INDEX "OrgInvite_orgId_consumedAt_idx" ON "OrgInvite"("orgId", "consumedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "OrgInviteGroup_inviteId_groupId_key" ON "OrgInviteGroup"("inviteId", "groupId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Certification_orgId_code_key" ON "Certification"("orgId", "code");
+CREATE UNIQUE INDEX "GroupMember_groupId_userId_key" ON "GroupMember"("groupId", "userId");
 
 -- CreateIndex
-CREATE INDEX "UserCertification_userId_idx" ON "UserCertification"("userId");
+CREATE INDEX "ImportJob_orgId_idx" ON "ImportJob"("orgId");
 
 -- CreateIndex
-CREATE INDEX "UserCertification_certificationId_idx" ON "UserCertification"("certificationId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "UserCertification_userId_certificationId_key" ON "UserCertification"("userId", "certificationId");
+CREATE UNIQUE INDEX "Domain_value_key" ON "Domain"("value");
 
 -- CreateIndex
 CREATE INDEX "Domain_orgId_idx" ON "Domain"("orgId");
@@ -493,19 +477,7 @@ CREATE INDEX "Domain_orgId_idx" ON "Domain"("orgId");
 CREATE INDEX "Domain_value_idx" ON "Domain"("value");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Domain_value_key" ON "Domain"("value");
-
--- CreateIndex
-CREATE INDEX "AuditLog_orgId_idx" ON "AuditLog"("orgId");
-
--- CreateIndex
-CREATE INDEX "AuditLog_entity_entityId_idx" ON "AuditLog"("entity", "entityId");
-
--- CreateIndex
-CREATE INDEX "OrgInvite_orgId_email_idx" ON "OrgInvite"("orgId", "email");
-
--- CreateIndex
-CREATE INDEX "OrgInvite_orgId_consumedAt_idx" ON "OrgInvite"("orgId", "consumedAt");
+CREATE INDEX "AuditLog_orgId_createdAt_idx" ON "AuditLog"("orgId", "createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
@@ -532,9 +504,16 @@ ALTER TABLE "Module" ADD CONSTRAINT "Module_courseId_fkey" FOREIGN KEY ("courseI
 ALTER TABLE "Lesson" ADD CONSTRAINT "Lesson_moduleId_fkey" FOREIGN KEY ("moduleId") REFERENCES "Module"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LessonRuntimeSnapshot" ADD CONSTRAINT "LessonRuntimeSnapshot_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LessonRuntimeSnapshot" ADD CONSTRAINT "LessonRuntimeSnapshot_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Assignment" ADD CONSTRAINT "Assignment_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -555,10 +534,10 @@ ALTER TABLE "Progress" ADD CONSTRAINT "Progress_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Progress" ADD CONSTRAINT "Progress_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LessonRuntimeSnapshot" ADD CONSTRAINT "LessonRuntimeSnapshot_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ProgressDaily" ADD CONSTRAINT "ProgressDaily_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LessonRuntimeSnapshot" ADD CONSTRAINT "LessonRuntimeSnapshot_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ProgressDaily" ADD CONSTRAINT "ProgressDaily_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AugmentationServed" ADD CONSTRAINT "AugmentationServed_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -585,18 +564,6 @@ ALTER TABLE "Assessment" ADD CONSTRAINT "Assessment_userId_fkey" FOREIGN KEY ("u
 ALTER TABLE "Assessment" ADD CONSTRAINT "Assessment_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatTurn" ADD CONSTRAINT "ChatTurn_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "Assessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Reflection" ADD CONSTRAINT "Reflection_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReflectionResponse" ADD CONSTRAINT "ReflectionResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ReflectionResponse" ADD CONSTRAINT "ReflectionResponse_reflectionId_fkey" FOREIGN KEY ("reflectionId") REFERENCES "Reflection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "UserBadge" ADD CONSTRAINT "UserBadge_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -610,18 +577,6 @@ ALTER TABLE "OrgMembership" ADD CONSTRAINT "OrgMembership_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "OrgMembership" ADD CONSTRAINT "OrgMembership_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AssignmentGroup" ADD CONSTRAINT "AssignmentGroup_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES "Assignment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AssignmentGroup" ADD CONSTRAINT "AssignmentGroup_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "OrgInvite" ADD CONSTRAINT "OrgInvite_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -639,16 +594,13 @@ ALTER TABLE "OrgInviteGroup" ADD CONSTRAINT "OrgInviteGroup_inviteId_fkey" FOREI
 ALTER TABLE "OrgInviteGroup" ADD CONSTRAINT "OrgInviteGroup_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Certification" ADD CONSTRAINT "Certification_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserCertification" ADD CONSTRAINT "UserCertification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "GroupMember" ADD CONSTRAINT "GroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserCertification" ADD CONSTRAINT "UserCertification_certificationId_fkey" FOREIGN KEY ("certificationId") REFERENCES "Certification"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserCertification" ADD CONSTRAINT "UserCertification_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ImportJob" ADD CONSTRAINT "ImportJob_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Domain" ADD CONSTRAINT "Domain_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -664,74 +616,4 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- ===== Manual application of migration 20251030000000_add_assignment_group_fields =====
-ALTER TABLE "Assignment" ADD COLUMN "groupId" TEXT;
-ALTER TABLE "Assignment" ADD COLUMN "dueAt" TIMESTAMP(3);
-ALTER TABLE "Assignment" ADD COLUMN "label" TEXT;
-
-UPDATE "Assignment" AS a
-SET "groupId" = ag."groupId"
-FROM (
-  SELECT DISTINCT ON ("assignmentId")
-    "assignmentId",
-    "groupId",
-    "createdAt",
-    "id"
-  FROM "AssignmentGroup"
-  ORDER BY "assignmentId", "createdAt" NULLS LAST, "id"
-) AS ag
-WHERE a."id" = ag."assignmentId"
-  AND a."groupId" IS NULL;
-
-DO $$
-DECLARE
-  missing_count INTEGER;
-BEGIN
-  SELECT COUNT(*) INTO missing_count
-  FROM "Assignment"
-  WHERE "groupId" IS NULL;
-
-  IF missing_count > 0 THEN
-    RAISE EXCEPTION 'Assignments missing groupId after init script backfill: %', missing_count;
-  END IF;
-END $$;
-
-ALTER TABLE "Assignment"
-ALTER COLUMN "groupId" SET NOT NULL;
-
-ALTER TABLE "Assignment"
-ADD CONSTRAINT IF NOT EXISTS "Assignment_groupId_fkey"
-FOREIGN KEY ("groupId") REFERENCES "OrgGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- ===== Manual application of migration 20251106090000_progress_daily_rollup =====
-CREATE TABLE "ProgressDaily" (
-  "id" TEXT NOT NULL,
-  "orgId" TEXT NOT NULL,
-  "lessonId" TEXT NOT NULL,
-  "date" TIMESTAMP(3) NOT NULL,
-  "viewers" INTEGER NOT NULL DEFAULT 0,
-  "avgPercent" DOUBLE PRECISION NOT NULL DEFAULT 0,
-  "completes" INTEGER NOT NULL DEFAULT 0,
-  "uniqueSecondsSum" INTEGER NOT NULL DEFAULT 0,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "ProgressDaily_pkey" PRIMARY KEY ("id")
-);
-
-CREATE UNIQUE INDEX "ProgressDaily_orgId_lessonId_date_key"
-ON "ProgressDaily" ("orgId", "lessonId", "date");
-
-CREATE INDEX "ProgressDaily_date_idx"
-ON "ProgressDaily" ("date");
-
-CREATE INDEX "ProgressDaily_orgId_date_idx"
-ON "ProgressDaily" ("orgId", "date");
-
-ALTER TABLE "ProgressDaily"
-ADD CONSTRAINT "ProgressDaily_orgId_fkey"
-FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "ProgressDaily"
-ADD CONSTRAINT "ProgressDaily_lessonId_fkey"
-FOREIGN KEY ("lessonId") REFERENCES "Lesson" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

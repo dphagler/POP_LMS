@@ -98,7 +98,7 @@ export async function fetchCompletionFunnel({
     prisma.progress.count({
       where: {
         user: userFilter,
-        isComplete: true,
+        completedAt: { not: null },
         ...(dateRange ? { completedAt: dateRange } : {}),
       },
     }),

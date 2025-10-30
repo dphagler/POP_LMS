@@ -15,7 +15,6 @@ const CSV_HEADER = [
   'uniqueSeconds',
   'durationS',
   'percent',
-  'provider',
   'lastTickAt',
   'sessionCount',
   'orgId',
@@ -110,20 +109,19 @@ export async function GET(request: Request) {
             orderBy: { id: 'asc' },
             take: pageSize,
             ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-            select: {
-              id: true,
-              userId: true,
-              lessonId: true,
-              uniqueSeconds: true,
-              createdAt: true,
-              updatedAt: true,
-              isComplete: true,
-              provider: true,
-              lastTickAt: true,
-              lesson: {
-                select: {
-                  id: true,
-                  title: true,
+          select: {
+            id: true,
+            userId: true,
+            lessonId: true,
+            uniqueSeconds: true,
+            createdAt: true,
+            updatedAt: true,
+            completedAt: true,
+            lastTickAt: true,
+            lesson: {
+              select: {
+                id: true,
+                title: true,
                   durationS: true,
                 },
               },
@@ -160,22 +158,21 @@ export async function GET(request: Request) {
 
             const sessionCount = lessonSessionCountMap.get(record.lessonId) ?? 0;
 
-            const values: Array<string | number> = [
-              record.userId,
-              record.user.email ?? '',
-              record.lessonId,
-              record.lesson?.title ?? '',
-              record.createdAt.toISOString(),
-              record.isComplete ? record.updatedAt.toISOString() : '',
-              uniqueSeconds,
-              lessonDuration,
-              percent.toFixed(4),
-              record.provider ?? '',
-              record.lastTickAt ? record.lastTickAt.toISOString() : '',
-              sessionCount,
-              orgId,
-              groups.join(';'),
-            ];
+          const values: Array<string | number> = [
+            record.userId,
+            record.user.email ?? '',
+            record.lessonId,
+            record.lesson?.title ?? '',
+            record.createdAt.toISOString(),
+            record.completedAt ? record.completedAt.toISOString() : '',
+            uniqueSeconds,
+            lessonDuration,
+            percent.toFixed(4),
+            record.lastTickAt ? record.lastTickAt.toISOString() : '',
+            sessionCount,
+            orgId,
+            groups.join(';'),
+          ];
 
             controller.enqueue(encoder.encode(`${values.map(escapeCsvValue).join(',')}\n`));
           }

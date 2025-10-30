@@ -138,18 +138,26 @@ async function renderLearnerDashboard() {
     },
   }));
 
-  const progressData: LearnerDashboardProgress[] = progresses.map((progress) => ({
-    id: progress.id,
-    lessonId: progress.lessonId,
-    isComplete: progress.isComplete,
-    watchedSeconds: progress.watchedSeconds,
-    lesson: progress.lesson
-      ? {
-          id: progress.lesson.id,
-          title: progress.lesson.title,
-        }
-      : null,
-  }));
+  const progressData: LearnerDashboardProgress[] = progresses.map((progress) => {
+    const duration = Math.max(progress.lesson?.durationS ?? 0, 0);
+    const watchedSeconds = Math.max(
+      Math.min(progress.uniqueSeconds ?? 0, duration),
+      0,
+    );
+
+    return {
+      id: progress.id,
+      lessonId: progress.lessonId,
+      isComplete: Boolean(progress.completedAt),
+      watchedSeconds,
+      lesson: progress.lesson
+        ? {
+            id: progress.lesson.id,
+            title: progress.lesson.title,
+          }
+        : null,
+    };
+  });
 
   return (
     <LearnerDashboardClient

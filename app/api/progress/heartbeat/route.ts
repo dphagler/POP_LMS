@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     assertSameOrg(lesson.module?.course.orgId, user.orgId ?? null);
 
-    const progress = await getOrCreate(user.id, lessonId, { provider });
+    const progress = await getOrCreate(user.id, lessonId);
 
     const posthogIdentity: ServerCaptureIdentity = {
       userId: user.id,
@@ -176,7 +176,6 @@ export async function POST(request: Request) {
     const saved = await saveSegments({
       userId: user.id,
       lessonId,
-      provider,
       tickAt: now,
       segments: segmentsChanged ? nextSegments : undefined,
       uniqueSeconds: segmentsChanged || !hasStoredUnique ? uniqueSeconds : undefined,
@@ -188,15 +187,15 @@ export async function POST(request: Request) {
 
     void serverCapture(
       "lesson_progress_tick_server",
-      {
-        lessonId,
-        lessonTitle: lesson.title,
-        provider,
-        t: safeT,
-        durationS: duration,
-        uniqueSeconds: latestUniqueSeconds,
-        completed,
-      },
+        {
+          lessonId,
+          lessonTitle: lesson.title,
+          provider,
+          t: safeT,
+          durationS: duration,
+          uniqueSeconds: latestUniqueSeconds,
+          completed,
+        },
       posthogIdentity,
     );
 

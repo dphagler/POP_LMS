@@ -1,429 +1,306 @@
-import {
-  PrismaClient,
-  Prisma,
-  UserRole,
-  OrgRole,
-  EnrollmentStatus,
-  QuestionType
-} from "@prisma/client";
+import { PrismaClient, QuestionType, UserRole, OrgRole, EnrollmentStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const POP_INITIATIVE_ID = "pop-initiative";
-const ASSIGNMENT_LABEL = "Workplace Readiness Assignment";
-
-type QuizQuestionSeed = {
-  id: string;
-  type: QuestionType;
-  prompt: string;
-  options: Prisma.InputJsonValue;
-  correctKey: string | null;
-};
-
-async function ensureQuiz(lessonId: string, questions: QuizQuestionSeed[]) {
-  const quiz = await prisma.quiz.upsert({
-    where: { lessonId },
-    update: {},
-    create: { lessonId }
-  });
-
-  const questionIds = questions.map((question) => question.id);
-
-  for (const question of questions) {
-    await prisma.quizQuestion.upsert({
-      where: { id: question.id },
-      update: {
-        quizId: quiz.id,
-        type: question.type,
-        prompt: question.prompt,
-        options: question.options,
-        correctKey: question.correctKey ?? undefined
-      },
-      create: {
-        id: question.id,
-        quizId: quiz.id,
-        type: question.type,
-        prompt: question.prompt,
-        options: question.options,
-        correctKey: question.correctKey ?? undefined
-      }
-    });
-  }
-
-  await prisma.quizQuestion.deleteMany({
-    where: { quizId: quiz.id, id: { notIn: questionIds } }
-  });
-
-  return quiz;
-}
-
-async function ensureGroupMembers(groupId: string, userIds: string[]) {
-  for (const userId of userIds) {
-    await prisma.groupMember.upsert({
-      where: { groupId_userId: { groupId, userId } },
-      update: {},
-      create: { groupId, userId }
-    });
-  }
-
-  await prisma.groupMember.deleteMany({
-    where: { groupId, userId: { notIn: userIds } }
-  });
-}
 
 async function main() {
+  const organizationId = "org-demo";
+  const adminEmail = "admin@example.com";
+  const learnerEmail = "learner@example.com";
+
   const organization = await prisma.organization.upsert({
-    where: { id: POP_INITIATIVE_ID },
+    where: { id: organizationId },
     update: {
-      name: "POP Initiative",
+      name: "Demo Academy",
       themePrimary: "#1f2937",
       themeAccent: "#f97316",
-      loginBlurb: "Choose how you’d like to sign in to your POP Initiative account. Your progress syncs across web and mobile."
+      loginBlurb: "Welcome back to Demo Academy."
     },
     create: {
-      id: POP_INITIATIVE_ID,
-      name: "POP Initiative",
+      id: organizationId,
+      name: "Demo Academy",
       themePrimary: "#1f2937",
       themeAccent: "#f97316",
-      loginBlurb: "Choose how you’d like to sign in to your POP Initiative account. Your progress syncs across web and mobile."
+      loginBlurb: "Welcome back to Demo Academy."
     }
   });
-
-  const now = new Date();
 
   await prisma.domain.upsert({
-    where: { value: "poplms.dev" },
-    update: { orgId: organization.id, verifiedAt: now },
+    where: { value: "demo.example" },
+    update: { orgId: organization.id, verifiedAt: new Date("2024-01-01T00:00:00.000Z") },
     create: {
       orgId: organization.id,
-      value: "poplms.dev",
-      verifiedAt: now
+      value: "demo.example",
+      verifiedAt: new Date("2024-01-01T00:00:00.000Z")
     }
   });
 
-  const userSeeds: Array<{
-    email: string;
-    name: string;
-    userRole: UserRole;
-    orgRole: OrgRole;
-  }> = [
-    {
-      email: "admin@poplms.dev",
-      name: "POP Admin",
-      userRole: UserRole.ADMIN,
-      orgRole: OrgRole.ADMIN
-    },
-    {
-      email: "instructor@poplms.dev",
-      name: "POP Instructor",
-      userRole: UserRole.INSTRUCTOR,
-      orgRole: OrgRole.INSTRUCTOR
-    },
-    ...Array.from({ length: 6 }).map((_, index) => ({
-      email: `learner${index + 1}@poplms.dev`,
-      name: `Learner ${index + 1}`,
-      userRole: UserRole.LEARNER,
-      orgRole: OrgRole.LEARNER
-    }))
-  ];
-
-  const usersByEmail = new Map<string, { id: string; role: UserRole }>();
-
-  for (const seed of userSeeds) {
-    const user = await prisma.user.upsert({
-      where: { email: seed.email },
-      update: {
-        name: seed.name,
-        orgId: organization.id,
-        role: seed.userRole
-      },
-      create: {
-        email: seed.email,
-        name: seed.name,
-        orgId: organization.id,
-        role: seed.userRole
-      }
-    });
-
-    usersByEmail.set(seed.email, { id: user.id, role: user.role });
-
-    await prisma.orgMembership.upsert({
-      where: {
-        userId_orgId: {
-          userId: user.id,
-          orgId: organization.id
-        }
-      },
-      update: {
-        role: seed.orgRole
-      },
-      create: {
-        userId: user.id,
-        orgId: organization.id,
-        role: seed.orgRole
-      }
-    });
-  }
-
-  const adminUserId = usersByEmail.get("admin@poplms.dev")?.id;
-  const instructorUserId = usersByEmail.get("instructor@poplms.dev")?.id;
-  if (!adminUserId || !instructorUserId) {
-    throw new Error("Admin and instructor users must be created before proceeding.");
-  }
-
-  const learnerUserIds = Array.from({ length: 6 }).map((_, index) => {
-    const user = usersByEmail.get(`learner${index + 1}@poplms.dev`);
-    if (!user) {
-      throw new Error(`Learner ${index + 1} was not created successfully.`);
-    }
-    return user.id;
-  });
-
-  const roboticsGroup = await prisma.orgGroup.upsert({
-    where: { id: "group-robotics-pathway" },
+  const admin = await prisma.user.upsert({
+    where: { email: adminEmail },
     update: {
-      name: "Robotics Pathway",
+      name: "Demo Admin",
+      orgId: organization.id,
+      role: UserRole.ADMIN
+    },
+    create: {
+      email: adminEmail,
+      name: "Demo Admin",
+      orgId: organization.id,
+      role: UserRole.ADMIN
+    }
+  });
+
+  const learner = await prisma.user.upsert({
+    where: { email: learnerEmail },
+    update: {
+      name: "Demo Learner",
+      orgId: organization.id,
+      role: UserRole.LEARNER
+    },
+    create: {
+      email: learnerEmail,
+      name: "Demo Learner",
+      orgId: organization.id,
+      role: UserRole.LEARNER
+    }
+  });
+
+  await prisma.orgMembership.upsert({
+    where: {
+      userId_orgId: { userId: admin.id, orgId: organization.id }
+    },
+    update: { role: OrgRole.ADMIN },
+    create: { userId: admin.id, orgId: organization.id, role: OrgRole.ADMIN }
+  });
+
+  await prisma.orgMembership.upsert({
+    where: {
+      userId_orgId: { userId: learner.id, orgId: organization.id }
+    },
+    update: { role: OrgRole.LEARNER },
+    create: { userId: learner.id, orgId: organization.id, role: OrgRole.LEARNER }
+  });
+
+  const engineeringGroup = await prisma.orgGroup.upsert({
+    where: { id: "group-engineering" },
+    update: {
+      name: "Engineering Cohort",
       orgId: organization.id
     },
     create: {
-      id: "group-robotics-pathway",
-      orgId: organization.id,
-      name: "Robotics Pathway"
+      id: "group-engineering",
+      name: "Engineering Cohort",
+      orgId: organization.id
     }
   });
 
-  const itGroup = await prisma.orgGroup.upsert({
-    where: { id: "group-it-pathway" },
+  await prisma.orgGroup.upsert({
+    where: { id: "group-operations" },
     update: {
-      name: "IT Pathway",
+      name: "Operations Cohort",
       orgId: organization.id
     },
     create: {
-      id: "group-it-pathway",
-      orgId: organization.id,
-      name: "IT Pathway"
+      id: "group-operations",
+      name: "Operations Cohort",
+      orgId: organization.id
     }
   });
 
-  await ensureGroupMembers(
-    roboticsGroup.id,
-    [instructorUserId, ...learnerUserIds.slice(0, 3)]
-  );
-  await ensureGroupMembers(
-    itGroup.id,
-    [instructorUserId, ...learnerUserIds.slice(3)]
-  );
+  await prisma.groupMember.upsert({
+    where: {
+      groupId_userId: { groupId: engineeringGroup.id, userId: learner.id }
+    },
+    update: {},
+    create: {
+      groupId: engineeringGroup.id,
+      userId: learner.id
+    }
+  });
 
   const course = await prisma.course.upsert({
-    where: { id: "course-workplace-readiness" },
+    where: { id: "course-onboarding" },
     update: {
-      title: "Workplace Readiness",
-      description: "Build practical habits to excel in early career roles."
+      orgId: organization.id,
+      title: "Onboarding Essentials",
+      description: "A short introduction to the Demo Academy platform."
     },
     create: {
-      id: "course-workplace-readiness",
+      id: "course-onboarding",
       orgId: organization.id,
-      title: "Workplace Readiness",
-      description: "Build practical habits to excel in early career roles."
+      title: "Onboarding Essentials",
+      description: "A short introduction to the Demo Academy platform."
     }
   });
 
   const module = await prisma.module.upsert({
-    where: { id: "module-professional-habits" },
+    where: { id: "module-welcome" },
     update: {
-      title: "Professional Habits",
-      order: 1,
-      courseId: course.id
+      courseId: course.id,
+      title: "Welcome Module",
+      order: 1
     },
     create: {
-      id: "module-professional-habits",
-      title: "Professional Habits",
-      order: 1,
-      courseId: course.id
+      id: "module-welcome",
+      courseId: course.id,
+      title: "Welcome Module",
+      order: 1
     }
   });
 
-  const lessonSeeds = [
-    {
-      id: "lesson-work-ethic-basics",
-      title: "Work Ethic Basics",
-      streamId: "stream-work-ethic-basics",
-      durationS: 100
+  const introLesson = await prisma.lesson.upsert({
+    where: { id: "lesson-intro" },
+    update: {
+      moduleId: module.id,
+      title: "Platform Walkthrough",
+      provider: "youtube",
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+      posterUrl: null,
+      durationS: 240,
+      requiresFullWatch: true
     },
-    {
-      id: "lesson-communication-skills",
-      title: "Communication Skills",
-      streamId: "stream-communication-skills",
-      durationS: 120
+    create: {
+      id: "lesson-intro",
+      moduleId: module.id,
+      title: "Platform Walkthrough",
+      provider: "youtube",
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+      posterUrl: null,
+      durationS: 240,
+      requiresFullWatch: true
+    }
+  });
+
+  const policyLesson = await prisma.lesson.upsert({
+    where: { id: "lesson-policy" },
+    update: {
+      moduleId: module.id,
+      title: "Team Policies",
+      streamId: "demo-stream-id",
+      provider: "cloudflare",
+      videoUrl: null,
+      posterUrl: null,
+      durationS: 300,
+      requiresFullWatch: true
     },
-    {
-      id: "lesson-team-collaboration",
-      title: "Team Collaboration",
-      streamId: "stream-team-collaboration",
-      durationS: 90
+    create: {
+      id: "lesson-policy",
+      moduleId: module.id,
+      title: "Team Policies",
+      streamId: "demo-stream-id",
+      provider: "cloudflare",
+      videoUrl: null,
+      posterUrl: null,
+      durationS: 300,
+      requiresFullWatch: true
     }
-  ];
+  });
 
-  const lessonRecords: { id: string; title: string }[] = [];
+  const quiz = await prisma.quiz.upsert({
+    where: { lessonId: policyLesson.id },
+    update: {},
+    create: { lessonId: policyLesson.id }
+  });
 
-  for (const seed of lessonSeeds) {
-    const lesson = await prisma.lesson.upsert({
-      where: { id: seed.id },
-      update: {
-        moduleId: module.id,
-        title: seed.title,
-        streamId: seed.streamId,
-        durationS: seed.durationS
-      },
-      create: {
-        id: seed.id,
-        moduleId: module.id,
-        title: seed.title,
-        streamId: seed.streamId,
-        durationS: seed.durationS
-      }
-    });
-
-    lessonRecords.push({ id: lesson.id, title: lesson.title });
-  }
-
-  const workEthicLessonId = lessonRecords.find(
-    (lesson) => lesson.id === "lesson-work-ethic-basics"
-  )?.id;
-  const communicationLessonId = lessonRecords.find(
-    (lesson) => lesson.id === "lesson-communication-skills"
-  )?.id;
-  const collaborationLessonId = lessonRecords.find(
-    (lesson) => lesson.id === "lesson-team-collaboration"
-  )?.id;
-
-  if (!workEthicLessonId || !communicationLessonId || !collaborationLessonId) {
-    throw new Error("All lessons must be created successfully.");
-  }
-
-  await ensureQuiz(workEthicLessonId, [
-    {
-      id: "quiz-work-ethic-q1",
+  await prisma.quizQuestion.upsert({
+    where: { id: "question-policy-1" },
+    update: {
+      quizId: quiz.id,
       type: QuestionType.MCQ,
-      prompt: "What is a key component of a strong work ethic?",
+      prompt: "Which channel should you use for urgent incidents?",
       options: [
-        { key: "A", text: "Consistency and reliability" },
-        { key: "B", text: "Ignoring deadlines" },
-        { key: "C", text: "Avoiding feedback" }
+        { key: "slack", label: "Slack #incidents" },
+        { key: "email", label: "Email leadership" },
+        { key: "pager", label: "Pager rotation" }
       ],
-      correctKey: "A"
+      correctKey: "pager"
     },
-    {
-      id: "quiz-work-ethic-q2",
+    create: {
+      id: "question-policy-1",
+      quizId: quiz.id,
       type: QuestionType.MCQ,
-      prompt: "Which action best demonstrates personal accountability at work?",
+      prompt: "Which channel should you use for urgent incidents?",
       options: [
-        { key: "A", text: "Waiting for others to remind you of tasks" },
-        { key: "B", text: "Owning mistakes and communicating next steps" },
-        { key: "C", text: "Delaying tasks until the last minute" }
+        { key: "slack", label: "Slack #incidents" },
+        { key: "email", label: "Email leadership" },
+        { key: "pager", label: "Pager rotation" }
       ],
-      correctKey: "B"
+      correctKey: "pager"
     }
-  ]);
+  });
 
-  await ensureQuiz(collaborationLessonId, [
-    {
-      id: "quiz-collaboration-q1",
-      type: QuestionType.MCQ,
-      prompt: "Select the behaviors that help a team collaborate effectively.",
-      options: [
-        { key: "A", text: "Sharing clear progress updates" },
-        { key: "B", text: "Holding back information" },
-        { key: "C", text: "Offering support when teammates are blocked" },
-        { key: "D", text: "Competing for personal recognition" }
-      ],
-      correctKey: "A,C"
+  const assignment = await prisma.assignment.upsert({
+    where: { id: "assignment-onboarding" },
+    update: {
+      orgId: organization.id,
+      groupId: engineeringGroup.id,
+      courseId: course.id,
+      moduleId: module.id,
+      label: "Onboarding Assignment",
+      dueAt: new Date("2024-02-01T00:00:00.000Z")
+    },
+    create: {
+      id: "assignment-onboarding",
+      orgId: organization.id,
+      groupId: engineeringGroup.id,
+      courseId: course.id,
+      moduleId: module.id,
+      label: "Onboarding Assignment",
+      dueAt: new Date("2024-02-01T00:00:00.000Z"),
+      createdBy: admin.id
     }
-  ]);
+  });
 
-  const assignmentTargets = [
-    { id: "assignment-workplace-readiness", groupId: roboticsGroup.id },
-    { id: "assignment-workplace-readiness-it", groupId: itGroup.id }
-  ];
-
-  for (const target of assignmentTargets) {
-    const assignment = await prisma.assignment.upsert({
-      where: { id: target.id },
-      update: {
-        orgId: organization.id,
-        groupId: target.groupId,
-        courseId: course.id,
-        moduleId: module.id,
-        label: ASSIGNMENT_LABEL,
-        createdBy: adminUserId,
-        deletedAt: null
-      },
-      create: {
-        id: target.id,
-        orgId: organization.id,
-        groupId: target.groupId,
-        courseId: course.id,
-        moduleId: module.id,
-        label: ASSIGNMENT_LABEL,
-        createdBy: adminUserId
-      }
-    });
-
-    const groupMembers = await prisma.groupMember.findMany({
-      where: { groupId: target.groupId },
-      select: { userId: true }
-    });
-    const memberIds = groupMembers.map((member) => member.userId);
-
-    for (const userId of memberIds) {
-      await prisma.enrollment.upsert({
-        where: { assignmentId_userId: { assignmentId: assignment.id, userId } },
-        update: {
-          status: EnrollmentStatus.ACTIVE,
-          deletedAt: null
-        },
-        create: {
-          assignmentId: assignment.id,
-          userId,
-          status: EnrollmentStatus.ACTIVE
-        }
-      });
+  await prisma.enrollment.upsert({
+    where: {
+      assignmentId_userId: { assignmentId: assignment.id, userId: learner.id }
+    },
+    update: { status: EnrollmentStatus.ACTIVE },
+    create: {
+      assignmentId: assignment.id,
+      userId: learner.id,
+      status: EnrollmentStatus.ACTIVE
     }
+  });
 
-    await prisma.enrollment.deleteMany({
-      where: {
-        assignmentId: assignment.id,
-        userId: { notIn: memberIds }
-      }
-    });
-  }
+  await prisma.progress.upsert({
+    where: {
+      userId_lessonId: { userId: learner.id, lessonId: introLesson.id }
+    },
+    update: {
+      segments: [[0, 230]],
+      uniqueSeconds: 230,
+      lastTickAt: new Date("2024-01-10T10:00:00.000Z"),
+      completedAt: new Date("2024-01-10T10:05:00.000Z")
+    },
+    create: {
+      userId: learner.id,
+      lessonId: introLesson.id,
+      segments: [[0, 230]],
+      uniqueSeconds: 230,
+      lastTickAt: new Date("2024-01-10T10:00:00.000Z"),
+      completedAt: new Date("2024-01-10T10:05:00.000Z")
+    }
+  });
 
-  const [
-    groupCount,
-    adminCount,
-    instructorCount,
-    learnerCount,
-    lessonCount,
-    assignmentCount,
-    enrollmentCount
-  ] = await Promise.all([
-    prisma.orgGroup.count({ where: { orgId: organization.id } }),
-    prisma.user.count({ where: { orgId: organization.id, role: UserRole.ADMIN } }),
-    prisma.user.count({ where: { orgId: organization.id, role: UserRole.INSTRUCTOR } }),
-    prisma.user.count({ where: { orgId: organization.id, role: UserRole.LEARNER } }),
-    prisma.lesson.count({ where: { moduleId: module.id } }),
-    prisma.assignment.count({ where: { orgId: organization.id } }),
-    prisma.enrollment.count({ where: { assignment: { orgId: organization.id } } })
-  ]);
-
-  console.log(
-    `Seed summary: org=${organization.id}, admins=${adminCount}, instructors=${instructorCount}, learners=${learnerCount}, groups=${groupCount}`
-  );
-  console.log(
-    `Assignments created: ${assignmentCount} total with ${enrollmentCount} enrollments.`
-  );
-  console.log(
-    `Lessons: ${lessonRecords.map((lesson) => lesson.title).join(", ")}`
-  );
+  await prisma.progress.upsert({
+    where: {
+      userId_lessonId: { userId: learner.id, lessonId: policyLesson.id }
+    },
+    update: {
+      segments: [[0, 140]],
+      uniqueSeconds: 140,
+      lastTickAt: new Date("2024-01-12T12:30:00.000Z"),
+      completedAt: null
+    },
+    create: {
+      userId: learner.id,
+      lessonId: policyLesson.id,
+      segments: [[0, 140]],
+      uniqueSeconds: 140,
+      lastTickAt: new Date("2024-01-12T12:30:00.000Z"),
+      completedAt: null
+    }
+  });
 }
 
 main()

@@ -7,11 +7,11 @@ const STREAK_LENGTH = 3;
 export async function computeStreak(userId: string) {
   const progresses = await prisma.progress.findMany({
     where: { userId },
-    select: { lastHeartbeatAt: true },
-    orderBy: { lastHeartbeatAt: "desc" }
+    select: { lastTickAt: true },
+    orderBy: { lastTickAt: "desc" }
   });
   const dates = progresses
-    .map((p) => (p.lastHeartbeatAt ? new Date(p.lastHeartbeatAt) : null))
+    .map((p) => (p.lastTickAt ? new Date(p.lastTickAt) : null))
     .filter((d): d is Date => !!d)
     .map((d) => new Date(d.toDateString()));
 

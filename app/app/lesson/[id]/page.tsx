@@ -53,7 +53,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
         : undefined);
 
   const duration = Math.max(durationSec ?? 0, 1);
-  const watchedSeconds = Math.max(progress?.watchedSeconds ?? 0, 0);
+  const watchedSeconds = Math.max(
+    Math.min(progress?.uniqueSeconds ?? 0, duration),
+    0,
+  );
   const progressPercent = Math.min(
     100,
     Math.round((watchedSeconds / duration) * 100),

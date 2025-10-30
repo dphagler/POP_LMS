@@ -106,7 +106,7 @@ export async function loadOrgAnalyticsSnapshot(orgId: string): Promise<OrgAnalyt
     allLessonIds.size > 0 && allUserIds.size > 0
       ? await prisma.progress.findMany({
           where: {
-            isComplete: true,
+            completedAt: { not: null },
             lessonId: { in: Array.from(allLessonIds) },
             userId: { in: Array.from(allUserIds) }
           },
