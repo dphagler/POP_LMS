@@ -13,6 +13,7 @@ import { lessonEvents } from '../analytics/lessonEvents';
 import { syncLessonCompletion } from '../lesson-progress';
 
 const DEVICE_TYPE = 'web';
+const AUGMENTATION_KIND = 'remediation';
 
 interface PlanAugmentationsInput {
   userId: string;
@@ -187,6 +188,7 @@ export const planAugmentations = async ({
           },
         },
         create: {
+          orgId,
           userId,
           lessonId,
           augmentationId: item.augmentationId,
@@ -194,12 +196,15 @@ export const planAugmentations = async ({
           assetRef: item.assetRef,
           ruleIndex: item.ruleIndex,
           diagnosticJson,
+          kind: AUGMENTATION_KIND,
         },
         update: {
+          orgId,
           objectiveId: item.objective.id,
           assetRef: item.assetRef,
           ruleIndex: item.ruleIndex,
           diagnosticJson,
+          kind: AUGMENTATION_KIND,
         },
       });
     }

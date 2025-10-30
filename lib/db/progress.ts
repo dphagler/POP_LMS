@@ -5,15 +5,19 @@ import { coerceSegments, computeUniqueSeconds } from "../lesson/progress";
 
 type ClientOrTx = PrismaClient | Prisma.TransactionClient;
 
-type ProgressDefaults = Omit<
-  Prisma.ProgressCreateInput,
-  | "id"
-  | "createdAt"
-  | "updatedAt"
-  | "user"
-  | "lesson"
-  | "userId"
-  | "lessonId"
+type ProgressDefaults = Partial<
+  Omit<
+    Prisma.ProgressCreateInput,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "user"
+    | "lesson"
+    | "org"
+    | "orgId"
+    | "userId"
+    | "lessonId"
+  >
 >;
 
 function getClient(client?: ClientOrTx): ClientOrTx {
@@ -23,7 +27,8 @@ function getClient(client?: ClientOrTx): ClientOrTx {
 export async function getOrCreate(
   userId: string,
   lessonId: string,
-  defaults: ProgressDefaults = {},
+  orgId: string,
+  defaults?: ProgressDefaults,
   client?: ClientOrTx,
 ): Promise<Progress> {
   const db = getClient(client);
@@ -34,12 +39,14 @@ export async function getOrCreate(
     create: {
       userId,
       lessonId,
-      ...defaults,
+      orgId,
+      ...(defaults ?? {}),
     },
   });
 }
 
 export type SaveSegmentsParams = {
+  orgId: string;
   userId: string;
   lessonId: string;
   tickAt?: Date | null;
@@ -50,6 +57,7 @@ export type SaveSegmentsParams = {
 };
 
 export async function saveSegments({
+  orgId,
   userId,
   lessonId,
   tickAt,
@@ -87,6 +95,7 @@ export async function saveSegments({
     create: {
       userId,
       lessonId,
+      orgId,
       lastTickAt: tickAt ?? undefined,
       segments:
         segments === undefined

@@ -174,6 +174,7 @@ export async function recordProgress({
     } else {
       await tx.progress.create({
         data: {
+          orgId: user.orgId,
           userId,
           lessonId: lesson.id,
           segments: mergedSegments,

@@ -91,7 +91,19 @@ export async function POST(request: Request) {
 
     assertSameOrg(lesson.module?.course.orgId, user.orgId ?? null);
 
-    const progress = await getOrCreate(user.id, lessonId);
+    const orgId = lesson.module?.course.orgId ?? user.orgId ?? undefined;
+
+    if (!orgId) {
+      logger.error({
+        event: "progress.heartbeat.missing_org",
+        lessonId,
+        userId: user.id,
+      });
+
+      return NextResponse.json({ error: "Lesson organization not found", requestId }, { status: 500 });
+    }
+
+    const progress = await getOrCreate(user.id, lessonId, orgId);
 
     const posthogIdentity: ServerCaptureIdentity = {
       userId: user.id,
@@ -163,6 +175,7 @@ export async function POST(request: Request) {
     }
 
     const saved = await saveSegments({
+      orgId: progress.orgId,
       userId: user.id,
       lessonId,
       tickAt: now,
