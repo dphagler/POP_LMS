@@ -167,6 +167,7 @@ CREATE TABLE "ProgressDaily" (
 -- CreateTable
 CREATE TABLE "AugmentationServed" (
     "id" TEXT NOT NULL,
+    "orgId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "lessonId" TEXT NOT NULL,
     "augmentationId" TEXT NOT NULL,
@@ -178,8 +179,23 @@ CREATE TABLE "AugmentationServed" (
     "completedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "kind" TEXT NOT NULL,
 
     CONSTRAINT "AugmentationServed_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AugmentationMessage" (
+    "id" TEXT NOT NULL,
+    "orgId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "lessonId" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "evidence" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AugmentationMessage_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -432,6 +448,12 @@ CREATE INDEX "AugmentationServed_lessonId_idx" ON "AugmentationServed"("lessonId
 CREATE UNIQUE INDEX "AugmentationServed_userId_lessonId_augmentationId_key" ON "AugmentationServed"("userId", "lessonId", "augmentationId");
 
 -- CreateIndex
+CREATE INDEX "AugmentationServed_orgId_lessonId_createdAt_idx" ON "AugmentationServed"("orgId", "lessonId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AugmentationMessage_orgId_userId_lessonId_createdAt_idx" ON "AugmentationMessage"("orgId", "userId", "lessonId", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Quiz_lessonId_key" ON "Quiz"("lessonId");
 
 -- CreateIndex
@@ -544,6 +566,18 @@ ALTER TABLE "AugmentationServed" ADD CONSTRAINT "AugmentationServed_userId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "AugmentationServed" ADD CONSTRAINT "AugmentationServed_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AugmentationServed" ADD CONSTRAINT "AugmentationServed_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AugmentationMessage" ADD CONSTRAINT "AugmentationMessage_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AugmentationMessage" ADD CONSTRAINT "AugmentationMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AugmentationMessage" ADD CONSTRAINT "AugmentationMessage_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Quiz" ADD CONSTRAINT "Quiz_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;

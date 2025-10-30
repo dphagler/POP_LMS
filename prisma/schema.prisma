@@ -299,17 +299,28 @@ model AugmentationMessage {
 }
 
 model AugmentationServed {
-  id        String   @id @default(cuid())
-  orgId     String
-  userId    String
-  lessonId  String
-  kind      String
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  orgId          String
+  userId         String
+  lessonId       String
+  augmentationId String
+  objectiveId    String
+  assetRef       String
+  ruleIndex      Int
+  diagnosticJson Json?
+  plannedAt      DateTime @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  kind           String
 
   org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, lessonId, augmentationId])
+  @@index([userId, lessonId])
+  @@index([lessonId])
   @@index([orgId, lessonId, createdAt])
 }
 

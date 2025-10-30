@@ -18,25 +18,13 @@ ALTER TABLE "Progress" ADD CONSTRAINT "Progress_orgId_fkey" FOREIGN KEY ("orgId"
 CREATE INDEX "Progress_orgId_lessonId_userId_idx" ON "Progress"("orgId", "lessonId", "userId");
 
 -- Update AugmentationServed structure
-DROP INDEX IF EXISTS "AugmentationServed_userId_lessonId_idx";
-DROP INDEX IF EXISTS "AugmentationServed_lessonId_idx";
-DROP INDEX IF EXISTS "AugmentationServed_userId_lessonId_augmentationId_key";
-
 ALTER TABLE "AugmentationServed"
-  DROP COLUMN IF EXISTS "augmentationId",
-  DROP COLUMN IF EXISTS "objectiveId",
-  DROP COLUMN IF EXISTS "assetRef",
-  DROP COLUMN IF EXISTS "ruleIndex",
-  DROP COLUMN IF EXISTS "diagnosticJson",
-  DROP COLUMN IF EXISTS "plannedAt",
-  DROP COLUMN IF EXISTS "completedAt",
-  DROP COLUMN IF EXISTS "updatedAt",
-  ADD COLUMN "orgId" TEXT,
-  ADD COLUMN "kind" TEXT;
+  ADD COLUMN IF NOT EXISTS "orgId" TEXT,
+  ADD COLUMN IF NOT EXISTS "kind" TEXT;
 
 UPDATE "AugmentationServed" AS a
 SET "orgId" = u."orgId",
-    "kind" = 'probe'
+    "kind" = 'remediation'
 FROM "User" AS u
 WHERE a."userId" = u."id";
 
@@ -44,6 +32,10 @@ ALTER TABLE "AugmentationServed" ALTER COLUMN "orgId" SET NOT NULL;
 ALTER TABLE "AugmentationServed" ALTER COLUMN "kind" SET NOT NULL;
 
 ALTER TABLE "AugmentationServed" ADD CONSTRAINT "AugmentationServed_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE INDEX IF NOT EXISTS "AugmentationServed_userId_lessonId_idx" ON "AugmentationServed"("userId", "lessonId");
+CREATE INDEX IF NOT EXISTS "AugmentationServed_lessonId_idx" ON "AugmentationServed"("lessonId");
+CREATE UNIQUE INDEX IF NOT EXISTS "AugmentationServed_userId_lessonId_augmentationId_key" ON "AugmentationServed"("userId", "lessonId", "augmentationId");
 
 CREATE INDEX "AugmentationServed_orgId_lessonId_createdAt_idx" ON "AugmentationServed"("orgId", "lessonId", "createdAt");
 
