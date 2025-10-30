@@ -267,12 +267,14 @@ async function main() {
       userId_lessonId: { userId: learner.id, lessonId: introLesson.id }
     },
     update: {
+      org: { connect: { id: organization.id } },
       segments: [[0, 230]],
       uniqueSeconds: 230,
       lastTickAt: new Date("2024-01-10T10:00:00.000Z"),
       completedAt: new Date("2024-01-10T10:05:00.000Z")
     },
     create: {
+      orgId: organization.id,
       userId: learner.id,
       lessonId: introLesson.id,
       segments: [[0, 230]],
@@ -287,12 +289,14 @@ async function main() {
       userId_lessonId: { userId: learner.id, lessonId: policyLesson.id }
     },
     update: {
+      org: { connect: { id: organization.id } },
       segments: [[0, 140]],
       uniqueSeconds: 140,
       lastTickAt: new Date("2024-01-12T12:30:00.000Z"),
       completedAt: null
     },
     create: {
+      orgId: organization.id,
       userId: learner.id,
       lessonId: policyLesson.id,
       segments: [[0, 140]],

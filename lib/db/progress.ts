@@ -28,7 +28,7 @@ export async function getOrCreate(
   userId: string,
   lessonId: string,
   orgId: string,
-  defaults: ProgressDefaults = {},
+  defaults?: ProgressDefaults,
   client?: ClientOrTx,
 ): Promise<Progress> {
   const db = getClient(client);
@@ -40,7 +40,7 @@ export async function getOrCreate(
       userId,
       lessonId,
       orgId,
-      ...defaults,
+      ...(defaults ?? {}),
     },
   });
 }

@@ -137,12 +137,14 @@ CREATE TABLE "Enrollment" (
 -- CreateTable
 CREATE TABLE "Progress" (
     "id" TEXT NOT NULL,
+    "orgId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "lessonId" TEXT NOT NULL,
     "segments" JSONB,
-    "uniqueSeconds" INTEGER NOT NULL DEFAULT 0,
+    "uniqueSeconds" INTEGER,
     "lastTickAt" TIMESTAMP(3),
     "completedAt" TIMESTAMP(3),
+    "reflectionAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -430,6 +432,9 @@ CREATE INDEX "Progress_lessonId_completedAt_idx" ON "Progress"("lessonId", "comp
 CREATE UNIQUE INDEX "Progress_userId_lessonId_key" ON "Progress"("userId", "lessonId");
 
 -- CreateIndex
+CREATE INDEX "Progress_orgId_lessonId_userId_idx" ON "Progress"("orgId", "lessonId", "userId");
+
+-- CreateIndex
 CREATE INDEX "ProgressDaily_date_idx" ON "ProgressDaily"("date");
 
 -- CreateIndex
@@ -554,6 +559,9 @@ ALTER TABLE "Progress" ADD CONSTRAINT "Progress_userId_fkey" FOREIGN KEY ("userI
 
 -- AddForeignKey
 ALTER TABLE "Progress" ADD CONSTRAINT "Progress_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Progress" ADD CONSTRAINT "Progress_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ProgressDaily" ADD CONSTRAINT "ProgressDaily_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
