@@ -50,16 +50,28 @@ export async function POST(request: Request) {
   const { logger, requestId } = createRequestLogger(request, { route: "progress.heartbeat" });
 
   try {
+    const url = new URL(request.url);
+    let body: unknown = {};
+
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.log("[heartbeat] →", url.pathname, body);
+      throw error;
+    }
+
+    console.log("[heartbeat] →", url.pathname, body);
+
     const user = await getSessionUser();
 
     if (!user) {
       logger.warn({
         event: "progress.heartbeat.unauthorized",
       });
+      console.warn("[heartbeat] 401 no session");
       return NextResponse.json({ error: "Unauthorized", requestId }, { status: 401 });
     }
 
-    const body = await request.json();
     const parsed = heartbeatSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -67,6 +79,8 @@ export async function POST(request: Request) {
         event: "progress.heartbeat.invalid_payload",
         issues: parsed.error.issues,
       });
+
+      console.warn("[heartbeat] 400 invalid payload", parsed.error.issues);
 
       return NextResponse.json({ error: "Invalid payload", requestId }, { status: 400 });
     }
@@ -200,18 +214,24 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const responseBody = {
       ok: true,
       uniqueSeconds: latestUniqueSeconds,
       completed,
       requestId,
-    });
+    };
+
+    console.log("[heartbeat] ←", { ok: true, uniqueSeconds: latestUniqueSeconds, completed });
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof SyntaxError) {
       logger.warn({
         event: "progress.heartbeat.invalid_json",
         error: serializeError(error),
       });
+
+      console.warn("[heartbeat] 400 invalid json");
 
       return NextResponse.json({ error: "Invalid JSON body", requestId }, { status: 400 });
     }
@@ -222,6 +242,8 @@ export async function POST(request: Request) {
         error: serializeError(error),
       });
 
+      console.warn("[heartbeat] 403 cross org");
+
       return NextResponse.json({ error: "Forbidden", requestId }, { status: 403 });
     }
 
@@ -230,6 +252,7 @@ export async function POST(request: Request) {
       error: serializeError(error),
     });
 
+    console.error("[heartbeat] 500", error);
     return NextResponse.json({ error: "An unexpected error occurred.", requestId }, { status: 500 });
   }
 }
