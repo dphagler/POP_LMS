@@ -11,7 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write --ignore-unknown .",
-    "test": "node --test lib/__tests__/auth-adapter.test.cjs lib/lesson/__tests__/progress.test.cjs lib/lesson/__tests__/diagnostics.test.cjs lib/lesson/__tests__/engine.test.cjs",
+    "test": "node --test -r ./test.preload.cjs lib/__tests__/auth-adapter.test.cjs lib/lesson/__tests__/progress.test.cjs lib/lesson/__tests__/diagnostics.test.cjs lib/lesson/__tests__/engine.test.cjs",
     "test:vitest": "vitest",
     "test:e2e": "playwright test",
     "check:routes": "node scripts/check-routes.mjs",
@@ -73,6 +73,7 @@
     "prisma": "^6.17.1",
     "tailwindcss": "^4.1.15",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^2.1.8"
