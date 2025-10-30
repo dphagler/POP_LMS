@@ -14,6 +14,10 @@ type YouTubeSinkOptions = {
   getDuration: () => number;
 };
 
+const DEBUG =
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
+
 const noopSink: TelemetrySink = {
   start() {
     // noop
@@ -55,7 +59,7 @@ export function createYouTubeSink({
       duration: Math.floor(getDuration?.() ?? 0),
     };
 
-    console.debug("[telemetry] heartbeat →", body);
+    DEBUG && console.warn("[telemetry] heartbeat →", body);
 
     try {
       const res = await fetch("/api/progress/heartbeat", {
@@ -65,11 +69,9 @@ export function createYouTubeSink({
         credentials: "same-origin",
       });
       const json = await res.json();
-      console.debug("[telemetry] heartbeat ←", json);
-      (window as any).__telemetry ||= {};
-      (window as any).__telemetry.last = json;
+      DEBUG && console.warn("[telemetry] heartbeat ←", json);
     } catch (error) {
-      console.warn("[telemetry] heartbeat error", error);
+      DEBUG && console.warn("[telemetry] heartbeat error", error);
     }
   };
 
@@ -79,7 +81,7 @@ export function createYouTubeSink({
     }
 
     timer = setInterval(tick, 2000);
-    console.log("[telemetry] sink start");
+    DEBUG && console.warn("[telemetry] sink start");
   };
 
   const stop = () => {
@@ -89,11 +91,13 @@ export function createYouTubeSink({
 
     clearInterval(timer);
     timer = null;
-    console.log("[telemetry] sink stop");
+    DEBUG && console.warn("[telemetry] sink stop");
   };
 
-  (window as any).__telemetry ||= {};
-  (window as any).__telemetry.forceTick = tick;
+  if (DEBUG) {
+    (window as any).__telemetry ||= {};
+    (window as any).__telemetry.forceTick = tick;
+  }
 
   return { start, stop };
 }
@@ -105,9 +109,7 @@ export function createCloudflareSink(_: CloudflareSinkOptions = {}): TelemetrySi
     return noopSink;
   }
 
-  if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
-    console.warn("Cloudflare sink not implemented yet");
-  }
+  DEBUG && console.warn("Cloudflare sink not implemented yet");
 
   return noopSink;
 }

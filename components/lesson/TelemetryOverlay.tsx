@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { Badge, Box, Button, Divider, HStack, Stack, Text } from "@chakra-ui/react";
+
+const DEBUG =
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
 
 const formatSeconds = (value: number): string => {
   if (!Number.isFinite(value) || value <= 0) {
@@ -50,40 +53,9 @@ export function TelemetryOverlay({
   onForceTick,
   isForceTickPending = false,
 }: TelemetryOverlayProps) {
-  useEffect(() => {
-    const globalTelemetry = (window as any).__telemetry || {};
-    globalTelemetry.overlay = {
-      mounted: true,
-      lessonId,
-      provider,
-      videoId,
-      currentTime,
-      duration,
-      lastPostStatus,
-      uniqueSeconds,
-      percent,
-      segmentCount,
-    };
-
-    (window as any).__telemetry = globalTelemetry;
-
-    return () => {
-      const existing = (window as any).__telemetry;
-      if (existing?.overlay) {
-        existing.overlay = { ...existing.overlay, mounted: false };
-      }
-    };
-  }, [
-    currentTime,
-    duration,
-    lastPostStatus,
-    lessonId,
-    percent,
-    provider,
-    segmentCount,
-    uniqueSeconds,
-    videoId,
-  ]);
+  if (!DEBUG) {
+    return null;
+  }
 
   return (
     <Box
@@ -152,15 +124,17 @@ export function TelemetryOverlay({
 
         <Divider borderColor="whiteAlpha.300" />
 
-        <Button
-          size="xs"
-          colorScheme="purple"
-          onClick={onForceTick}
-          isLoading={isForceTickPending}
-          loadingText="Posting"
-        >
-          Force tick
-        </Button>
+        {DEBUG ? (
+          <Button
+            size="xs"
+            colorScheme="purple"
+            onClick={onForceTick}
+            isLoading={isForceTickPending}
+            loadingText="Posting"
+          >
+            Force tick
+          </Button>
+        ) : null}
       </Stack>
     </Box>
   );
