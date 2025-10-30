@@ -1,4 +1,4 @@
-import { assertRequiredForProd } from "../lib/env";
+import { assertRequiredForProd } from "../lib/env.runtime";
 
 if (process.env.VERCEL_ENV === "production" && process.env.SKIP_ENV_VALIDATION !== "1") {
   assertRequiredForProd();
