@@ -7,12 +7,16 @@ export const runtime = "nodejs";
 const nextAuthGET = handlers.GET!;
 const nextAuthPOST = handlers.POST!;
 
-export const GET: typeof nextAuthGET = async (request, context) => {
+export const GET = (async (
+  ...args: Parameters<typeof nextAuthGET>
+) => {
   assertRequiredForProd();
-  return nextAuthGET(request, context);
-};
+  return nextAuthGET(...args);
+}) satisfies typeof nextAuthGET;
 
-export const POST: typeof nextAuthPOST = async (request, context) => {
+export const POST = (async (
+  ...args: Parameters<typeof nextAuthPOST>
+) => {
   assertRequiredForProd();
-  return nextAuthPOST(request, context);
-};
+  return nextAuthPOST(...args);
+}) satisfies typeof nextAuthPOST;
