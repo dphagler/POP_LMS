@@ -8,20 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AspectRatio,
-  Badge,
-  Box,
-  Button,
-  Container,
-  Flex,
-  HStack,
-  Icon,
-  IconButton,
-  Progress,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Badge, Box, Button, Container, Flex, HStack, Icon, IconButton, Progress, Stack, Text } from "@chakra-ui/react";
 import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { TelemetryOverlay } from "@/components/lesson/TelemetryOverlay";
@@ -38,46 +25,6 @@ import { getProgress } from "./actions";
 const formatPercent = (value: number): string => `${value}%`;
 
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
-
-let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
-
-function loadYouTubeIframeAPI(): Promise<YouTubeNamespace> {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("YouTube API unavailable"));
-  }
-
-  if (window.YT && typeof window.YT.Player === "function") {
-    return Promise.resolve(window.YT);
-  }
-
-  if (!youtubeApiPromise) {
-    youtubeApiPromise = new Promise((resolve, reject) => {
-      const previous = window.onYouTubeIframeAPIReady;
-
-      window.onYouTubeIframeAPIReady = () => {
-        previous?.();
-
-        if (window.YT && typeof window.YT.Player === "function") {
-          resolve(window.YT);
-        } else {
-          reject(new Error("YouTube API failed to load"));
-        }
-      };
-
-      const script = document.createElement("script");
-      script.src = YOUTUBE_IFRAME_API_SRC;
-      script.async = true;
-      script.onerror = () => {
-        youtubeApiPromise = null;
-        reject(new Error("Failed to load YouTube IFrame API"));
-      };
-
-      document.head.appendChild(script);
-    });
-  }
-
-  return youtubeApiPromise;
-}
 
 type LessonPlayerClientProps = {
   lessonId: string;
@@ -242,7 +189,6 @@ export function LessonPlayerClient({
     videoProvider ?? env.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ?? "youtube"
   ) as VideoProviderName;
   const isYouTube = provider === "youtube";
-  const playerContainerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const telemetryRef = useRef<ReturnType<typeof createYouTubeSink> | null>(null);
   const isPlayingRef = useRef(false);
@@ -778,77 +724,121 @@ export function LessonPlayerClient({
       return;
     }
 
-    const containerNode = playerContainerRef.current;
-    if (!containerNode) {
-      return;
-    }
-
-    let mounted = true;
+    let cancelled = false;
     let localPlayer: YouTubePlayer | null = null;
+    const previousOnReady = (window as any).onYouTubeIframeAPIReady;
+    let readyHandler: (() => void) | null = null;
 
-    loadYouTubeIframeAPI()
-      .then((YT) => {
-        if (!mounted) {
-          return;
-        }
+    const createPlayer = () => {
+      if (cancelled) {
+        return;
+      }
 
-        containerNode.innerHTML = "";
+      const container = document.getElementById("yt-player");
+      const YT = (window as any).YT as YouTubeNamespace | undefined;
 
-        const player = new YT.Player(containerNode, {
-          videoId,
-          playerVars: {
-            rel: 0,
-            modestbranding: 1,
-            playsinline: 1,
-            controls: 1,
+      if (!container || !YT || typeof YT.Player !== "function") {
+        return;
+      }
+
+      const playerState = YT.PlayerState;
+
+      container.innerHTML = "";
+
+      const player = new YT.Player(container, {
+        videoId,
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          controls: 1,
+        },
+        events: {
+          onReady: () => {
+            if (cancelled) {
+              return;
+            }
+
+            console.log("[telemetry] yt ready");
+            isPlayingRef.current = false;
+            setIsPlaying(false);
           },
-          events: {
-            onReady: () => {
-              if (!mounted) {
-                return;
-              }
+          onStateChange: (event: YouTubePlayerEvent) => {
+            if (cancelled || !playerState) {
+              return;
+            }
+
+            const state = event.data;
+
+            if (state === playerState.PLAYING) {
+              isPlayingRef.current = true;
+              setIsPlaying(true);
+              telemetryRef.current?.start();
+              emitProgressTick(true);
+            } else if (state === playerState.PAUSED) {
               isPlayingRef.current = false;
               setIsPlaying(false);
-            },
-            onStateChange: (event: YouTubePlayerEvent) => {
-              if (!mounted) {
-                return;
-              }
-
-              const state = event.data;
-
-              if (state === YT.PlayerState.PLAYING) {
-                isPlayingRef.current = true;
-                setIsPlaying(true);
-                telemetryRef.current?.start();
-                emitProgressTick(true);
-              } else if (state === YT.PlayerState.PAUSED) {
-                isPlayingRef.current = false;
-                setIsPlaying(false);
-                telemetryRef.current?.stop();
-                emitProgressTick(true);
-              } else if (state === YT.PlayerState.ENDED) {
-                isPlayingRef.current = false;
-                setIsPlaying(false);
-                telemetryRef.current?.stop();
-                emitProgressTick(true);
-                void emitCompletionEvent("ended");
-              }
-            },
+              telemetryRef.current?.stop();
+              emitProgressTick(true);
+            } else if (state === playerState.ENDED) {
+              isPlayingRef.current = false;
+              setIsPlaying(false);
+              telemetryRef.current?.stop();
+              emitProgressTick(true);
+              void emitCompletionEvent("ended");
+            }
           },
-        });
-
-        localPlayer = player;
-        playerRef.current = player;
-      })
-      .catch((error) => {
-        if (telemetryDebugEnabled) {
-          console.warn("Failed to initialise YouTube player", error);
-        }
+        },
       });
 
+      localPlayer = player;
+      playerRef.current = player;
+    };
+
+    const ensureYouTubeScript = () => {
+      const existingScript = document.querySelector(
+        `script[src="${YOUTUBE_IFRAME_API_SRC}"]`,
+      );
+
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = YOUTUBE_IFRAME_API_SRC;
+        script.async = true;
+        script.onerror = () => {
+          if (telemetryDebugEnabled) {
+            console.warn("Failed to load YouTube IFrame API");
+          }
+        };
+        document.body.appendChild(script);
+      }
+    };
+
+    const setupPlayer = () => {
+      const YT = (window as any).YT as YouTubeNamespace | undefined;
+
+      if (YT && typeof YT.Player === "function") {
+        createPlayer();
+        return;
+      }
+
+      readyHandler = () => {
+        previousOnReady?.();
+        createPlayer();
+      };
+
+      (window as any).onYouTubeIframeAPIReady = readyHandler;
+    };
+
+    ensureYouTubeScript();
+    setupPlayer();
+
     return () => {
-      mounted = false;
+      cancelled = true;
+
+      if (readyHandler && (window as any).onYouTubeIframeAPIReady === readyHandler) {
+        (window as any).onYouTubeIframeAPIReady = previousOnReady;
+      }
+
       telemetryRef.current?.stop();
       isPlayingRef.current = false;
       emitProgressTick(true);
@@ -861,14 +851,11 @@ export function LessonPlayerClient({
       }
 
       playerRef.current = null;
-
-      containerNode.innerHTML = "";
     };
   }, [
     emitCompletionEvent,
     emitProgressTick,
     isYouTube,
-    lessonId,
     telemetryDebugEnabled,
     videoId,
   ]);
@@ -962,62 +949,58 @@ export function LessonPlayerClient({
             </HStack>
 
             <Flex flex="1" align="center" justify="center">
-              <AspectRatio ratio={9 / 16} w="full" maxW="full">
+              <Box
+                borderRadius="2xl"
+                overflow="hidden"
+                position="relative"
+                w="full"
+                maxW="full"
+                bg={posterUrl ? undefined : "gray.800"}
+                backgroundImage={posterUrl ? `url(${posterUrl})` : undefined}
+                backgroundSize="cover"
+                backgroundPosition="center"
+                boxShadow="2xl"
+              >
+                <div
+                  id="yt-player"
+                  style={{ aspectRatio: "16/9", width: "100%" }}
+                  data-video-provider={provider}
+                  aria-hidden={!showPlayer}
+                />
                 <Box
-                  borderRadius="2xl"
-                  overflow="hidden"
-                  position="relative"
-                  bg={posterUrl ? undefined : "gray.800"}
-                  backgroundImage={posterUrl ? `url(${posterUrl})` : undefined}
-                  backgroundSize="cover"
-                  backgroundPosition="center"
-                  boxShadow="2xl"
+                  position="absolute"
+                  inset={0}
+                  bg="blackAlpha.500"
+                  opacity={isPlaying ? 0 : 1}
+                  transition="opacity 0.3s ease"
+                  pointerEvents="none"
+                  zIndex={2}
+                />
+                <Flex
+                  position="absolute"
+                  inset={0}
+                  align="center"
+                  justify="center"
+                  pointerEvents="none"
+                  zIndex={3}
                 >
-                  <Box
-                    ref={playerContainerRef}
-                    position="absolute"
-                    inset={0}
-                    w="full"
-                    h="full"
-                    zIndex={1}
-                    data-video-provider={provider}
-                    aria-hidden={!showPlayer}
+                  <IconButton
+                    aria-label={isPlaying ? "Pause lesson" : "Play lesson"}
+                    icon={<Icon as={isPlaying ? Pause : Play} boxSize={7} />}
+                    size="lg"
+                    borderRadius="full"
+                    colorScheme="whiteAlpha"
+                    bg="whiteAlpha.300"
+                    _hover={{ bg: "whiteAlpha.400" }}
+                    aria-pressed={isPlaying}
+                    onClick={handleTogglePlayback}
+                    pointerEvents={showPlayer && isPlaying ? "none" : "auto"}
+                    opacity={showPlayer ? (isPlaying ? 0 : 1) : 1}
+                    transition="opacity 0.2s ease"
+                    isDisabled={!showPlayer}
                   />
-                  <Box
-                    position="absolute"
-                    inset={0}
-                    bg="blackAlpha.500"
-                    opacity={isPlaying ? 0 : 1}
-                    transition="opacity 0.3s ease"
-                    pointerEvents="none"
-                    zIndex={2}
-                  />
-                  <Flex
-                    position="absolute"
-                    inset={0}
-                    align="center"
-                    justify="center"
-                    pointerEvents="none"
-                    zIndex={3}
-                  >
-                    <IconButton
-                      aria-label={isPlaying ? "Pause lesson" : "Play lesson"}
-                      icon={<Icon as={isPlaying ? Pause : Play} boxSize={7} />}
-                      size="lg"
-                      borderRadius="full"
-                      colorScheme="whiteAlpha"
-                      bg="whiteAlpha.300"
-                      _hover={{ bg: "whiteAlpha.400" }}
-                      aria-pressed={isPlaying}
-                      onClick={handleTogglePlayback}
-                      pointerEvents={showPlayer && isPlaying ? "none" : "auto"}
-                      opacity={showPlayer ? (isPlaying ? 0 : 1) : 1}
-                      transition="opacity 0.2s ease"
-                      isDisabled={!showPlayer}
-                    />
-                  </Flex>
-                </Box>
-              </AspectRatio>
+                </Flex>
+              </Box>
             </Flex>
 
             <Stack spacing={4} pb={{ base: 8, md: 0 }}>
