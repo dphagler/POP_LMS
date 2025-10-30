@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { publicEnv } from "@/lib/env.client";
 
 export type VideoProviderName = "youtube" | "cloudflare";
 
@@ -14,9 +15,7 @@ type YouTubeSinkOptions = {
   getDuration: () => number;
 };
 
-const DEBUG =
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
+const DEBUG = publicEnv.telemetryDebugEnabled;
 
 const noopSink: TelemetrySink = {
   start() {
@@ -105,7 +104,7 @@ export function createYouTubeSink({
 type CloudflareSinkOptions = Record<string, never>;
 
 export function createCloudflareSink(_: CloudflareSinkOptions = {}): TelemetrySink {
-  if (!env.STREAM_ENABLED) {
+  if (!env.streamEnabled) {
     return noopSink;
   }
 

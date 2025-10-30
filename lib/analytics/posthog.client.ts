@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { publicEnv } from "@/lib/env.client";
 
 type PosthogClientHandle = {
   capture: (event: string, properties?: Record<string, unknown>) => void;
@@ -37,8 +37,8 @@ let loadPromise: Promise<PosthogClientHandle | null> | null = null;
 let lastIdentitySnapshot: string | null = null;
 
 function logDebug(message: string, ...args: unknown[]) {
-  if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
-    console.debug(`[posthog] ${message}`, ...args);
+  if (publicEnv.telemetryDebugEnabled) {
+    console.warn(`[posthog] ${message}`, ...args);
   }
 }
 
@@ -60,7 +60,7 @@ async function waitForClient(): Promise<PosthogClientHandle | null> {
     return loadPromise;
   }
 
-  if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (!publicEnv.NEXT_PUBLIC_POSTHOG_KEY) {
     return null;
   }
 
@@ -130,7 +130,7 @@ async function hashEmail(email: string): Promise<string | null> {
 }
 
 export async function initPosthogClient(identity?: PosthogIdentity): Promise<PosthogInitResult | null> {
-  if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (!publicEnv.NEXT_PUBLIC_POSTHOG_KEY) {
     return null;
   }
 
@@ -191,7 +191,7 @@ export async function initPosthogClient(identity?: PosthogIdentity): Promise<Pos
 }
 
 export async function getPosthogClient(): Promise<PosthogClientHandle | null> {
-  if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (!publicEnv.NEXT_PUBLIC_POSTHOG_KEY) {
     return null;
   }
 

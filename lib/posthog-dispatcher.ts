@@ -1,7 +1,9 @@
 "use client";
 
-const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
+import { publicEnv } from "@/lib/env.client";
+
+const HOST = publicEnv.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+const KEY = publicEnv.NEXT_PUBLIC_POSTHOG_KEY ?? "";
 const STORAGE_KEY = "pop-posthog-anonymous-id";
 
 function getAnonymousId(): string {

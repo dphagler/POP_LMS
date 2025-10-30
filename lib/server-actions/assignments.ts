@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { requireRole } from '@/lib/authz';
 import { logAudit } from '@/lib/db/audit';
+import { env } from '@/lib/env';
 import {
   backfillAssignmentsEnrollments,
   bulkUpdateAssignmentsDueAt,
@@ -138,7 +139,7 @@ export async function withdrawAssignmentsAction(
     throw new Error('Organization context is required.');
   }
 
-  const leaveEnrollments = process.env.LEAVE_ENROLLMENTS !== 'false';
+  const leaveEnrollments = env.LEAVE_ENROLLMENTS !== 'false';
   const result = await withdrawAssignments(user.orgId, input.ids, { leaveEnrollments });
 
   if (result.removedIds.length > 0) {

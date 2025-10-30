@@ -7,21 +7,13 @@ import { getOrCreate, saveSegments } from "@/lib/db/progress";
 import { coerceSegments, computeUniqueSeconds, mergeSegments, type Segment } from "@/lib/lesson/progress";
 import { prisma } from "@/lib/prisma";
 import { createRequestLogger, serializeError } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 const MAX_BACKDATE_MS = 5_000;
 const MAX_JUMP_SECONDS = 2 * 60 * 60;
 const SEGMENT_PADDING = 2;
 
-const REQUIRED_COMPLETION_PCT = (() => {
-  const raw = process.env.LESSON_COMPLETE_PCT;
-  const parsed = raw ? Number.parseFloat(raw) : NaN;
-
-  if (!Number.isFinite(parsed)) {
-    return 0.92;
-  }
-
-  return Math.min(Math.max(parsed, 0), 1);
-})();
+const REQUIRED_COMPLETION_PCT = env.lessonCompletionRatio;
 
 const heartbeatSchema = z.object({
   lessonId: z.string().min(1),
@@ -60,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line no-console
-    if (process.env.LOG_HEARTBEAT === "1") console.log("[heartbeat]", body);
+    if (env.logHeartbeatEnabled) console.log("[heartbeat]", body);
 
     const user = await getSessionUser();
 

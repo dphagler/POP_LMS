@@ -1,4 +1,8 @@
+/* eslint-disable no-console */
+
 import { randomUUID } from "crypto";
+
+import { env } from "@/lib/env";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -12,7 +16,7 @@ export type Logger = {
   child: (context: LogPayload) => Logger;
 };
 
-const serviceName = process.env.SERVICE_NAME ?? "pop-lms";
+const serviceName = env.SERVICE_NAME;
 
 const consoleMethod: Record<LogLevel, "debug" | "log" | "warn" | "error"> = {
   debug: "debug",

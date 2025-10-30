@@ -1,8 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
+
+import { env } from "@/lib/env";
+
 import { normalizeDomain, assertValidDomain } from "./domain-utils";
 import { prisma } from "./prisma";
 
-export const DEFAULT_ORG_NAME = "POP Initiative";
+export const DEFAULT_ORG_NAME = env.DEFAULT_ORG_NAME;
 
 export async function resolveOrgName(orgId: string | null | undefined) {
   if (!orgId) {

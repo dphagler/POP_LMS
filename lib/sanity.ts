@@ -1,6 +1,8 @@
 import { createClient } from "@sanity/client";
 import imageUrlBuilder from "@sanity/image-url";
 
+import { env } from "@/lib/env";
+
 const SANITY_API_VERSION = "2024-08-01";
 
 type SanityClient = ReturnType<typeof createClient>;
@@ -39,9 +41,9 @@ export type SanityCourseDocument = {
 
 function getSanityConfig() {
   return {
-    projectId: process.env.SANITY_PROJECT_ID,
-    dataset: process.env.SANITY_DATASET,
-    token: process.env.SANITY_READ_TOKEN
+    projectId: env.SANITY_PROJECT_ID ?? env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: env.SANITY_DATASET ?? env.NEXT_PUBLIC_SANITY_DATASET,
+    token: env.SANITY_READ_TOKEN
   };
 }
 
@@ -96,9 +98,9 @@ export function urlFor(source: string) {
 
 function resolveSanityStudioBaseUrl() {
   const explicit =
-    process.env.SANITY_STUDIO_BASE_URL ??
-    process.env.NEXT_PUBLIC_SANITY_STUDIO_URL ??
-    process.env.SANITY_STUDIO_URL;
+    env.SANITY_STUDIO_BASE_URL ??
+    env.NEXT_PUBLIC_SANITY_STUDIO_URL ??
+    env.SANITY_STUDIO_URL;
   if (explicit) {
     return explicit.replace(/\/$/, "");
   }

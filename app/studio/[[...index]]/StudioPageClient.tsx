@@ -5,6 +5,7 @@ import {NextStudio} from 'next-sanity/studio'
 
 import config from '@/sanity.config'
 import {projectId} from '@/sanity/env'
+import { publicEnv } from '@/lib/env.client'
 
 const DEFAULT_REMOTE_STUDIO_URL = `https://${projectId}.sanity.studio`
 
@@ -21,7 +22,7 @@ function normalizeBasePath(path: string | undefined) {
 export default function StudioPageClient() {
   const isDevelopment = process.env.NODE_ENV === 'development'
   const remoteStudioUrl =
-    process.env.NEXT_PUBLIC_SANITY_STUDIO_URL ?? DEFAULT_REMOTE_STUDIO_URL
+    publicEnv.NEXT_PUBLIC_SANITY_STUDIO_URL ?? DEFAULT_REMOTE_STUDIO_URL
 
   const iframeSrc = useMemo(() => {
     try {
