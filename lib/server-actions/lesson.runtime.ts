@@ -408,55 +408,70 @@ export const getLessonRuntime = async ({
   const orgId = await ensureUserOrgId(userId);
 
   const snapshotRuntime = await loadLessonRuntimeSnapshot(orgId, lessonId);
+  let runtime: LessonRuntime;
+
   if (snapshotRuntime) {
-    return snapshotRuntime;
+    runtime = snapshotRuntime;
+  } else {
+    const lesson = await prisma.lesson.findFirst({
+      where: {
+        id: lessonId,
+        module: { course: { orgId } },
+      },
+      select: {
+        id: true,
+        title: true,
+        streamId: true,
+        provider: true,
+        videoUrl: true,
+        posterUrl: true,
+        durationS: true,
+        quiz: { select: { id: true } },
+      },
+    });
+
+    if (!lesson) {
+      throw new Error('Lesson not found');
+    }
+
+    const streamId = normalizeOptionalString(lesson.streamId);
+    const videoUrl = normalizeOptionalString(lesson.videoUrl);
+    const posterUrl = normalizeOptionalString(lesson.posterUrl);
+    const provider = normalizeProvider(lesson.provider);
+
+    const { videoProvider, videoId, streamId: resolvedStreamId } = resolveVideoSource({
+      lessonId: lesson.id,
+      provider,
+      streamId,
+      videoUrl,
+    });
+
+    runtime = {
+      id: lesson.id,
+      title: lesson.title,
+      objectives: [],
+      streamId: resolvedStreamId,
+      videoId,
+      videoProvider,
+      posterUrl,
+      durationSec: lesson.durationS,
+      assessmentType: lesson.quiz ? 'QUIZ' : NO_ASSESSMENT_TYPE,
+      augmentations: [],
+    };
   }
 
-  const lesson = await prisma.lesson.findFirst({
-    where: {
-      id: lessonId,
-      module: { course: { orgId } },
-    },
-    select: {
-      id: true,
-      title: true,
-      streamId: true,
-      provider: true,
-      videoUrl: true,
-      posterUrl: true,
-      durationS: true,
-      quiz: { select: { id: true } },
-    },
-  });
-
-  if (!lesson) {
-    throw new Error('Lesson not found');
+  if (process.env.NODE_ENV !== 'production') {
+    const { videoProvider, videoId, streamId, durationSec } = runtime;
+    console.log('[runtime] lesson', {
+      id: runtime.id,
+      provider: videoProvider,
+      videoId,
+      streamId,
+      duration: durationSec,
+    });
   }
 
-  const streamId = normalizeOptionalString(lesson.streamId);
-  const videoUrl = normalizeOptionalString(lesson.videoUrl);
-  const posterUrl = normalizeOptionalString(lesson.posterUrl);
-  const provider = normalizeProvider(lesson.provider);
-
-  const { videoProvider, videoId, streamId: resolvedStreamId } = resolveVideoSource({
-    lessonId: lesson.id,
-    provider,
-    streamId,
-    videoUrl,
-  });
-
-  return {
-    id: lesson.id,
-    title: lesson.title,
-    objectives: [],
-    streamId: resolvedStreamId,
-    videoId,
-    videoProvider,
-    posterUrl,
-    durationSec: lesson.durationS,
-    assessmentType: lesson.quiz ? 'QUIZ' : NO_ASSESSMENT_TYPE,
-    augmentations: [],
-  };
+  return runtime;
 };
 
 export const getNextLesson = async ({
