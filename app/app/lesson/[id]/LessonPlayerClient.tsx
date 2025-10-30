@@ -24,6 +24,10 @@ import { getProgress } from "./actions";
 
 const formatPercent = (value: number): string => `${value}%`;
 
+const TELEMETRY_DEBUG =
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
+  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
+
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 
 type LessonPlayerClientProps = {
@@ -205,9 +209,7 @@ export function LessonPlayerClient({
     typeof initialUniqueSeconds === "number" && Number.isFinite(initialUniqueSeconds)
       ? Math.max(0, Math.round(initialUniqueSeconds))
       : 0;
-  const telemetryDebugValue = process.env.NEXT_PUBLIC_TELEMETRY_DEBUG;
-  const telemetryDebugEnabled =
-    telemetryDebugValue === "1" || telemetryDebugValue === "true";
+  const telemetryDebugEnabled = TELEMETRY_DEBUG;
   const [telemetryState, setTelemetryState] = useState(() => ({
     currentTime: 0,
     lastPostStatus: "idle",
@@ -221,32 +223,20 @@ export function LessonPlayerClient({
   const completionEmittedRef = useRef(false);
 
   useEffect(() => {
-    const debug = telemetryDebugEnabled;
+    if (!telemetryDebugEnabled) {
+      return;
+    }
 
-    console.log("[telemetry] mount", {
-      TELEMETRY_DEBUG: telemetryDebugValue,
-      provider: videoProvider,
-      videoId,
-      duration: videoDuration,
-      path: window.location.pathname,
-    });
+    const DEBUG = telemetryDebugEnabled;
 
-    const globalTelemetry = (window as any).__telemetry || {};
-    globalTelemetry.config = {
-      debug,
-      provider: videoProvider,
-      videoId,
-      duration: videoDuration,
-    };
-
-    (window as any).__telemetry = globalTelemetry;
-  }, [
-    telemetryDebugEnabled,
-    telemetryDebugValue,
-    videoDuration,
-    videoId,
-    videoProvider,
-  ]);
+    DEBUG &&
+      console.warn("[telemetry] mount", {
+        provider: videoProvider,
+        videoId,
+        duration: videoDuration,
+        path: window.location.pathname,
+      });
+  }, [telemetryDebugEnabled, videoDuration, videoId, videoProvider]);
 
   useEffect(() => {
     if (durationSeconds <= 0) {
@@ -525,7 +515,8 @@ export function LessonPlayerClient({
         };
       } catch (error) {
         if (telemetryDebugEnabled) {
-          console.warn("Failed to fetch progress snapshot", error);
+          const DEBUG = telemetryDebugEnabled;
+          DEBUG && console.warn("Failed to fetch progress snapshot", error);
         }
 
         return null;
@@ -759,7 +750,10 @@ export function LessonPlayerClient({
               return;
             }
 
-            console.log("[telemetry] yt ready");
+            if (telemetryDebugEnabled) {
+              const DEBUG = telemetryDebugEnabled;
+              DEBUG && console.warn("[telemetry] yt ready");
+            }
             isPlayingRef.current = false;
             setIsPlaying(false);
           },
@@ -806,7 +800,8 @@ export function LessonPlayerClient({
         script.async = true;
         script.onerror = () => {
           if (telemetryDebugEnabled) {
-            console.warn("Failed to load YouTube IFrame API");
+            const DEBUG = telemetryDebugEnabled;
+            DEBUG && console.warn("Failed to load YouTube IFrame API");
           }
         };
         document.body.appendChild(script);
@@ -872,34 +867,6 @@ export function LessonPlayerClient({
     durationSeconds > 0
       ? Math.min(100, Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100))
       : 0;
-
-  useEffect(() => {
-    const globalTelemetry = (window as any).__telemetry || {};
-    globalTelemetry.state = {
-      provider,
-      videoId,
-      lessonId,
-      currentTime: telemetryState.currentTime,
-      uniqueSeconds: telemetryState.uniqueSeconds,
-      percent: telemetryPercent,
-      segmentCount: telemetryState.segmentCount,
-      lastPostStatus: telemetryState.lastPostStatus,
-      isPlaying: isPlayingRef.current,
-      debug: telemetryDebugEnabled,
-    };
-
-    (window as any).__telemetry = globalTelemetry;
-  }, [
-    lessonId,
-    provider,
-    telemetryDebugEnabled,
-    telemetryPercent,
-    telemetryState.currentTime,
-    telemetryState.lastPostStatus,
-    telemetryState.segmentCount,
-    telemetryState.uniqueSeconds,
-    videoId,
-  ]);
 
   return (
     <>
