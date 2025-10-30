@@ -1,6 +1,7 @@
-const PUBLIC_KEY = process.env.POSTHOG_API_KEY ?? process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
-const HOST =
-  process.env.POSTHOG_HOST ?? process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+import { env } from "@/lib/env";
+
+const PUBLIC_KEY = env.POSTHOG_SERVER_KEY ?? env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
+const HOST = env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
 export type PosthogEvent = {
   event: string;

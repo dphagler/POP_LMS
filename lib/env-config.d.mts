@@ -1,0 +1,68 @@
+import type { z } from "zod";
+
+export type ServerEnv = {
+  NODE_ENV: string;
+  NEXTAUTH_URL?: string;
+  NEXTAUTH_SECRET: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  AUTH_EMAIL_ENABLED: "true" | "false";
+  RESEND_API_KEY?: string;
+  AUTH_EMAIL_FROM?: string;
+  AUTH_EMAIL_SUBJECT: string;
+  AUTH_EMAIL_RATE_LIMIT_WINDOW: number;
+  AUTH_EMAIL_RATE_LIMIT_MAX: number;
+  AUTH_EMAIL_TOKEN_MAX_AGE: number;
+  DATABASE_URL: string;
+  SHADOW_DATABASE_URL?: string;
+  NEXT_PUBLIC_SANITY_PROJECT_ID: string;
+  NEXT_PUBLIC_SANITY_DATASET: string;
+  NEXT_PUBLIC_SANITY_API_VERSION: string;
+  NEXT_PUBLIC_SANITY_STUDIO_URL?: string;
+  SANITY_PROJECT_ID?: string;
+  SANITY_DATASET?: string;
+  SANITY_READ_TOKEN?: string;
+  SANITY_STUDIO_BASE_URL?: string;
+  SANITY_STUDIO_URL?: string;
+  SANITY_STUDIO_PROJECT_ID?: string;
+  SANITY_STUDIO_DATASET?: string;
+  SANITY_STUDIO_API_VERSION?: string;
+  SANITY_DEPLOY_STUDIO_TOKEN?: string;
+  SANITY_MANAGEMENT_TOKEN?: string;
+  SANITY_MANAGE_TOKEN?: string;
+  SANITY_DEV_CORS_ORIGINS?: string;
+  NEXT_PUBLIC_POSTHOG_KEY?: string;
+  NEXT_PUBLIC_POSTHOG_HOST?: string;
+  POSTHOG_SERVER_KEY?: string;
+  NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: "youtube" | "cloudflare";
+  NEXT_PUBLIC_TELEMETRY_DEBUG: "1" | "true" | "0" | "false";
+  LESSON_COMPLETE_PCT: string;
+  STREAM_ENABLED: "true" | "false";
+  STREAM_WEBHOOK_SECRET?: string;
+  DEFAULT_ORG_NAME: string;
+  LOG_HEARTBEAT: "1" | "0";
+  UPSTASH_REDIS_REST_URL?: string;
+  UPSTASH_REDIS_REST_TOKEN?: string;
+  SERVICE_NAME: string;
+  FEATURE_CHAT_PROBE_MOCK_RUBRIC?: string;
+  LEAVE_ENROLLMENTS?: string;
+  APP_BASE_URL?: string;
+  NEXT_PUBLIC_APP_URL?: string;
+  VERCEL_URL?: string;
+  AUTH_URL?: string;
+};
+
+export type ClientEnv = {
+  NEXT_PUBLIC_POSTHOG_KEY?: string;
+  NEXT_PUBLIC_POSTHOG_HOST?: string;
+  NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: "youtube" | "cloudflare";
+  NEXT_PUBLIC_TELEMETRY_DEBUG: "1" | "true" | "0" | "false";
+  NEXT_PUBLIC_SANITY_PROJECT_ID: string;
+  NEXT_PUBLIC_SANITY_DATASET: string;
+  NEXT_PUBLIC_SANITY_STUDIO_URL?: string;
+};
+
+export declare const serverEnvSchema: z.ZodType<ServerEnv>;
+export declare const clientEnvSchema: z.ZodType<ClientEnv>;
+export declare function loadServerEnv(raw?: NodeJS.ProcessEnv): ServerEnv;
+export declare function loadClientEnv(raw?: NodeJS.ProcessEnv): ClientEnv;

@@ -8,6 +8,7 @@ import type {
   LessonRuntime,
 } from '../lesson/contracts';
 import { prisma } from '../prisma';
+import { env } from '@/lib/env';
 
 interface GetNextLessonInput {
   userId: string;
@@ -196,7 +197,7 @@ const resolveVideoSource = ({
     }
 
     if (normalizedStreamId) {
-      if (process.env.NODE_ENV !== 'production') {
+      if (env.NODE_ENV !== 'production') {
         throw new Error(
           `Lesson ${lessonId} is configured for YouTube but the video URL is missing or invalid.`,
         );
@@ -467,9 +468,9 @@ export const getLessonRuntime = async ({
     };
   }
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (env.NODE_ENV !== 'production') {
     const { videoProvider, videoId, streamId, durationSec } = runtime;
-    console.log('[runtime] lesson', {
+    console.warn('[runtime] lesson', {
       id: runtime.id,
       provider: videoProvider,
       videoId,

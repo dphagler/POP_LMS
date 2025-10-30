@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
+import { publicEnv } from "@/lib/env.client";
+
 type LessonAnalyticsOptions = {
   lessonId: string;
   isDone: boolean;
@@ -34,7 +36,7 @@ type LessonAnalyticsHandlers = {
   trackAugmentationComplete: (payload?: AugmentationEventPayload) => void;
 };
 
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+const POSTHOG_KEY = publicEnv.NEXT_PUBLIC_POSTHOG_KEY;
 
 export function useLessonAnalytics({
   lessonId,
@@ -75,11 +77,11 @@ export function useLessonAnalytics({
           return;
         }
 
-        console.log(`[analytics] ${event}`, payload);
+        console.warn(`[analytics] ${event}`, payload);
       } catch (error) {
         console.error(`[analytics] Failed to emit "${event}"`, error);
         try {
-          console.log(`[analytics:fallback] ${event}`, payload);
+          console.warn(`[analytics:fallback] ${event}`, payload);
         } catch {
           // Ignore secondary logging failures.
         }

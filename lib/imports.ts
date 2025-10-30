@@ -253,9 +253,9 @@ function parseGroupNames(raw?: string) {
 function resolveAppBaseUrl() {
   const candidate =
     env.NEXTAUTH_URL ??
-    process.env.APP_BASE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.VERCEL_URL ??
+    env.APP_BASE_URL ??
+    env.NEXT_PUBLIC_APP_URL ??
+    env.VERCEL_URL ??
     "http://localhost:3000";
 
   if (candidate.startsWith("http://") || candidate.startsWith("https://")) {

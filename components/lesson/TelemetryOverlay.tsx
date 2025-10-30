@@ -2,9 +2,9 @@
 
 import { Badge, Box, Button, Divider, HStack, Stack, Text } from "@chakra-ui/react";
 
-const DEBUG =
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
+import { publicEnv } from "@/lib/env.client";
+
+const DEBUG = publicEnv.telemetryDebugEnabled;
 
 const formatSeconds = (value: number): string => {
   if (!Number.isFinite(value) || value <= 0) {

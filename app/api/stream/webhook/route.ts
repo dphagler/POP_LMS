@@ -47,7 +47,7 @@ function normalizeSecond(at: number): number {
 export async function POST(request: Request) {
   const { logger, requestId } = createRequestLogger(request, { route: "stream.webhook" });
 
-  const streamEnabled = env.STREAM_ENABLED;
+  const streamEnabled = env.streamEnabled;
   const webhookSecret = env.STREAM_WEBHOOK_SECRET;
 
   if (!streamEnabled || !webhookSecret) {

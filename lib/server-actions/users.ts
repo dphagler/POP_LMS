@@ -51,9 +51,10 @@ type MagicLinkResult = {
 function resolveAuthLocation() {
   const explicitUrl =
     env.NEXTAUTH_URL ??
-    process.env.AUTH_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.VERCEL_URL ??
+    env.AUTH_URL ??
+    env.APP_BASE_URL ??
+    env.NEXT_PUBLIC_APP_URL ??
+    env.VERCEL_URL ??
     "http://localhost:3000";
 
   const candidate = explicitUrl.startsWith("http")

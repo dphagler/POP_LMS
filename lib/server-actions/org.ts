@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/authz";
+import { env } from "@/lib/env";
 import {
   assertValidDomain,
   buildDomainVerificationToken,
@@ -75,8 +76,7 @@ async function requireAdminOrgContext() {
 }
 
 function shouldSkipDnsVerification() {
-  const env = process.env.NODE_ENV;
-  return env === "development" || env === "test";
+  return env.NODE_ENV === "development" || env.NODE_ENV === "test";
 }
 
 async function verifyDomainOwnership({

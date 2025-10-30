@@ -12,6 +12,7 @@ import { prisma } from '../prisma';
 import { lessonEvents } from '../analytics/lessonEvents';
 import { getLessonRuntime } from './lesson.runtime';
 import { syncLessonCompletion } from '../lesson-progress';
+import { env } from '@/lib/env';
 
 interface GetNextLessonInput {
   userId: string;
@@ -27,7 +28,7 @@ interface SubmitChatProbeInput {
 const DEVICE_TYPE = 'web';
 
 const USE_CHAT_PROBE_MOCK_RUBRIC =
-  (process.env.FEATURE_CHAT_PROBE_MOCK_RUBRIC ?? '').toLowerCase() === 'true';
+  (env.FEATURE_CHAT_PROBE_MOCK_RUBRIC ?? '').toLowerCase() === 'true';
 
 interface GetAugmentationsInput {
   userId: string;

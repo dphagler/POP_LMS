@@ -1,5 +1,7 @@
 "use client";
 
+import { publicEnv } from "@/lib/env.client";
+
 type ClientErrorContext = {
   event?: string;
   properties?: Record<string, unknown>;
@@ -86,7 +88,7 @@ export function captureError(error: unknown, context: ClientErrorContext = {}): 
     return;
   }
 
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (!publicEnv.NEXT_PUBLIC_POSTHOG_KEY) {
     return;
   }
 

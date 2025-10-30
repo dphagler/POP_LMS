@@ -13,7 +13,7 @@ import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react
 import { PostHogClient } from "@/analytics/posthog-client";
 import { TelemetryOverlay } from "@/components/lesson/TelemetryOverlay";
 import { initPosthogClient, type PosthogClientHandle } from "@/lib/analytics/posthog.client";
-import { env } from "@/lib/env";
+import { publicEnv } from "@/lib/env.client";
 import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
 import {
   type YouTubeNamespace,
@@ -24,9 +24,7 @@ import { getProgress } from "./actions";
 
 const formatPercent = (value: number): string => `${value}%`;
 
-const TELEMETRY_DEBUG =
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "1" ||
-  process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
+const TELEMETRY_DEBUG = publicEnv.telemetryDebugEnabled;
 
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 
@@ -190,7 +188,7 @@ export function LessonPlayerClient({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
   const provider: VideoProviderName = (
-    videoProvider ?? env.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ?? "youtube"
+    videoProvider ?? publicEnv.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ?? "youtube"
   ) as VideoProviderName;
   const isYouTube = provider === "youtube";
   const playerRef = useRef<YouTubePlayer | null>(null);

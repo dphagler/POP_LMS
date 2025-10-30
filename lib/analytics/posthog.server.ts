@@ -84,7 +84,7 @@ export async function serverCapture(
       keepalive: true,
     });
   } catch (error) {
-    if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
+    if (env.telemetryDebugEnabled) {
       console.warn("Failed to capture PostHog event", { event, error });
     }
   }
