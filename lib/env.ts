@@ -16,9 +16,17 @@ export const ServerEnv = z.object({
   RESEND_API_KEY: z.string().optional(),
   AUTH_EMAIL_FROM: z.string().email().optional(),
   AUTH_EMAIL_SUBJECT: z.string().default("Your POP LMS magic link"),
-  AUTH_EMAIL_RATE_LIMIT_WINDOW: z.coerce.number().int().positive().default(10 * 60),
+  AUTH_EMAIL_RATE_LIMIT_WINDOW: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(10 * 60),
   AUTH_EMAIL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
-  AUTH_EMAIL_TOKEN_MAX_AGE: z.coerce.number().int().positive().default(10 * 60),
+  AUTH_EMAIL_TOKEN_MAX_AGE: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(10 * 60),
   SHADOW_DATABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1).default("sanity-demo"),
   NEXT_PUBLIC_SANITY_DATASET: z.string().min(1).default("production"),
@@ -49,12 +57,13 @@ export const ServerEnv = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   SERVICE_NAME: z.string().default("pop-lms"),
+  MODEL_API_KEY: z.string().optional(),
   FEATURE_CHAT_PROBE_MOCK_RUBRIC: z.string().optional(),
   LEAVE_ENROLLMENTS: z.string().optional(),
   APP_BASE_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().optional(),
   VERCEL_URL: z.string().optional(),
-  AUTH_URL: z.string().url().optional(),
+  AUTH_URL: z.string().url().optional()
 });
 
 const rawEnv = ServerEnv.parse(process.env);
@@ -62,7 +71,12 @@ const rawEnv = ServerEnv.parse(process.env);
 const isTruthyFlag = (value: string | undefined) => {
   if (!value) return false;
   const normalized = value.toLowerCase();
-  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+  return (
+    normalized === "1" ||
+    normalized === "true" ||
+    normalized === "yes" ||
+    normalized === "on"
+  );
 };
 
 const parsedLessonCompletionPct = (() => {
@@ -75,7 +89,9 @@ const parsedLessonCompletionPct = (() => {
 
 const resolvedDatabaseUrl =
   rawEnv.DATABASE_URL ??
-  (rawEnv.NODE_ENV === "production" ? undefined : "postgres://localhost:5432/postgres");
+  (rawEnv.NODE_ENV === "production"
+    ? undefined
+    : "postgres://localhost:5432/postgres");
 
 const resolvedNextAuthSecret =
   rawEnv.NEXTAUTH_SECRET ??
@@ -91,7 +107,7 @@ export const env = {
   streamEnabled: rawEnv.STREAM_ENABLED === "true",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
   logHeartbeatEnabled: rawEnv.LOG_HEARTBEAT === "1",
-  lessonCompletionRatio: parsedLessonCompletionPct,
+  lessonCompletionRatio: parsedLessonCompletionPct
 } as const;
 
 export type ServerEnv = typeof env;
