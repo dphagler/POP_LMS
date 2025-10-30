@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Badge, Box, Button, Divider, HStack, Stack, Text } from "@chakra-ui/react";
 
 const formatSeconds = (value: number): string => {
@@ -23,7 +24,9 @@ const formatPercent = (value: number): string => {
 };
 
 type TelemetryOverlayProps = {
+  lessonId: string;
   provider: string;
+  videoId: string | null;
   currentTime: number;
   duration: number;
   lastPostStatus: string;
@@ -35,7 +38,9 @@ type TelemetryOverlayProps = {
 };
 
 export function TelemetryOverlay({
+  lessonId,
   provider,
+  videoId,
   currentTime,
   duration,
   lastPostStatus,
@@ -45,6 +50,41 @@ export function TelemetryOverlay({
   onForceTick,
   isForceTickPending = false,
 }: TelemetryOverlayProps) {
+  useEffect(() => {
+    const globalTelemetry = (window as any).__telemetry || {};
+    globalTelemetry.overlay = {
+      mounted: true,
+      lessonId,
+      provider,
+      videoId,
+      currentTime,
+      duration,
+      lastPostStatus,
+      uniqueSeconds,
+      percent,
+      segmentCount,
+    };
+
+    (window as any).__telemetry = globalTelemetry;
+
+    return () => {
+      const existing = (window as any).__telemetry;
+      if (existing?.overlay) {
+        existing.overlay = { ...existing.overlay, mounted: false };
+      }
+    };
+  }, [
+    currentTime,
+    duration,
+    lastPostStatus,
+    lessonId,
+    percent,
+    provider,
+    segmentCount,
+    uniqueSeconds,
+    videoId,
+  ]);
+
   return (
     <Box
       position="fixed"
@@ -69,8 +109,18 @@ export function TelemetryOverlay({
 
         <Stack spacing={1}>
           <HStack justify="space-between">
+            <Text opacity={0.7}>Lesson</Text>
+            <Text fontWeight="semibold">{lessonId}</Text>
+          </HStack>
+          <HStack justify="space-between">
             <Text opacity={0.7}>Provider</Text>
             <Text fontWeight="semibold">{provider}</Text>
+          </HStack>
+          <HStack justify="space-between" align="flex-start">
+            <Text opacity={0.7}>Video ID</Text>
+            <Text fontWeight="semibold" textAlign="right">
+              {videoId || "-"}
+            </Text>
           </HStack>
           <HStack justify="space-between">
             <Text opacity={0.7}>Current time</Text>

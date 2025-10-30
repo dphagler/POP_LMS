@@ -259,7 +259,9 @@ export function LessonPlayerClient({
     typeof initialUniqueSeconds === "number" && Number.isFinite(initialUniqueSeconds)
       ? Math.max(0, Math.round(initialUniqueSeconds))
       : 0;
-  const telemetryDebugEnabled = env.NEXT_PUBLIC_TELEMETRY_DEBUG;
+  const telemetryDebugValue = process.env.NEXT_PUBLIC_TELEMETRY_DEBUG;
+  const telemetryDebugEnabled =
+    telemetryDebugValue === "1" || telemetryDebugValue === "true";
   const [telemetryState, setTelemetryState] = useState(() => ({
     currentTime: 0,
     lastPostStatus: "idle",
@@ -271,6 +273,34 @@ export function LessonPlayerClient({
   const [posthogReady, setPosthogReady] = useState(false);
   const lastProgressSecondRef = useRef<number | null>(null);
   const completionEmittedRef = useRef(false);
+
+  useEffect(() => {
+    const debug = telemetryDebugEnabled;
+
+    console.log("[telemetry] mount", {
+      TELEMETRY_DEBUG: telemetryDebugValue,
+      provider: videoProvider,
+      videoId,
+      duration: videoDuration,
+      path: window.location.pathname,
+    });
+
+    const globalTelemetry = (window as any).__telemetry || {};
+    globalTelemetry.config = {
+      debug,
+      provider: videoProvider,
+      videoId,
+      duration: videoDuration,
+    };
+
+    (window as any).__telemetry = globalTelemetry;
+  }, [
+    telemetryDebugEnabled,
+    telemetryDebugValue,
+    videoDuration,
+    videoId,
+    videoProvider,
+  ]);
 
   useEffect(() => {
     if (durationSeconds <= 0) {
@@ -548,14 +578,14 @@ export function LessonPlayerClient({
           completed: Boolean(data.completed),
         };
       } catch (error) {
-        if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
+        if (telemetryDebugEnabled) {
           console.warn("Failed to fetch progress snapshot", error);
         }
 
         return null;
       }
     },
-    [lessonId, posthogReady, provider],
+    [lessonId, posthogReady, provider, telemetryDebugEnabled],
   );
 
   const emitCompletionEvent = useCallback(
@@ -811,7 +841,7 @@ export function LessonPlayerClient({
         playerRef.current = player;
       })
       .catch((error) => {
-        if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
+        if (telemetryDebugEnabled) {
           console.warn("Failed to initialise YouTube player", error);
         }
       });
@@ -833,7 +863,14 @@ export function LessonPlayerClient({
 
       containerNode.innerHTML = "";
     };
-  }, [emitCompletionEvent, emitProgressTick, isYouTube, lessonId, videoId]);
+  }, [
+    emitCompletionEvent,
+    emitProgressTick,
+    isYouTube,
+    lessonId,
+    telemetryDebugEnabled,
+    videoId,
+  ]);
 
   useEffect(() => {
     if (!isYouTube) {
@@ -867,6 +904,34 @@ export function LessonPlayerClient({
     durationSeconds > 0
       ? Math.min(100, Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100))
       : 0;
+
+  useEffect(() => {
+    const globalTelemetry = (window as any).__telemetry || {};
+    globalTelemetry.state = {
+      provider,
+      videoId,
+      lessonId,
+      currentTime: telemetryState.currentTime,
+      uniqueSeconds: telemetryState.uniqueSeconds,
+      percent: telemetryPercent,
+      segmentCount: telemetryState.segmentCount,
+      lastPostStatus: telemetryState.lastPostStatus,
+      isPlaying: isPlayingRef.current,
+      debug: telemetryDebugEnabled,
+    };
+
+    (window as any).__telemetry = globalTelemetry;
+  }, [
+    lessonId,
+    provider,
+    telemetryDebugEnabled,
+    telemetryPercent,
+    telemetryState.currentTime,
+    telemetryState.lastPostStatus,
+    telemetryState.segmentCount,
+    telemetryState.uniqueSeconds,
+    videoId,
+  ]);
 
   return (
     <>
@@ -1019,7 +1084,9 @@ export function LessonPlayerClient({
       </Flex>
       {telemetryDebugEnabled ? (
         <TelemetryOverlay
+          lessonId={lessonId}
           provider={provider}
+          videoId={videoId}
           currentTime={telemetryState.currentTime}
           duration={durationSeconds}
           lastPostStatus={telemetryState.lastPostStatus}
