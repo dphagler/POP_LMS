@@ -641,34 +641,21 @@ export function LessonPlayerClient({
       return;
     }
 
+    const forceTick = (window as any).__telemetry?.forceTick;
+
+    if (typeof forceTick !== "function") {
+      setTelemetryState((previous) => ({
+        ...previous,
+        lastPostStatus: "force tick unavailable",
+      }));
+      return;
+    }
+
     setIsForceTickPending(true);
 
     try {
-      const player = playerRef.current;
-      let currentTime = 0;
-
-      if (player) {
-        try {
-          currentTime = player.getCurrentTime?.() ?? 0;
-        } catch {
-          currentTime = 0;
-        }
-      }
-
-      const payload = {
-        lessonId,
-        provider,
-        t: Math.max(0, Math.floor(Number.isFinite(currentTime) ? currentTime : 0)),
-      };
-
-      const response = await fetch("/api/progress/heartbeat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const statusLabel = `heartbeat ${response.ok ? "ok" : "error"} (${response.status}) @ ${new Date().toLocaleTimeString()}`;
-
+      await forceTick();
+      const statusLabel = `force tick ok @ ${new Date().toLocaleTimeString()}`;
       setTelemetryState((previous) => ({
         ...previous,
         lastPostStatus: statusLabel,
@@ -677,12 +664,12 @@ export function LessonPlayerClient({
       const message = error instanceof Error ? error.message : "unknown";
       setTelemetryState((previous) => ({
         ...previous,
-        lastPostStatus: `heartbeat error: ${message}`,
+        lastPostStatus: `force tick error: ${message}`,
       }));
     } finally {
       setIsForceTickPending(false);
     }
-  }, [lessonId, provider, telemetryDebugEnabled]);
+  }, [telemetryDebugEnabled]);
 
   useEffect(() => {
     return () => {
@@ -731,40 +718,54 @@ export function LessonPlayerClient({
       return;
     }
 
+    const getPlayerTime = () => {
+      const player = playerRef.current;
+      if (player) {
+        try {
+          return player.getCurrentTime();
+        } catch {
+          return 0;
+        }
+      }
+
+      return 0;
+    };
+
+    const getDuration = () => {
+      const player = playerRef.current;
+      if (player) {
+        try {
+          const playerDuration = player.getDuration();
+          if (typeof playerDuration === "number" && Number.isFinite(playerDuration)) {
+            return playerDuration;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      return Number.isFinite(videoDuration) ? videoDuration : 0;
+    };
+
     const sink = createYouTubeSink({
       lessonId,
       videoId,
-      getPlayerTime: () => {
-        const player = playerRef.current;
-        if (player) {
-          try {
-            return player.getCurrentTime();
-          } catch {
-            return 0;
-          }
-        }
-        return 0;
-      },
-      getDuration: () => {
-        const player = playerRef.current;
-        if (player) {
-          try {
-            const playerDuration = player.getDuration();
-            if (typeof playerDuration === "number" && Number.isFinite(playerDuration)) {
-              return playerDuration;
-            }
-          } catch {
-            // ignore
-          }
-        }
-
-        return Number.isFinite(videoDuration) ? videoDuration : 0;
-      },
+      getPlayerTime,
+      getDuration,
     });
 
     telemetryRef.current = sink;
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        sink.stop();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       sink.stop();
       if (telemetryRef.current === sink) {
         telemetryRef.current = null;
@@ -871,26 +872,6 @@ export function LessonPlayerClient({
     telemetryDebugEnabled,
     videoId,
   ]);
-
-  useEffect(() => {
-    if (!isYouTube) {
-      return;
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        telemetryRef.current?.stop();
-      } else if (isPlayingRef.current) {
-        telemetryRef.current?.start();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [isYouTube]);
 
   useLessonPlayerKeyboardShortcuts({
     containerRef,

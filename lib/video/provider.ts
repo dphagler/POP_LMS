@@ -14,23 +14,6 @@ type YouTubeSinkOptions = {
   getDuration: () => number;
 };
 
-type HeartbeatEvent = "start" | "tick" | "flush";
-
-type HeartbeatPayload = {
-  lessonId: string;
-  provider: VideoProviderName;
-  videoId: string;
-  t: number;
-  currentTime: number;
-  duration: number;
-  recordedAt: number;
-  isVisible: boolean;
-  final: boolean;
-  event: HeartbeatEvent;
-};
-
-const AUTH_COOKIE_PATTERN = /(?:^|;\s*)(?:__Secure-next-auth\.session-token|next-auth\.session-token)=/i;
-
 const noopSink: TelemetrySink = {
   start() {
     // noop
@@ -44,50 +27,6 @@ function isClient(): boolean {
   return typeof window !== "undefined" && typeof document !== "undefined";
 }
 
-function safeRead(source: () => number): number {
-  try {
-    const value = source();
-    return Number.isFinite(value) ? value : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function hasSession(): boolean {
-  if (!isClient()) {
-    return false;
-  }
-
-  try {
-    return AUTH_COOKIE_PATTERN.test(document.cookie);
-  } catch {
-    return false;
-  }
-}
-
-async function post(url: string, body: HeartbeatPayload): Promise<void> {
-  try {
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
-      console.warn("Telemetry POST failed", error);
-    }
-  }
-}
-
-function resolveVisibility(): boolean {
-  if (!isClient()) {
-    return true;
-  }
-
-  return document.visibilityState !== "hidden";
-}
-
 export function createYouTubeSink({
   lessonId,
   videoId,
@@ -98,89 +37,65 @@ export function createYouTubeSink({
     return noopSink;
   }
 
-  if (!hasSession()) {
-    if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
-      console.debug("Skipping telemetry sink; no session cookie detected");
-    }
-    return noopSink;
-  }
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let lastSent = -1;
 
-  let interval: ReturnType<typeof setInterval> | null = null;
-  let lastSecond: number | null = null;
-  let started = false;
-
-  const send = async (second: number, event: HeartbeatEvent, force = false, final = false) => {
-    if (!Number.isFinite(second)) {
-      second = 0;
-    }
-
-    if (!force && lastSecond === second) {
+  const tick = async () => {
+    const t = Math.floor(getPlayerTime?.() ?? 0);
+    if (t <= 0 || t === lastSent) {
       return;
     }
 
-    lastSecond = second;
-
-    const payload: HeartbeatPayload = {
+    lastSent = t;
+    const body = {
       lessonId,
-      provider: "youtube",
+      provider: "youtube" as const,
+      t,
       videoId,
-      t: second,
-      currentTime: second,
-      duration: Math.max(0, Math.floor(safeRead(getDuration))),
-      recordedAt: Date.now(),
-      isVisible: resolveVisibility(),
-      final,
-      event,
+      duration: Math.floor(getDuration?.() ?? 0),
     };
 
-    if (env.NEXT_PUBLIC_TELEMETRY_DEBUG) {
-      console.debug("Telemetry", payload);
+    console.debug("[telemetry] heartbeat →", body);
+
+    try {
+      const res = await fetch("/api/progress/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "same-origin",
+      });
+      const json = await res.json();
+      console.debug("[telemetry] heartbeat ←", json);
+      (window as any).__telemetry ||= {};
+      (window as any).__telemetry.last = json;
+    } catch (error) {
+      console.warn("[telemetry] heartbeat error", error);
+    }
+  };
+
+  const start = () => {
+    if (timer) {
+      return;
     }
 
-    await post("/api/progress/heartbeat", payload);
+    timer = setInterval(tick, 2000);
+    console.log("[telemetry] sink start");
   };
 
-  const currentSecond = () => Math.max(0, Math.floor(safeRead(getPlayerTime)));
+  const stop = () => {
+    if (!timer) {
+      return;
+    }
 
-  void send(currentSecond(), "start", true, false);
-
-  const sendTick = (force = false) => {
-    void send(currentSecond(), "tick", force, false);
+    clearInterval(timer);
+    timer = null;
+    console.log("[telemetry] sink stop");
   };
 
-  const sendFlush = () => {
-    void send(currentSecond(), "flush", true, true);
-  };
+  (window as any).__telemetry ||= {};
+  (window as any).__telemetry.forceTick = tick;
 
-  return {
-    start() {
-      if (!started) {
-        started = true;
-        sendTick(true);
-      }
-
-      if (interval !== null) {
-        return;
-      }
-
-      interval = setInterval(() => {
-        sendTick();
-      }, 2000);
-    },
-    stop() {
-      if (interval !== null) {
-        clearInterval(interval);
-        interval = null;
-      }
-
-      if (!started) {
-        return;
-      }
-
-      sendFlush();
-      started = false;
-    },
-  };
+  return { start, stop };
 }
 
 type CloudflareSinkOptions = Record<string, never>;
