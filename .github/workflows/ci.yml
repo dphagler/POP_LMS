@@ -33,3 +33,5 @@ jobs:
           NEXT_PUBLIC_TELEMETRY_DEBUG: "0"
       - name: Verify database migrations (dry run)
         run: pnpm db:deploy -- --dry-run
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/dummydb
