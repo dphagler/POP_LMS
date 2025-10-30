@@ -98,6 +98,9 @@ model Organization {
   importJobs       ImportJob[]
   runtimeSnapshots LessonRuntimeSnapshot[]
   progressDaily    ProgressDaily[]
+  progresses       Progress[]
+  augmentationMessages AugmentationMessage[]
+  augmentationsServed  AugmentationServed[]
 }
 
 model User {
@@ -117,6 +120,7 @@ model User {
   sessions            Session[]
   progresses          Progress[]
   assessments         Assessment[]
+  augmentationMessages AugmentationMessage[]
   augmentationsServed AugmentationServed[]
   quizResponses       QuizResponse[]
   badges              UserBadge[]
@@ -176,6 +180,7 @@ model Lesson {
   // back-relations
   progresses       Progress[]
   assessments      Assessment[]
+  augmentationMessages AugmentationMessage[]
   augmentations    AugmentationServed[]
   runtimeSnapshots LessonRuntimeSnapshot[]
   progressDaily    ProgressDaily[]
@@ -236,21 +241,25 @@ model Enrollment {
 }
 
 model Progress {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
+  orgId         String
   userId        String
   lessonId      String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson        Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   segments      Json? // [{s:number,e:number}] seconds
-  uniqueSeconds Int       @default(0)
+  uniqueSeconds Int?
   lastTickAt    DateTime?
   completedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  reflectionAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([userId, lessonId])
   @@index([userId, lessonId])
   @@index([lessonId, completedAt])
+  @@index([orgId, lessonId, userId])
 }
 
 model ProgressDaily {
@@ -272,26 +281,36 @@ model ProgressDaily {
   @@index([orgId, date])
 }
 
+model AugmentationMessage {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  lessonId  String
+  role      String
+  content   String
+  evidence  Json?
+  createdAt DateTime @default(now())
+
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, userId, lessonId, createdAt])
+}
+
 model AugmentationServed {
-  id             String    @id @default(cuid())
-  userId         String
-  lessonId       String
-  augmentationId String
-  objectiveId    String
-  assetRef       String
-  ruleIndex      Int
-  diagnosticJson Json?
-  plannedAt      DateTime  @default(now())
-  completedAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  lessonId  String
+  kind      String
+  createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, lessonId, augmentationId])
-  @@index([userId, lessonId])
-  @@index([lessonId])
+  @@index([orgId, lessonId, createdAt])
 }
 
 model Quiz {
