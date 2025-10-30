@@ -745,7 +745,7 @@ export function LessonPlayerClient({
 
       container.innerHTML = "";
 
-      const player = new YT.Player("yt-player", {
+      const player = new YT.Player(container, {
         videoId,
         playerVars: {
           rel: 0,
