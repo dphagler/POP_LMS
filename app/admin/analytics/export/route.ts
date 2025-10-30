@@ -85,15 +85,13 @@ export async function GET(request: Request) {
 
   const encoder = new TextEncoder();
   const pageSize = 200;
-  const sessionCountRowsPromise = prisma.progress.groupBy({
-    where,
-    by: ['lessonId'],
-    _count: { lessonId: true },
-  });
-
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const sessionCountRows = await sessionCountRowsPromise;
+      const sessionCountRows = await prisma.progress.groupBy({
+        where,
+        by: ['lessonId'],
+        _count: { lessonId: true },
+      });
       const lessonSessionCountMap = new Map(
         sessionCountRows.map((row) => [row.lessonId, row._count?.lessonId ?? 0])
       );
