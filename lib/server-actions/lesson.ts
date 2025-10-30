@@ -61,6 +61,7 @@ export const getNextLesson = async ({
     videoProvider: 'cloudflare',
     posterUrl: null,
     durationSec: 1800,
+    requiresFullWatch: true,
     assessmentType: 'QUIZ',
     augmentations: [mockAugmentationRule],
   };

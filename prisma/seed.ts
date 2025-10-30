@@ -245,7 +245,8 @@ async function main() {
       courseId: course.id,
       moduleId: module.id,
       label: "Onboarding Assignment",
-      dueAt: new Date("2024-02-01T00:00:00.000Z")
+      dueAt: new Date("2024-02-01T00:00:00.000Z"),
+      createdBy: admin.id
     }
   });
 

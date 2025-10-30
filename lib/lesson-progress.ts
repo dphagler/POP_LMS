@@ -38,8 +38,8 @@ function computeWatchRequirementMet(lesson: LessonWithQuiz, progress: Progress):
 
   const duration = Math.max(lesson.durationS, 1);
   const threshold = Math.round(duration * COMPLETION_THRESHOLD);
-  const uniqueSeconds = Number.isFinite(progress.uniqueSeconds)
-    ? Math.max(0, progress.uniqueSeconds)
+  const uniqueSeconds = Number.isFinite(progress.uniqueSeconds ?? NaN)
+    ? Math.max(0, progress.uniqueSeconds ?? 0)
     : 0;
   const watched = Math.min(uniqueSeconds, duration);
   return watched >= threshold;

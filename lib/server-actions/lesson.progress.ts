@@ -160,7 +160,7 @@ export async function recordProgress({
         ? new Date()
         : null;
 
-    const data: Prisma.ProgressUpdateInput = {
+    const updateData: Prisma.ProgressUpdateInput = {
       segments: mergedSegments,
       uniqueSeconds,
       completedAt: nextCompletedAt ?? undefined,
@@ -169,14 +169,16 @@ export async function recordProgress({
     if (existing) {
       await tx.progress.update({
         where: { id: existing.id },
-        data,
+        data: updateData,
       });
     } else {
       await tx.progress.create({
         data: {
           userId,
           lessonId: lesson.id,
-          ...data,
+          segments: mergedSegments,
+          uniqueSeconds,
+          completedAt: nextCompletedAt ?? undefined,
         },
       });
     }

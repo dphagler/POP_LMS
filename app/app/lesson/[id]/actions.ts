@@ -237,8 +237,11 @@ export const saveProgress = async (
   const session = await requireUser();
   const userId = session.user.id;
 
-  const result = await recordProgress({ userId, lessonId, segments });
-  const progress = await loadProgress(userId, lessonId);
+  const [result, runtime] = await Promise.all([
+    recordProgress({ userId, lessonId, segments }),
+    getLessonRuntime({ userId, lessonId }),
+  ]);
+  const progress = await loadProgress(userId, lessonId, runtime);
 
   return {
     uniqueSeconds: result.uniqueSeconds,
