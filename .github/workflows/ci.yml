@@ -27,6 +27,6 @@ jobs:
       - name: Build and Test
         run: |
           pnpm build
-          pnpm test --if-present
+          pnpm run --if-present test
       - name: Dry run database deploy
         run: pnpm db:deploy -- --dry-run
