@@ -100,6 +100,9 @@ export async function createMagicLinkForEmail(
   const callbackPath = options.callbackPath ?? "/app";
   const token = randomBytes(32).toString("hex");
   const secret = env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("NEXTAUTH_SECRET is required to create magic links.");
+  }
   const hashedToken = createHash("sha256")
     .update(`${token}${secret}`)
     .digest("hex");

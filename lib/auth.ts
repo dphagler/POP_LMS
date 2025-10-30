@@ -7,11 +7,15 @@ import ResendProvider from "next-auth/providers/resend";
 import { MembershipSource, OrgRole, UserRole } from "@prisma/client";
 import { buildAuthAdapter } from "./auth-adapter";
 import { findOrgIdForDomain, getDefaultOrgForEmail, getOrCreateDefaultOrg } from "./org";
-import { env } from "./env";
+import { assertRequiredForProd, env } from "./env";
 import { sendSignInEmail } from "./email";
 import { enforceRateLimit } from "./rate-limit";
 import { prisma } from "./prisma";
 import { logAudit } from "./db/audit";
+
+if (env.NODE_ENV === "production") {
+  assertRequiredForProd();
+}
 
 const adapter = buildAuthAdapter();
 
