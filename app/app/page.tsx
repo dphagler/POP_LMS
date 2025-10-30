@@ -12,6 +12,8 @@ import LearnerDashboardClient, {
 
 import type { Prisma, UserRole } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 const assignmentInclude = {
   module: {
     include: {
