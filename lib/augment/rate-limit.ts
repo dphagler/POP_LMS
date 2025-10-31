@@ -1,36 +1,19 @@
 import { prisma } from "@/lib/prisma";
 
-const MAX_PER_HOUR = 3;
-const WINDOW_MS = 60 * 60 * 1000;
-
-type CheckQuotaInput = {
-  userId: string;
-  lessonId: string;
-};
-
-type CheckQuotaResult = {
-  ok: boolean;
-  remaining: number;
-};
-
-export async function checkAugmentQuota({
-  userId,
-  lessonId
-}: CheckQuotaInput): Promise<CheckQuotaResult> {
-  const cutoff = new Date(Date.now() - WINDOW_MS);
-
-  const recentCount = await prisma.augmentationServed.count({
+export async function checkAugmentQuota(
+  orgId: string,
+  userId: string,
+  lessonId: string,
+  max = 3
+) {
+  const since = new Date(Date.now() - 60 * 60 * 1000);
+  const count = await prisma.augmentationServed.count({
     where: {
+      orgId,
       userId,
       lessonId,
-      createdAt: { gt: cutoff }
+      createdAt: { gte: since }
     }
   });
-
-  const remaining = Math.max(0, MAX_PER_HOUR - recentCount);
-
-  return {
-    ok: recentCount < MAX_PER_HOUR,
-    remaining
-  };
+  return { ok: count < max, remaining: Math.max(0, max - count) };
 }
