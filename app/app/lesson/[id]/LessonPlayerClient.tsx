@@ -53,6 +53,7 @@ import { getProgress } from "./actions";
 const formatPercent = (value: number): string => `${value}%`;
 
 const TELEMETRY_DEBUG = publicEnv.telemetryDebugEnabled;
+const AUGMENT_ENABLED = publicEnv.AUGMENT_ENABLE;
 
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 
@@ -300,6 +301,9 @@ export function LessonPlayerClient({
   );
 
   const handleOpenAugment = useCallback(() => {
+    if (!AUGMENT_ENABLED) {
+      return;
+    }
     setAugmentOpen(true);
   }, [setAugmentOpen]);
 
@@ -1073,18 +1077,20 @@ export function LessonPlayerClient({
               </Box>
             </Flex>
 
-            <Flex justify="flex-end">
-              <Button
-                size="sm"
-                variant="outline"
-                colorScheme="primary"
-                onClick={handleOpenAugment}
-                aria-expanded={isAugmentOpen}
-                data-lesson-shortcuts="ignore"
-              >
-                Chat with POP Bot
-              </Button>
-            </Flex>
+            {AUGMENT_ENABLED ? (
+              <Flex justify="flex-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="primary"
+                  onClick={handleOpenAugment}
+                  aria-expanded={isAugmentOpen}
+                  data-lesson-shortcuts="ignore"
+                >
+                  Chat with POP Bot
+                </Button>
+              </Flex>
+            ) : null}
 
             <Stack spacing={4} pb={{ base: 8, md: 0 }}>
               <HStack justify="space-between">
@@ -1131,16 +1137,18 @@ export function LessonPlayerClient({
           </Stack>
         </Container>
       </Flex>
-      <AugmentDrawer
-        isOpen={isAugmentOpen}
-        onClose={handleCloseAugment}
-        lessonTitle={lessonTitle}
-        messages={augmentMessages}
-        pending={augmentPending}
-        error={augmentError}
-        onSend={handleSendAugment}
-        mockMode={augmentMockMode}
-      />
+      {AUGMENT_ENABLED ? (
+        <AugmentDrawer
+          isOpen={isAugmentOpen}
+          onClose={handleCloseAugment}
+          lessonTitle={lessonTitle}
+          messages={augmentMessages}
+          pending={augmentPending}
+          error={augmentError}
+          onSend={handleSendAugment}
+          mockMode={augmentMockMode}
+        />
+      ) : null}
       {telemetryDebugEnabled ? (
         <TelemetryOverlay
           lessonId={lessonId}
