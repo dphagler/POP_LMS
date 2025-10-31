@@ -19,8 +19,7 @@ import {
   IconButton,
   Progress,
   Stack,
-  Text,
-  useToast
+  Text
 } from "@chakra-ui/react";
 import {
   ArrowLeft,
@@ -38,7 +37,6 @@ import {
   type PosthogClientHandle
 } from "@/lib/analytics/posthog.client";
 import { publicEnv } from "@/lib/env.client";
-import { useAugment, type AugmentSendArgs } from "@/lib/hooks/useAugment";
 import {
   createYouTubeSink,
   type VideoProviderName
@@ -261,55 +259,18 @@ export function LessonPlayerClient({
   const [posthogReady, setPosthogReady] = useState(false);
   const lastProgressSecondRef = useRef<number | null>(null);
   const completionEmittedRef = useRef(false);
-  const toast = useToast();
-  const {
-    messages: augmentMessages,
-    send: sendAugment,
-    pending: augmentPending,
-    error: augmentError,
-    open: isAugmentOpen,
-    setOpen: setAugmentOpen,
-    mockMode: augmentMockMode
-  } = useAugment({ lessonId });
+  const [isAugmentOpen, setIsAugmentOpen] = useState(false);
 
-  const handleSendAugment = useCallback(
-    async (payload: AugmentSendArgs) => {
-      const result = await sendAugment(payload);
-
-      if (!result.ok) {
-        if (result.reason === "quota_exceeded") {
-          toast({
-            title: "Try again later",
-            status: "info",
-            duration: 4000,
-            isClosable: true
-          });
-        } else if (result.message) {
-          toast({
-            title: "Unable to reach POP Bot",
-            description: result.message,
-            status: "error",
-            duration: 5000,
-            isClosable: true
-          });
-        }
-      }
-
-      return result;
-    },
-    [sendAugment, toast]
-  );
+  const handleAugmentOpenChange = useCallback((next: boolean) => {
+    setIsAugmentOpen(next);
+  }, []);
 
   const handleOpenAugment = useCallback(() => {
     if (!AUGMENT_ENABLED) {
       return;
     }
-    setAugmentOpen(true);
-  }, [setAugmentOpen]);
-
-  const handleCloseAugment = useCallback(() => {
-    setAugmentOpen(false);
-  }, [setAugmentOpen]);
+    setIsAugmentOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!telemetryDebugEnabled) {
@@ -1139,14 +1100,10 @@ export function LessonPlayerClient({
       </Flex>
       {AUGMENT_ENABLED ? (
         <AugmentDrawer
-          isOpen={isAugmentOpen}
-          onClose={handleCloseAugment}
+          lessonId={lessonId}
           lessonTitle={lessonTitle}
-          messages={augmentMessages}
-          pending={augmentPending}
-          error={augmentError}
-          onSend={handleSendAugment}
-          mockMode={augmentMockMode}
+          open={isAugmentOpen}
+          onOpenChange={handleAugmentOpenChange}
         />
       ) : null}
       {telemetryDebugEnabled ? (
