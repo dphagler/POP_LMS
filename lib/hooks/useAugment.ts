@@ -1,5 +1,8 @@
 import { useCallback, useState } from "react";
 
+export const AUGMENT_QUOTA_NOTE =
+  "We limit to 3 prompts/hour for this lesson to keep things snappy.";
+
 type AugmentKind = "probe" | "remediation" | "reflection";
 
 export type AugmentMessage = {
@@ -79,8 +82,16 @@ export function useAugment({
             typeof data?.error === "string" && data.error.length > 0
               ? data.error
               : "quota_exceeded";
-          setError(messageText);
-          return { ok: false, reason: "quota_exceeded", message: messageText };
+
+          const normalizedMessage =
+            messageText === "quota_exceeded" ? AUGMENT_QUOTA_NOTE : messageText;
+
+          setError(normalizedMessage);
+          return {
+            ok: false,
+            reason: "quota_exceeded",
+            message: normalizedMessage
+          };
         }
 
         if (!response.ok || !data) {

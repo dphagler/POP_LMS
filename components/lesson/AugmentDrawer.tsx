@@ -30,6 +30,7 @@ import {
 } from "@chakra-ui/react";
 
 import {
+  AUGMENT_QUOTA_NOTE,
   type AugmentMessage,
   type AugmentSendArgs,
   type AugmentSendResult
@@ -101,8 +102,8 @@ export function AugmentDrawer({
       return null;
     }
 
-    if (error === "quota_exceeded") {
-      return "You’ve reached today’s prompt limit.";
+    if (error === "quota_exceeded" || error === AUGMENT_QUOTA_NOTE) {
+      return AUGMENT_QUOTA_NOTE;
     }
 
     return error;
@@ -221,6 +222,26 @@ export function AugmentDrawer({
                     </Box>
                   );
                 })}
+                {pending ? (
+                  <Box alignSelf="flex-start" maxW="85%">
+                    <Stack
+                      spacing={1}
+                      bg={assistantBubbleBg}
+                      color={assistantBubbleColor}
+                      borderRadius="lg"
+                      px={4}
+                      py={3}
+                    >
+                      <Text fontSize="xs" fontWeight="medium">
+                        POP Bot
+                      </Text>
+                      <Text fontSize="lg" letterSpacing="0.5em" aria-hidden>
+                        ...
+                      </Text>
+                      <VisuallyHidden>POP Bot is responding</VisuallyHidden>
+                    </Stack>
+                  </Box>
+                ) : null}
                 <Box ref={messagesEndRef} />
               </Stack>
             )}
