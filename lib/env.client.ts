@@ -9,7 +9,7 @@ export const ClientEnvSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: videoProvider,
   NEXT_PUBLIC_TELEMETRY_DEBUG: telemetryFlag,
-  NEXT_PUBLIC_AUGMENT_ENABLE: telemetryFlag,
+  NEXT_PUBLIC_AUGMENT_ENABLE: augmentFlag,
   AUGMENT_ENABLE: augmentFlag,
   NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1).default("sanity-demo"),
   NEXT_PUBLIC_SANITY_DATASET: z.string().min(1).default("production"),
@@ -22,8 +22,7 @@ const rawEnv = ClientEnvSchema.parse({
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT:
     process.env.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT,
   NEXT_PUBLIC_TELEMETRY_DEBUG: process.env.NEXT_PUBLIC_TELEMETRY_DEBUG,
-  NEXT_PUBLIC_AUGMENT_ENABLE:
-    process.env.NEXT_PUBLIC_AUGMENT_ENABLE ?? process.env.AUGMENT_ENABLE,
+  NEXT_PUBLIC_AUGMENT_ENABLE: process.env.NEXT_PUBLIC_AUGMENT_ENABLE,
   AUGMENT_ENABLE: process.env.AUGMENT_ENABLE,
   NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET,
@@ -41,10 +40,14 @@ const isTruthyFlag = (value: string | undefined) => {
   );
 };
 
+const resolvedAugmentEnable =
+  rawEnv.NEXT_PUBLIC_AUGMENT_ENABLE ?? rawEnv.AUGMENT_ENABLE ?? "false";
+
 export const publicEnv = {
   ...rawEnv,
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
-  AUGMENT_ENABLE: isTruthyFlag(rawEnv.NEXT_PUBLIC_AUGMENT_ENABLE)
+  AUGMENT_ENABLE: resolvedAugmentEnable,
+  augmentEnabled: resolvedAugmentEnable === "true"
 } as const;
 
 export type ClientEnv = typeof publicEnv;
