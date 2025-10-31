@@ -1,317 +1,131 @@
-import { PrismaClient, QuestionType, UserRole, OrgRole, EnrollmentStatus } from "@prisma/client";
-
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const organizationId = "org-demo";
-  const adminEmail = "admin@example.com";
-  const learnerEmail = "learner@example.com";
+  // Wipe tables in order (idempotent dev seed)
+  await prisma.$transaction([
+    prisma.augmentationMessage?.deleteMany?.(),
+    prisma.augmentationServed?.deleteMany?.(),
+    prisma.progress.deleteMany(),
+    prisma.enrollment.deleteMany(),
+    prisma.assignment.deleteMany(),
+    prisma.groupMember.deleteMany(),
+    prisma.group.deleteMany(),
+    prisma.domain?.deleteMany?.(),
+    prisma.user.deleteMany(),
+    prisma.lesson.deleteMany(),
+    prisma.module.deleteMany(),
+    prisma.course.deleteMany(),
+    prisma.organization.deleteMany(),
+  ].filter(Boolean) as any);
 
-  const organization = await prisma.organization.upsert({
-    where: { id: organizationId },
-    update: {
-      name: "Demo Academy",
-      themePrimary: "#1f2937",
-      themeAccent: "#f97316",
-      loginBlurb: "Welcome back to Demo Academy."
-    },
-    create: {
-      id: organizationId,
-      name: "Demo Academy",
-      themePrimary: "#1f2937",
-      themeAccent: "#f97316",
-      loginBlurb: "Welcome back to Demo Academy."
-    }
+  // Org
+  const org = await prisma.organization.create({
+    data: { name: process.env.DEFAULT_ORG_NAME || "POP Initiative" },
   });
 
-  await prisma.domain.upsert({
-    where: { value: "demo.example" },
-    update: { orgId: organization.id, verifiedAt: new Date("2024-01-01T00:00:00.000Z") },
-    create: {
-      orgId: organization.id,
-      value: "demo.example",
-      verifiedAt: new Date("2024-01-01T00:00:00.000Z")
-    }
+  // Admin user
+  const admin = await prisma.user.create({
+    data: {
+      orgId: org.id,
+      email: "admin@example.com",
+      name: "POP Admin",
+      role: "ADMIN",
+      source: "invite",
+    },
   });
 
-  const admin = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      name: "Demo Admin",
-      orgId: organization.id,
-      role: UserRole.ADMIN
-    },
-    create: {
-      email: adminEmail,
-      name: "Demo Admin",
-      orgId: organization.id,
-      role: UserRole.ADMIN
-    }
+  // Group
+  const group = await prisma.group.create({
+    data: { orgId: org.id, name: "Alpha Group" },
+  });
+  await prisma.groupMember.create({
+    data: { orgId: org.id, groupId: group.id, userId: admin.id, groupManager: true },
   });
 
-  const learner = await prisma.user.upsert({
-    where: { email: learnerEmail },
-    update: {
-      name: "Demo Learner",
-      orgId: organization.id,
-      role: UserRole.LEARNER
-    },
-    create: {
-      email: learnerEmail,
-      name: "Demo Learner",
-      orgId: organization.id,
-      role: UserRole.LEARNER
-    }
+  // Course / Module
+  const course = await prisma.course.create({
+    data: { orgId: org.id, title: "Essential Skills Starter" },
+  });
+  const mod = await prisma.module.create({
+    data: { orgId: org.id, courseId: course.id, title: "Communication Basics" },
   });
 
-  await prisma.orgMembership.upsert({
-    where: {
-      userId_orgId: { userId: admin.id, orgId: organization.id }
+  // Lessons (YouTube-first)
+  const lessons = await prisma.$transaction([
+    prisma.lesson.create({
+      data: {
+        orgId: org.id,
+        moduleId: mod.id,
+        title: "Effective Listening",
+        provider: "youtube",
+        videoUrl: "https://www.youtube.com/watch?v=ysz5S6PUM-U",
+        durationS: 90,
+        requiresFullWatch: true,
+      },
+    }),
+    prisma.lesson.create({
+      data: {
+        orgId: org.id,
+        moduleId: mod.id,
+        title: "Clear Messaging",
+        provider: "youtube",
+        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        durationS: 75,
+        requiresFullWatch: true,
+      },
+    }),
+    prisma.lesson.create({
+      data: {
+        orgId: org.id,
+        moduleId: mod.id,
+        title: "Nonverbal Cues (Cloudflare later)",
+        provider: "cloudflare",
+        streamId: null, // fill when you enable Cloudflare
+        durationS: 60,
+        requiresFullWatch: false,
+      },
+    }),
+  ]);
+
+  // Assignment → Enrollment for group
+  const assignment = await prisma.assignment.create({
+    data: {
+      orgId: org.id,
+      groupId: group.id,
+      moduleId: mod.id,
+      label: "Week 1",
+      dueAt: null,
+      createdBy: admin.id,
     },
-    update: { role: OrgRole.ADMIN },
-    create: { userId: admin.id, orgId: organization.id, role: OrgRole.ADMIN }
+  });
+  for (const l of lessons) {
+    await prisma.enrollment.upsert({
+      where: { userId_moduleId_orgId: { userId: admin.id, moduleId: mod.id, orgId: org.id } },
+      create: { userId: admin.id, moduleId: mod.id, orgId: org.id },
+      update: {},
+    });
+  }
+
+  // Optional: tiny Progress starter row so analytics isn’t empty
+  await prisma.progress.create({
+    data: {
+      orgId: org.id,
+      userId: admin.id,
+      lessonId: lessons[0].id,
+      segments: [],
+      uniqueSeconds: 0,
+    },
   });
 
-  await prisma.orgMembership.upsert({
-    where: {
-      userId_orgId: { userId: learner.id, orgId: organization.id }
-    },
-    update: { role: OrgRole.LEARNER },
-    create: { userId: learner.id, orgId: organization.id, role: OrgRole.LEARNER }
-  });
-
-  const engineeringGroup = await prisma.orgGroup.upsert({
-    where: { id: "group-engineering" },
-    update: {
-      name: "Engineering Cohort",
-      orgId: organization.id
-    },
-    create: {
-      id: "group-engineering",
-      name: "Engineering Cohort",
-      orgId: organization.id
-    }
-  });
-
-  await prisma.orgGroup.upsert({
-    where: { id: "group-operations" },
-    update: {
-      name: "Operations Cohort",
-      orgId: organization.id
-    },
-    create: {
-      id: "group-operations",
-      name: "Operations Cohort",
-      orgId: organization.id
-    }
-  });
-
-  await prisma.groupMember.upsert({
-    where: {
-      groupId_userId: { groupId: engineeringGroup.id, userId: learner.id }
-    },
-    update: {},
-    create: {
-      groupId: engineeringGroup.id,
-      userId: learner.id
-    }
-  });
-
-  const course = await prisma.course.upsert({
-    where: { id: "course-onboarding" },
-    update: {
-      orgId: organization.id,
-      title: "Onboarding Essentials",
-      description: "A short introduction to the Demo Academy platform."
-    },
-    create: {
-      id: "course-onboarding",
-      orgId: organization.id,
-      title: "Onboarding Essentials",
-      description: "A short introduction to the Demo Academy platform."
-    }
-  });
-
-  const module = await prisma.module.upsert({
-    where: { id: "module-welcome" },
-    update: {
-      courseId: course.id,
-      title: "Welcome Module",
-      order: 1
-    },
-    create: {
-      id: "module-welcome",
-      courseId: course.id,
-      title: "Welcome Module",
-      order: 1
-    }
-  });
-
-  const introLesson = await prisma.lesson.upsert({
-    where: { id: "lesson-intro" },
-    update: {
-      moduleId: module.id,
-      title: "Platform Walkthrough",
-      provider: "youtube",
-      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
-      posterUrl: null,
-      durationS: 240,
-      requiresFullWatch: true
-    },
-    create: {
-      id: "lesson-intro",
-      moduleId: module.id,
-      title: "Platform Walkthrough",
-      provider: "youtube",
-      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
-      posterUrl: null,
-      durationS: 240,
-      requiresFullWatch: true
-    }
-  });
-
-  const policyLesson = await prisma.lesson.upsert({
-    where: { id: "lesson-policy" },
-    update: {
-      moduleId: module.id,
-      title: "Team Policies",
-      streamId: "demo-stream-id",
-      provider: "cloudflare",
-      videoUrl: null,
-      posterUrl: null,
-      durationS: 300,
-      requiresFullWatch: true
-    },
-    create: {
-      id: "lesson-policy",
-      moduleId: module.id,
-      title: "Team Policies",
-      streamId: "demo-stream-id",
-      provider: "cloudflare",
-      videoUrl: null,
-      posterUrl: null,
-      durationS: 300,
-      requiresFullWatch: true
-    }
-  });
-
-  const quiz = await prisma.quiz.upsert({
-    where: { lessonId: policyLesson.id },
-    update: {},
-    create: { lessonId: policyLesson.id }
-  });
-
-  await prisma.quizQuestion.upsert({
-    where: { id: "question-policy-1" },
-    update: {
-      quizId: quiz.id,
-      type: QuestionType.MCQ,
-      prompt: "Which channel should you use for urgent incidents?",
-      options: [
-        { key: "slack", label: "Slack #incidents" },
-        { key: "email", label: "Email leadership" },
-        { key: "pager", label: "Pager rotation" }
-      ],
-      correctKey: "pager"
-    },
-    create: {
-      id: "question-policy-1",
-      quizId: quiz.id,
-      type: QuestionType.MCQ,
-      prompt: "Which channel should you use for urgent incidents?",
-      options: [
-        { key: "slack", label: "Slack #incidents" },
-        { key: "email", label: "Email leadership" },
-        { key: "pager", label: "Pager rotation" }
-      ],
-      correctKey: "pager"
-    }
-  });
-
-  const assignment = await prisma.assignment.upsert({
-    where: { id: "assignment-onboarding" },
-    update: {
-      orgId: organization.id,
-      groupId: engineeringGroup.id,
-      courseId: course.id,
-      moduleId: module.id,
-      label: "Onboarding Assignment",
-      dueAt: new Date("2024-02-01T00:00:00.000Z")
-    },
-    create: {
-      id: "assignment-onboarding",
-      orgId: organization.id,
-      groupId: engineeringGroup.id,
-      courseId: course.id,
-      moduleId: module.id,
-      label: "Onboarding Assignment",
-      dueAt: new Date("2024-02-01T00:00:00.000Z"),
-      createdBy: admin.id
-    }
-  });
-
-  await prisma.enrollment.upsert({
-    where: {
-      assignmentId_userId: { assignmentId: assignment.id, userId: learner.id }
-    },
-    update: { status: EnrollmentStatus.ACTIVE },
-    create: {
-      assignmentId: assignment.id,
-      userId: learner.id,
-      status: EnrollmentStatus.ACTIVE
-    }
-  });
-
-  await prisma.progress.upsert({
-    where: {
-      userId_lessonId: { userId: learner.id, lessonId: introLesson.id }
-    },
-    update: {
-      org: { connect: { id: organization.id } },
-      segments: [[0, 230]],
-      uniqueSeconds: 230,
-      lastTickAt: new Date("2024-01-10T10:00:00.000Z"),
-      completedAt: new Date("2024-01-10T10:05:00.000Z")
-    },
-    create: {
-      orgId: organization.id,
-      userId: learner.id,
-      lessonId: introLesson.id,
-      segments: [[0, 230]],
-      uniqueSeconds: 230,
-      lastTickAt: new Date("2024-01-10T10:00:00.000Z"),
-      completedAt: new Date("2024-01-10T10:05:00.000Z")
-    }
-  });
-
-  await prisma.progress.upsert({
-    where: {
-      userId_lessonId: { userId: learner.id, lessonId: policyLesson.id }
-    },
-    update: {
-      org: { connect: { id: organization.id } },
-      segments: [[0, 140]],
-      uniqueSeconds: 140,
-      lastTickAt: new Date("2024-01-12T12:30:00.000Z"),
-      completedAt: null
-    },
-    create: {
-      orgId: organization.id,
-      userId: learner.id,
-      lessonId: policyLesson.id,
-      segments: [[0, 140]],
-      uniqueSeconds: 140,
-      lastTickAt: new Date("2024-01-12T12:30:00.000Z"),
-      completedAt: null
-    }
+  console.log("Seeded:", {
+    org: org.name,
+    admin: admin.email,
+    course: course.title,
+    module: mod.title,
+    lessons: lessons.map(l => ({ id: l.id, title: l.title, provider: l.provider })),
+    assignment: assignment.id,
   });
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().finally(() => prisma.$disconnect());
