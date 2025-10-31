@@ -1,84 +1,136 @@
 "use client";
-import { useCallback, useMemo, useRef, useState } from "react";
 
-export type ChatMsg = {
+import { useCallback, useState } from "react";
+
+export const AUGMENT_QUOTA_NOTE =
+  "We limit to 3 prompts/hour for this lesson to keep things snappy.";
+
+type AugmentKind = "probe" | "remediation" | "reflection";
+
+export type AugmentMessage = {
   role: "assistant" | "user";
   content: string;
-  at: string;
+  at: Date;
 };
-type SendArgs = {
-  lessonId: string;
-  kind?: "probe" | "remediation" | "reflection";
+
+export type AugmentSendArgs = {
+  kind: AugmentKind;
   message?: string;
   transcriptSnippet?: string;
 };
 
-export function useAugment(initial?: { open?: boolean; seed?: ChatMsg[] }) {
-  const [open, setOpen] = useState(!!initial?.open);
+export type AugmentSendResult =
+  | { ok: true; mock: boolean; content: string }
+  | { ok: false; reason: "quota_exceeded" | "error"; message?: string };
+
+type UseAugmentOptions = {
+  lessonId: string;
+  initialOpen?: boolean;
+};
+
+type AugmentResponse = {
+  ok?: boolean;
+  content?: string;
+  __mock?: boolean;
+  error?: string;
+};
+
+export function useAugment({
+  lessonId,
+  initialOpen = false
+}: UseAugmentOptions) {
+  const [messages, setMessages] = useState<AugmentMessage[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMsg[]>(initial?.seed ?? []);
-  const mockRef = useRef<boolean>(false);
+  const [open, setOpen] = useState(initialOpen);
+  const [mockMode, setMockMode] = useState(false);
 
   const send = useCallback(
     async ({
-      lessonId,
-      kind = "probe",
-      message = "",
+      kind,
+      message,
       transcriptSnippet
-    }: SendArgs) => {
+    }: AugmentSendArgs): Promise<AugmentSendResult> => {
+      const trimmedMessage = message?.trim();
+      const userMessage: AugmentMessage | null = trimmedMessage
+        ? { role: "user", content: trimmedMessage, at: new Date() }
+        : null;
+
+      if (userMessage) {
+        setMessages((previous) => [...previous, userMessage]);
+      }
+
       setPending(true);
       setError(null);
-      if (message.trim()) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "user",
-            content: message.trim(),
-            at: new Date().toISOString()
-          }
-        ]);
-      }
+
       try {
-        const res = await fetch("/api/augment", {
+        const response = await fetch("/api/augment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ lessonId, kind, message, transcriptSnippet })
+          body: JSON.stringify({
+            lessonId,
+            kind,
+            message: trimmedMessage,
+            transcriptSnippet
+          })
         });
-        const json = await res.json();
-        mockRef.current = !!json?.__mock;
-        if (!res.ok || !json?.content)
-          throw new Error(json?.error || "Augment failed");
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: json.content,
-            at: new Date().toISOString()
-          }
+
+        const data = (await response
+          .json()
+          .catch(() => null)) as AugmentResponse | null;
+
+        if (response.status === 429) {
+          const messageText =
+            typeof data?.error === "string" && data.error.length > 0
+              ? data.error
+              : "quota_exceeded";
+
+          const normalizedMessage =
+            messageText === "quota_exceeded" ? AUGMENT_QUOTA_NOTE : messageText;
+
+          setError(normalizedMessage);
+          return {
+            ok: false,
+            reason: "quota_exceeded",
+            message: normalizedMessage
+          };
+        }
+
+        if (!response.ok || !data) {
+          const messageText =
+            typeof data?.error === "string" && data.error.length > 0
+              ? data.error
+              : "Unable to reach POP Bot";
+          setError(messageText);
+          return { ok: false, reason: "error", message: messageText };
+        }
+
+        if (!data.content) {
+          const messageText = "POP Bot sent an empty response";
+          setError(messageText);
+          return { ok: false, reason: "error", message: messageText };
+        }
+
+        setMessages((previous) => [
+          ...previous,
+          { role: "assistant", content: data.content as string, at: new Date() }
         ]);
-      } catch (e: any) {
-        setError(e?.message || "Augment failed");
+
+        const usedMock = Boolean(data.__mock);
+        setMockMode(usedMock);
+
+        return { ok: true, mock: usedMock, content: data.content };
+      } catch (caught) {
+        const messageText =
+          caught instanceof Error ? caught.message : "Something went wrong";
+        setError(messageText);
+        return { ok: false, reason: "error", message: messageText };
       } finally {
         setPending(false);
       }
     },
-    []
+    [lessonId]
   );
 
-  const api = useMemo(
-    () => ({
-      open,
-      setOpen,
-      pending,
-      error,
-      messages,
-      send,
-      isMock: () => mockRef.current
-    }),
-    [open, pending, error, messages, send]
-  );
-
-  return api;
+  return { pending, error, send, messages, open, setOpen, mockMode } as const;
 }
