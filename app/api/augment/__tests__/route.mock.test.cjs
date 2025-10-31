@@ -104,7 +104,8 @@ test('POST /api/augment uses mock assistant when MODEL_API_KEY missing', async (
         'Progress: 30 sec watched of 60 sec total (50% complete); segments: 1 segment(s)',
         'Confusion cues: none detected.'
       ].join('\n')
-    })
+    }),
+    redactEmails: (value) => value
   });
 
   register('@/lib/augment/rate-limit', {
