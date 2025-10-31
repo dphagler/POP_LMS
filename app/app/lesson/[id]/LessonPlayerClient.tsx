@@ -5,20 +5,48 @@ import {
   useEffect,
   useRef,
   useState,
-  type RefObject,
+  type RefObject
 } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Box, Button, Container, Flex, HStack, Icon, IconButton, Progress, Stack, Text } from "@chakra-ui/react";
-import { ArrowLeft, Captions, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import {
+  Badge,
+  Box,
+  Button,
+  Container,
+  Flex,
+  HStack,
+  Icon,
+  IconButton,
+  Progress,
+  Stack,
+  Text,
+  useToast
+} from "@chakra-ui/react";
+import {
+  ArrowLeft,
+  Captions,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX
+} from "lucide-react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { TelemetryOverlay } from "@/components/lesson/TelemetryOverlay";
-import { initPosthogClient, type PosthogClientHandle } from "@/lib/analytics/posthog.client";
+import { AugmentDrawer } from "@/components/lesson/AugmentDrawer";
+import {
+  initPosthogClient,
+  type PosthogClientHandle
+} from "@/lib/analytics/posthog.client";
 import { publicEnv } from "@/lib/env.client";
-import { createYouTubeSink, type VideoProviderName } from "@/lib/video/provider";
+import { useAugment, type AugmentSendArgs } from "@/lib/hooks/useAugment";
+import {
+  createYouTubeSink,
+  type VideoProviderName
+} from "@/lib/video/provider";
 import {
   type YouTubeNamespace,
   type YouTubePlayer,
-  type YouTubePlayerEvent,
+  type YouTubePlayerEvent
 } from "@/types/youtube";
 import { getProgress } from "./actions";
 
@@ -61,7 +89,7 @@ const INTERACTIVE_SELECTOR = [
   "textarea",
   "select",
   "button",
-  'a[href]',
+  "a[href]",
   '[role="button"]',
   '[role="link"]',
   '[role="menuitem"]',
@@ -69,7 +97,7 @@ const INTERACTIVE_SELECTOR = [
   '[role="menuitemcheckbox"]',
   '[role="textbox"]',
   '[contenteditable="true"]',
-  '[data-lesson-shortcuts="ignore"]',
+  '[data-lesson-shortcuts="ignore"]'
 ].join(",");
 
 const COMPLETION_THRESHOLD_RATIO = 0.92;
@@ -79,7 +107,7 @@ function useLessonPlayerKeyboardShortcuts({
   onTogglePlayback,
   onGoToPrevious,
   onGoToNext,
-  primaryCtaRef,
+  primaryCtaRef
 }: ShortcutsConfig) {
   useEffect(() => {
     const container = containerRef.current;
@@ -151,7 +179,11 @@ function useLessonPlayerKeyboardShortcuts({
         return;
       }
 
-      if (key === "Enter" && primaryCtaRef.current && !primaryCtaRef.current.disabled) {
+      if (
+        key === "Enter" &&
+        primaryCtaRef.current &&
+        !primaryCtaRef.current.disabled
+      ) {
         event.preventDefault();
         primaryCtaRef.current.focus();
         primaryCtaRef.current.click();
@@ -162,7 +194,13 @@ function useLessonPlayerKeyboardShortcuts({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [containerRef, onGoToNext, onGoToPrevious, onTogglePlayback, primaryCtaRef]);
+  }, [
+    containerRef,
+    onGoToNext,
+    onGoToPrevious,
+    onTogglePlayback,
+    primaryCtaRef
+  ]);
 }
 
 export function LessonPlayerClient({
@@ -182,17 +220,19 @@ export function LessonPlayerClient({
   userId,
   userEmail,
   userOrgId,
-  userRole,
+  userRole
 }: LessonPlayerClientProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
-  const provider: VideoProviderName = (
-    videoProvider ?? publicEnv.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ?? "youtube"
-  ) as VideoProviderName;
+  const provider: VideoProviderName = (videoProvider ??
+    publicEnv.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT ??
+    "youtube") as VideoProviderName;
   const isYouTube = provider === "youtube";
   const playerRef = useRef<YouTubePlayer | null>(null);
-  const telemetryRef = useRef<ReturnType<typeof createYouTubeSink> | null>(null);
+  const telemetryRef = useRef<ReturnType<typeof createYouTubeSink> | null>(
+    null
+  );
   const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const isMuted = false;
@@ -204,7 +244,8 @@ export function LessonPlayerClient({
       ? Math.max(0, Math.round(videoDuration))
       : 0;
   const initialUniqueSecondsValue =
-    typeof initialUniqueSeconds === "number" && Number.isFinite(initialUniqueSeconds)
+    typeof initialUniqueSeconds === "number" &&
+    Number.isFinite(initialUniqueSeconds)
       ? Math.max(0, Math.round(initialUniqueSeconds))
       : 0;
   const telemetryDebugEnabled = TELEMETRY_DEBUG;
@@ -212,13 +253,59 @@ export function LessonPlayerClient({
     currentTime: 0,
     lastPostStatus: "idle",
     uniqueSeconds: initialUniqueSecondsValue,
-    segmentCount: 0,
+    segmentCount: 0
   }));
   const [isForceTickPending, setIsForceTickPending] = useState(false);
   const posthogClientRef = useRef<PosthogClientHandle | null>(null);
   const [posthogReady, setPosthogReady] = useState(false);
   const lastProgressSecondRef = useRef<number | null>(null);
   const completionEmittedRef = useRef(false);
+  const toast = useToast();
+  const {
+    messages: augmentMessages,
+    send: sendAugment,
+    pending: augmentPending,
+    error: augmentError,
+    open: isAugmentOpen,
+    setOpen: setAugmentOpen,
+    mockMode: augmentMockMode
+  } = useAugment({ lessonId });
+
+  const handleSendAugment = useCallback(
+    async (payload: AugmentSendArgs) => {
+      const result = await sendAugment(payload);
+
+      if (!result.ok) {
+        if (result.reason === "quota_exceeded") {
+          toast({
+            title: "Try again later",
+            status: "info",
+            duration: 4000,
+            isClosable: true
+          });
+        } else if (result.message) {
+          toast({
+            title: "Unable to reach POP Bot",
+            description: result.message,
+            status: "error",
+            duration: 5000,
+            isClosable: true
+          });
+        }
+      }
+
+      return result;
+    },
+    [sendAugment, toast]
+  );
+
+  const handleOpenAugment = useCallback(() => {
+    setAugmentOpen(true);
+  }, [setAugmentOpen]);
+
+  const handleCloseAugment = useCallback(() => {
+    setAugmentOpen(false);
+  }, [setAugmentOpen]);
 
   useEffect(() => {
     if (!telemetryDebugEnabled) {
@@ -232,7 +319,7 @@ export function LessonPlayerClient({
         provider: videoProvider,
         videoId,
         duration: videoDuration,
-        path: window.location.pathname,
+        path: window.location.pathname
       });
   }, [telemetryDebugEnabled, videoDuration, videoId, videoProvider]);
 
@@ -281,7 +368,7 @@ export function LessonPlayerClient({
 
         return {
           ...previous,
-          currentTime: normalized,
+          currentTime: normalized
         };
       });
     };
@@ -313,7 +400,7 @@ export function LessonPlayerClient({
       userId,
       email: userEmail ?? null,
       orgId: userOrgId ?? null,
-      role: userRole ?? null,
+      role: userRole ?? null
     }).then((result) => {
       if (cancelled) {
         return;
@@ -331,7 +418,7 @@ export function LessonPlayerClient({
         lessonId,
         title: lessonTitle,
         provider,
-        durationS: durationSeconds,
+        durationS: durationSeconds
       });
     });
 
@@ -349,7 +436,7 @@ export function LessonPlayerClient({
     userEmail,
     userId,
     userOrgId,
-    userRole,
+    userRole
   ]);
 
   useEffect(() => {
@@ -366,7 +453,10 @@ export function LessonPlayerClient({
           return;
         }
 
-        const uniqueSecondsValue = Math.max(0, Math.round(result.uniqueSeconds ?? 0));
+        const uniqueSecondsValue = Math.max(
+          0,
+          Math.round(result.uniqueSeconds ?? 0)
+        );
         const segmentCountValue = Math.max(0, result.segmentCount ?? 0);
         const statusLabel = `poll ok @ ${new Date().toLocaleTimeString()}`;
 
@@ -374,7 +464,7 @@ export function LessonPlayerClient({
           ...previous,
           lastPostStatus: statusLabel,
           uniqueSeconds: uniqueSecondsValue,
-          segmentCount: segmentCountValue,
+          segmentCount: segmentCountValue
         }));
       } catch (error) {
         if (cancelled) {
@@ -384,7 +474,7 @@ export function LessonPlayerClient({
         const message = error instanceof Error ? error.message : "unknown";
         setTelemetryState((previous) => ({
           ...previous,
-          lastPostStatus: `poll error: ${message}`,
+          lastPostStatus: `poll error: ${message}`
         }));
       }
     };
@@ -438,10 +528,10 @@ export function LessonPlayerClient({
       client.capture("lesson_progress_tick", {
         lessonId,
         t: currentSecond,
-        percent,
+        percent
       });
     },
-    [durationSeconds, lessonId, posthogReady],
+    [durationSeconds, lessonId, posthogReady]
   );
 
   useEffect(() => {
@@ -493,8 +583,8 @@ export function LessonPlayerClient({
             t:
               typeof timeOverride === "number" && Number.isFinite(timeOverride)
                 ? Math.max(0, Math.round(timeOverride))
-                : 0,
-          }),
+                : 0
+          })
         });
 
         if (!response.ok) {
@@ -509,7 +599,7 @@ export function LessonPlayerClient({
         return {
           uniqueSeconds:
             typeof data.uniqueSeconds === "number" ? data.uniqueSeconds : 0,
-          completed: Boolean(data.completed),
+          completed: Boolean(data.completed)
         };
       } catch (error) {
         if (telemetryDebugEnabled) {
@@ -520,7 +610,7 @@ export function LessonPlayerClient({
         return null;
       }
     },
-    [lessonId, posthogReady, provider, telemetryDebugEnabled],
+    [lessonId, posthogReady, provider, telemetryDebugEnabled]
   );
 
   const emitCompletionEvent = useCallback(
@@ -557,18 +647,18 @@ export function LessonPlayerClient({
 
       const uniqueSecondsValue = Math.max(
         0,
-        Math.round(snapshot.uniqueSeconds ?? 0),
+        Math.round(snapshot.uniqueSeconds ?? 0)
       );
 
       client.capture("lesson_view_complete", {
         lessonId,
         uniqueSeconds: uniqueSecondsValue,
-        durationS: durationSeconds,
+        durationS: durationSeconds
       });
 
       completionEmittedRef.current = true;
     },
-    [durationSeconds, fetchProgressSnapshot, lessonId, posthogReady],
+    [durationSeconds, fetchProgressSnapshot, lessonId, posthogReady]
   );
 
   const handleForceTelemetryTick = useCallback(async () => {
@@ -581,7 +671,7 @@ export function LessonPlayerClient({
     if (typeof forceTick !== "function") {
       setTelemetryState((previous) => ({
         ...previous,
-        lastPostStatus: "force tick unavailable",
+        lastPostStatus: "force tick unavailable"
       }));
       return;
     }
@@ -593,13 +683,13 @@ export function LessonPlayerClient({
       const statusLabel = `force tick ok @ ${new Date().toLocaleTimeString()}`;
       setTelemetryState((previous) => ({
         ...previous,
-        lastPostStatus: statusLabel,
+        lastPostStatus: statusLabel
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown";
       setTelemetryState((previous) => ({
         ...previous,
-        lastPostStatus: `force tick error: ${message}`,
+        lastPostStatus: `force tick error: ${message}`
       }));
     } finally {
       setIsForceTickPending(false);
@@ -671,7 +761,10 @@ export function LessonPlayerClient({
       if (player) {
         try {
           const playerDuration = player.getDuration();
-          if (typeof playerDuration === "number" && Number.isFinite(playerDuration)) {
+          if (
+            typeof playerDuration === "number" &&
+            Number.isFinite(playerDuration)
+          ) {
             return playerDuration;
           }
         } catch {
@@ -686,7 +779,7 @@ export function LessonPlayerClient({
       lessonId,
       videoId,
       getPlayerTime,
-      getDuration,
+      getDuration
     });
 
     telemetryRef.current = sink;
@@ -740,7 +833,7 @@ export function LessonPlayerClient({
           rel: 0,
           modestbranding: 1,
           playsinline: 1,
-          controls: 1,
+          controls: 1
         },
         events: {
           onReady: () => {
@@ -779,8 +872,8 @@ export function LessonPlayerClient({
               emitProgressTick(true);
               void emitCompletionEvent("ended");
             }
-          },
-        },
+          }
+        }
       });
 
       localPlayer = player;
@@ -789,7 +882,7 @@ export function LessonPlayerClient({
 
     const ensureYouTubeScript = () => {
       const existingScript = document.querySelector(
-        `script[src="${YOUTUBE_IFRAME_API_SRC}"]`,
+        `script[src="${YOUTUBE_IFRAME_API_SRC}"]`
       );
 
       if (!existingScript) {
@@ -828,7 +921,10 @@ export function LessonPlayerClient({
     return () => {
       cancelled = true;
 
-      if (readyHandler && (window as any).onYouTubeIframeAPIReady === readyHandler) {
+      if (
+        readyHandler &&
+        (window as any).onYouTubeIframeAPIReady === readyHandler
+      ) {
         (window as any).onYouTubeIframeAPIReady = previousOnReady;
       }
 
@@ -850,7 +946,7 @@ export function LessonPlayerClient({
     emitProgressTick,
     isYouTube,
     telemetryDebugEnabled,
-    videoId,
+    videoId
   ]);
 
   useLessonPlayerKeyboardShortcuts({
@@ -858,12 +954,15 @@ export function LessonPlayerClient({
     onTogglePlayback: handleTogglePlayback,
     onGoToPrevious: previousLessonHref ? handleGoToPrevious : undefined,
     onGoToNext: nextLessonHref ? handleGoToNext : undefined,
-    primaryCtaRef,
+    primaryCtaRef
   });
 
   const telemetryPercent =
     durationSeconds > 0
-      ? Math.min(100, Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100))
+      ? Math.min(
+          100,
+          Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100)
+        )
       : 0;
 
   return (
@@ -894,7 +993,13 @@ export function LessonPlayerClient({
               >
                 Back
               </Button>
-              <Text fontWeight="semibold" fontSize="lg" flex="1" textAlign="center" noOfLines={2}>
+              <Text
+                fontWeight="semibold"
+                fontSize="lg"
+                flex="1"
+                textAlign="center"
+                noOfLines={2}
+              >
                 {lessonTitle}
               </Text>
               <Badge
@@ -968,6 +1073,19 @@ export function LessonPlayerClient({
               </Box>
             </Flex>
 
+            <Flex justify="flex-end">
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="primary"
+                onClick={handleOpenAugment}
+                aria-expanded={isAugmentOpen}
+                data-lesson-shortcuts="ignore"
+              >
+                Chat with POP Bot
+              </Button>
+            </Flex>
+
             <Stack spacing={4} pb={{ base: 8, md: 0 }}>
               <HStack justify="space-between">
                 <Button
@@ -994,7 +1112,9 @@ export function LessonPlayerClient({
               <Stack spacing={1}>
                 <Flex justify="space-between" fontSize="sm">
                   <Text color="fg.muted">Progress</Text>
-                  <Text fontWeight="medium">{formatPercent(progressPercent)}</Text>
+                  <Text fontWeight="medium">
+                    {formatPercent(progressPercent)}
+                  </Text>
                 </Flex>
                 <Progress value={progressPercent} borderRadius="full" />
               </Stack>
@@ -1011,6 +1131,16 @@ export function LessonPlayerClient({
           </Stack>
         </Container>
       </Flex>
+      <AugmentDrawer
+        isOpen={isAugmentOpen}
+        onClose={handleCloseAugment}
+        lessonTitle={lessonTitle}
+        messages={augmentMessages}
+        pending={augmentPending}
+        error={augmentError}
+        onSend={handleSendAugment}
+        mockMode={augmentMockMode}
+      />
       {telemetryDebugEnabled ? (
         <TelemetryOverlay
           lessonId={lessonId}
@@ -1029,4 +1159,3 @@ export function LessonPlayerClient({
     </>
   );
 }
-
