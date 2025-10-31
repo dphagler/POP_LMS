@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       orgId,
       userId,
       lessonId,
-      Number(process.env.AUGMENT_MAX_PER_HOUR ?? 3)
+      Number(env.AUGMENT_MAX_PER_HOUR)
     );
     if (!quota.ok)
       return NextResponse.json(

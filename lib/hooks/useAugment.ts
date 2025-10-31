@@ -43,7 +43,7 @@ export function useAugment({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(initialOpen);
-  const [mockMode, setMockMode] = useState(false);
+  const [isMock, setIsMock] = useState(false);
 
   const send = useCallback(
     async ({
@@ -117,7 +117,7 @@ export function useAugment({
         ]);
 
         const usedMock = Boolean(data.__mock);
-        setMockMode(usedMock);
+        setIsMock(usedMock);
 
         return { ok: true, mock: usedMock, content: data.content };
       } catch (caught) {
@@ -132,5 +132,5 @@ export function useAugment({
     [lessonId]
   );
 
-  return { pending, error, send, messages, open, setOpen, mockMode } as const;
+  return { pending, error, send, messages, open, setOpen, isMock } as const;
 }

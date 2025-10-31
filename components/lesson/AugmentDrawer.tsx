@@ -87,7 +87,7 @@ export function AugmentDrawer({
             <HStack justify="space-between">
               <Text fontWeight="bold">Chat with POP Bot</Text>
               <HStack>
-                {chat.mockMode && <Badge colorScheme="purple">Mock</Badge>}
+                {chat.isMock && <Badge colorScheme="purple">Mock</Badge>}
                 <Badge colorScheme="gray">3 prompts/hour</Badge>
               </HStack>
             </HStack>

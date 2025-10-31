@@ -51,7 +51,11 @@ import { getProgress } from "./actions";
 const formatPercent = (value: number): string => `${value}%`;
 
 const TELEMETRY_DEBUG = publicEnv.telemetryDebugEnabled;
-const AUGMENT_ENABLED = publicEnv.AUGMENT_ENABLE;
+const AUGMENT_FLAG =
+  process.env.NEXT_PUBLIC_AUGMENT_ENABLE ??
+  process.env.AUGMENT_ENABLE ??
+  publicEnv.AUGMENT_ENABLE;
+const AUG_ON = AUGMENT_FLAG === "true";
 
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 
@@ -254,6 +258,26 @@ export function LessonPlayerClient({
     uniqueSeconds: initialUniqueSecondsValue,
     segmentCount: 0
   }));
+
+  useEffect(() => {
+    if (!AUG_ON) {
+      return;
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log("[augment] mount", {
+      AUGMENT_ENABLE:
+        process.env.NEXT_PUBLIC_AUGMENT_ENABLE ??
+        process.env.AUGMENT_ENABLE ??
+        publicEnv.AUGMENT_ENABLE,
+      lessonId,
+      title: lessonTitle
+    });
+  }, [lessonId, lessonTitle]);
   const [isForceTickPending, setIsForceTickPending] = useState(false);
   const posthogClientRef = useRef<PosthogClientHandle | null>(null);
   const [posthogReady, setPosthogReady] = useState(false);
@@ -924,7 +948,7 @@ export function LessonPlayerClient({
     progressPercent >= completionPercentThreshold;
 
   useEffect(() => {
-    if (!AUGMENT_ENABLED) {
+    if (!AUG_ON) {
       return;
     }
 
@@ -1046,11 +1070,11 @@ export function LessonPlayerClient({
               </Box>
             </Flex>
 
-            {AUGMENT_ENABLED ? (
-              <div className="flex items-center gap-2">
+            {AUG_ON && (
+              <div style={{ marginTop: 12 }}>
                 <AugmentDrawer lessonId={lessonId} lessonTitle={lessonTitle} />
               </div>
-            ) : null}
+            )}
 
             <Stack spacing={4} pb={{ base: 8, md: 0 }}>
               <HStack justify="space-between">
