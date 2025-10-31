@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const telemetryFlag = z.enum(["1", "true", "0", "false"]).default("0");
 const videoProvider = z.enum(["youtube", "cloudflare"]).default("youtube");
+const augmentFlag = z.enum(["true", "false"]).default("false");
 
 export const ClientEnvSchema = z.object({
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
@@ -9,6 +10,7 @@ export const ClientEnvSchema = z.object({
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: videoProvider,
   NEXT_PUBLIC_TELEMETRY_DEBUG: telemetryFlag,
   NEXT_PUBLIC_AUGMENT_ENABLE: telemetryFlag,
+  AUGMENT_ENABLE: augmentFlag,
   NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1).default("sanity-demo"),
   NEXT_PUBLIC_SANITY_DATASET: z.string().min(1).default("production"),
   NEXT_PUBLIC_SANITY_STUDIO_URL: z.string().url().optional()
@@ -20,7 +22,9 @@ const rawEnv = ClientEnvSchema.parse({
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT:
     process.env.NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT,
   NEXT_PUBLIC_TELEMETRY_DEBUG: process.env.NEXT_PUBLIC_TELEMETRY_DEBUG,
-  NEXT_PUBLIC_AUGMENT_ENABLE: process.env.NEXT_PUBLIC_AUGMENT_ENABLE,
+  NEXT_PUBLIC_AUGMENT_ENABLE:
+    process.env.NEXT_PUBLIC_AUGMENT_ENABLE ?? process.env.AUGMENT_ENABLE,
+  AUGMENT_ENABLE: process.env.AUGMENT_ENABLE,
   NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET,
   NEXT_PUBLIC_SANITY_STUDIO_URL: process.env.NEXT_PUBLIC_SANITY_STUDIO_URL

@@ -124,10 +124,9 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
 
 ## AI Lesson Chat
 
-- Set `AUGMENT_ENABLE=true` in `.env.local` to show the AI chat drawer in lessons.
-- Requests are rate limited to `AUGMENT_MAX_PER_HOUR` per user/lesson combination.
-- Leave `MODEL_API_KEY` unset during local development to run in mock mode; the API will return placeholder responses.
-- By default we only send the active lesson context and an anonymized user identifier to the model provider.
+- Set `AUGMENT_ENABLE=true` in `.env.local` to show the drawer.
+- Without a `MODEL_API_KEY`, the API returns a mock response for UI testing.
+- Rate limit defaults to 3 prompts/hour per lesson.
 
 ## Recommended lint guardrails
 
