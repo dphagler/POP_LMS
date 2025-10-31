@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { PostHogClient } from "@/analytics/posthog-client";
 import { TelemetryOverlay } from "@/components/lesson/TelemetryOverlay";
-import { AugmentDrawer } from "@/components/lesson/AugmentDrawer";
+import AugmentDrawer from "@/components/lesson/AugmentDrawer";
 import {
   initPosthogClient,
   type PosthogClientHandle
@@ -259,19 +259,6 @@ export function LessonPlayerClient({
   const [posthogReady, setPosthogReady] = useState(false);
   const lastProgressSecondRef = useRef<number | null>(null);
   const completionEmittedRef = useRef(false);
-  const [isAugmentOpen, setIsAugmentOpen] = useState(false);
-
-  const handleAugmentOpenChange = useCallback((next: boolean) => {
-    setIsAugmentOpen(next);
-  }, []);
-
-  const handleOpenAugment = useCallback(() => {
-    if (!AUGMENT_ENABLED) {
-      return;
-    }
-    setIsAugmentOpen(true);
-  }, []);
-
   useEffect(() => {
     if (!telemetryDebugEnabled) {
       return;
@@ -929,6 +916,27 @@ export function LessonPlayerClient({
           Math.round((telemetryState.uniqueSeconds / durationSeconds) * 100)
         )
       : 0;
+  const completionPercentThreshold = Math.round(
+    COMPLETION_THRESHOLD_RATIO * 100
+  );
+  const completed =
+    telemetryPercent >= completionPercentThreshold ||
+    progressPercent >= completionPercentThreshold;
+
+  useEffect(() => {
+    if (!AUGMENT_ENABLED) {
+      return;
+    }
+
+    if (!completed) {
+      return;
+    }
+
+    const btn = document.querySelector(
+      '[aria-label="Chat with POP Bot"]'
+    ) as HTMLButtonElement | null;
+    btn?.click();
+  }, [completed]);
 
   return (
     <>
@@ -1039,18 +1047,9 @@ export function LessonPlayerClient({
             </Flex>
 
             {AUGMENT_ENABLED ? (
-              <Flex justify="flex-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  colorScheme="primary"
-                  onClick={handleOpenAugment}
-                  aria-expanded={isAugmentOpen}
-                  data-lesson-shortcuts="ignore"
-                >
-                  Chat with POP Bot
-                </Button>
-              </Flex>
+              <div className="flex items-center gap-2">
+                <AugmentDrawer lessonId={lessonId} lessonTitle={lessonTitle} />
+              </div>
             ) : null}
 
             <Stack spacing={4} pb={{ base: 8, md: 0 }}>
@@ -1098,14 +1097,6 @@ export function LessonPlayerClient({
           </Stack>
         </Container>
       </Flex>
-      {AUGMENT_ENABLED ? (
-        <AugmentDrawer
-          lessonId={lessonId}
-          lessonTitle={lessonTitle}
-          open={isAugmentOpen}
-          onOpenChange={handleAugmentOpenChange}
-        />
-      ) : null}
       {telemetryDebugEnabled ? (
         <TelemetryOverlay
           lessonId={lessonId}
