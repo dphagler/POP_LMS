@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { buildAugmentPrompt } from "@/lib/augment/prompt";
+import { buildAugmentPrompt, redactEmails } from "@/lib/augment/prompt";
 import { checkAugmentQuota } from "@/lib/augment/rate-limit";
 import { assertSameOrg, getSessionUser } from "@/lib/authz";
 import { coerceSegments } from "@/lib/lesson/progress";
@@ -223,6 +223,16 @@ export async function POST(request: Request) {
     const objectives = extractObjectives(runtimeSnapshot);
     const segments = coerceSegments(progressRow?.segments ?? undefined);
 
+    const allowEmailInPrompts = env.allowEmailInPrompts;
+    const trimmedSnippet = payload.transcriptSnippet?.trim();
+    const trimmedMessage = payload.message?.trim();
+    const sanitizedSnippet = allowEmailInPrompts
+      ? trimmedSnippet
+      : redactEmails(trimmedSnippet);
+    const sanitizedMessage = allowEmailInPrompts
+      ? trimmedMessage
+      : redactEmails(trimmedMessage);
+
     const prompt = buildAugmentPrompt({
       lesson: { title: lesson.title, objectives },
       progress: {
@@ -230,8 +240,9 @@ export async function POST(request: Request) {
         durationS: lesson.durationS,
         segments
       },
-      transcriptSnippet: payload.transcriptSnippet?.trim(),
-      lastUserMsg: payload.message?.trim()
+      transcriptSnippet: trimmedSnippet,
+      lastUserMsg: trimmedMessage,
+      sanitizeEmails: !allowEmailInPrompts
     });
 
     const assistant = await generateAssistantMessage(prompt, lesson.title);
@@ -264,8 +275,8 @@ export async function POST(request: Request) {
             source: "augment_route",
             kind: payload.kind,
             promptInputs: {
-              transcriptSnippet: payload.transcriptSnippet?.trim() ?? null,
-              lastUserMsg: payload.message?.trim() ?? null
+              transcriptSnippet: sanitizedSnippet ?? null,
+              lastUserMsg: sanitizedMessage ?? null
             }
           }
         }

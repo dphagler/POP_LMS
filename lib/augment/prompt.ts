@@ -1,6 +1,6 @@
 const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 
-const redactEmails = (value: string | undefined): string | undefined => {
+export const redactEmails = (value: string | undefined): string | undefined => {
   if (!value) return undefined;
   return value.replace(EMAIL_PATTERN, "[redacted]");
 };
@@ -21,6 +21,7 @@ type BuildPromptInput = {
   progress: ProgressInfo;
   transcriptSnippet?: string;
   lastUserMsg?: string;
+  sanitizeEmails?: boolean;
 };
 
 type BuildPromptResult = {
@@ -149,12 +150,16 @@ export function buildAugmentPrompt({
   lesson,
   progress,
   transcriptSnippet,
-  lastUserMsg
+  lastUserMsg,
+  sanitizeEmails = true
 }: BuildPromptInput): BuildPromptResult {
   const objectivesSummary = summarizeObjectives(lesson.objectives);
   const progressSummary = summarizeProgress(progress);
-  const safeSnippet = redactEmails(transcriptSnippet)?.trim();
-  const safeLastMessage = redactEmails(lastUserMsg)?.trim();
+  const maybeRedact: (value?: string) => string | undefined = sanitizeEmails
+    ? (value) => redactEmails(value)
+    : (value) => value;
+  const safeSnippet = maybeRedact(transcriptSnippet)?.trim();
+  const safeLastMessage = maybeRedact(lastUserMsg)?.trim();
   const confusionSignals = detectConfusion(
     progressSummary.ratio,
     safeSnippet,

@@ -49,6 +49,7 @@ export const ServerEnv = z.object({
   POSTHOG_SERVER_KEY: z.string().optional(),
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: videoProvider,
   NEXT_PUBLIC_TELEMETRY_DEBUG: telemetryFlag,
+  NEXT_PUBLIC_AUGMENT_ENABLE: telemetryFlag,
   LESSON_COMPLETE_PCT: z.string().default("0.92"),
   STREAM_ENABLED: booleanFlag.default("false"),
   STREAM_WEBHOOK_SECRET: z.string().optional(),
@@ -63,7 +64,8 @@ export const ServerEnv = z.object({
   APP_BASE_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().optional(),
   VERCEL_URL: z.string().optional(),
-  AUTH_URL: z.string().url().optional()
+  AUTH_URL: z.string().url().optional(),
+  ALLOW_EMAIL_IN_PROMPTS: telemetryFlag
 });
 
 const rawEnv = ServerEnv.parse(process.env);
@@ -107,7 +109,8 @@ export const env = {
   streamEnabled: rawEnv.STREAM_ENABLED === "true",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
   logHeartbeatEnabled: rawEnv.LOG_HEARTBEAT === "1",
-  lessonCompletionRatio: parsedLessonCompletionPct
+  lessonCompletionRatio: parsedLessonCompletionPct,
+  allowEmailInPrompts: isTruthyFlag(rawEnv.ALLOW_EMAIL_IN_PROMPTS)
 } as const;
 
 export type ServerEnv = typeof env;
