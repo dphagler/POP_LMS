@@ -122,7 +122,13 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
   disable analytics entirely. When enabled in production, client error events are sampled (25%) and scrubbed before being sent to
   PostHog.
 
+## AI Lesson Chat
+
+- Set `AUGMENT_ENABLE=true` in `.env.local` to show the AI chat drawer in lessons.
+- Requests are rate limited to `AUGMENT_MAX_PER_HOUR` per user/lesson combination.
+- Leave `MODEL_API_KEY` unset during local development to run in mock mode; the API will return placeholder responses.
+- By default we only send the active lesson context and an anonymized user identifier to the model provider.
+
 ## Recommended lint guardrails
 
 Enable ESLint rules such as `no-console` and `no-unused-vars` (along with [`unused-imports/no-unused-imports`](https://github.com/sweepline/eslint-plugin-unused-imports)) to keep dead code and debug logging from slipping back into the codebase. Add them to `.eslintrc.js` once the project is ready to enforce the stricter posture.
-
