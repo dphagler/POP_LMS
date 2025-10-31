@@ -153,7 +153,14 @@ test('POST /api/augment returns mock payload when MODEL_API_KEY missing', async 
   assert.ok(typeof json.content === 'string' && json.content.length > 0);
 
   assert.equal(messagesPersisted.length, 3, 'should persist system, user, and assistant messages');
-  assert.deepEqual(servedRecord, { orgId: 'org-1', userId: 'user-1', lessonId: 'lesson-1', kind: 'probe' });
+  assert.equal(servedRecord.orgId, 'org-1');
+  assert.equal(servedRecord.userId, 'user-1');
+  assert.equal(servedRecord.lessonId, 'lesson-1');
+  assert.equal(servedRecord.kind, 'probe');
+  assert.equal(servedRecord.objectiveId, 'lesson-1:adhoc');
+  assert.equal(servedRecord.assetRef, 'adhoc');
+  assert.equal(servedRecord.ruleIndex, -1);
+  assert.match(servedRecord.augmentationId, /^adhoc:/);
 
   if (restoreEnv !== undefined) {
     process.env.MODEL_API_KEY = restoreEnv;
