@@ -11,27 +11,22 @@ type SkipResult = { skip: true; reason: string };
 
 type CoursePayload = {
   title: string;
-  order: number;
-  published: boolean;
-  slug?: string;
+  description: string | null;
 };
 
 type ModulePayload = {
   title: string;
   order: number;
-  published: boolean;
   courseId: string;
-  slug?: string;
 };
 
 type LessonPayload = {
   title: string;
-  order: number;
-  published: boolean;
   moduleId: string;
-  provider?: Provider;
-  videoUrl?: string | null;
-  streamId?: string | null;
+  provider: Provider;
+  videoUrl: string | null;
+  streamId: string | null;
+  posterUrl: string | null;
   durationS: number;
   requiresFullWatch: boolean;
 };
@@ -56,7 +51,12 @@ function sanitizeTitle(value: unknown): string | undefined {
   return stringified.length > 0 ? stringified : undefined;
 }
 
-function extractSlug(value: unknown): string | undefined {
+function toNumber(value: unknown, fallback = 0): number {
+  const coerced = Number(value);
+  return Number.isFinite(coerced) ? coerced : fallback;
+}
+
+function sanitizeOptionalString(value: unknown): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -66,20 +66,8 @@ function extractSlug(value: unknown): string | undefined {
     return trimmed.length > 0 ? trimmed : undefined;
   }
 
-  if (typeof value === "object") {
-    const maybeCurrent = (value as { current?: unknown }).current;
-    if (typeof maybeCurrent === "string") {
-      const trimmed = maybeCurrent.trim();
-      return trimmed.length > 0 ? trimmed : undefined;
-    }
-  }
-
-  return undefined;
-}
-
-function toNumber(value: unknown, fallback = 0): number {
-  const coerced = Number(value);
-  return Number.isFinite(coerced) ? coerced : fallback;
+  const stringified = String(value).trim();
+  return stringified.length > 0 ? stringified : undefined;
 }
 
 function pruneForDiff(value: unknown): unknown {
@@ -138,14 +126,8 @@ export function mapCourse(
 
   const payload: CoursePayload = {
     title,
-    order: toNumber(doc?.order ?? 0, 0),
-    published: doc?.published !== false
+    description: sanitizeOptionalString(doc?.description) ?? null
   };
-
-  const slug = extractSlug(doc?.slug ?? undefined);
-  if (slug) {
-    payload.slug = slug;
-  }
 
   return payload;
 }
@@ -166,14 +148,8 @@ export function mapModule(
   const payload: ModulePayload = {
     title,
     order: toNumber(doc?.order ?? 0, 0),
-    published: doc?.published !== false,
     courseId
   };
-
-  const slug = extractSlug(doc?.slug ?? undefined);
-  if (slug) {
-    payload.slug = slug;
-  }
 
   return payload;
 }
@@ -191,22 +167,34 @@ export function mapLesson(
     return { skip: true, reason: "missing_title" };
   }
 
-  const inferredProvider = doc?.videoUrl
-    ? "youtube"
-    : doc?.streamId
-      ? "cloudflare"
-      : null;
-  const provider = normalizeProvider(doc?.provider ?? inferredProvider);
+  const explicitProvider = normalizeProvider(doc?.provider);
+  const inferredProvider = explicitProvider
+    ? explicitProvider
+    : sanitizeOptionalString(doc?.videoUrl) ||
+        sanitizeOptionalString(doc?.youtubeId)
+      ? "youtube"
+      : sanitizeOptionalString(doc?.streamId)
+        ? "cloudflare"
+        : null;
+  const provider = explicitProvider ?? inferredProvider;
+
+  if (!provider) {
+    return { skip: true, reason: "missing_provider" };
+  }
 
   const rawVideoUrl = isNonEmptyString(doc?.videoUrl)
     ? doc?.videoUrl.trim()
     : undefined;
+  const youtubeId = sanitizeOptionalString(doc?.youtubeId);
   const rawStreamId = isNonEmptyString(doc?.streamId)
     ? doc?.streamId.trim()
     : undefined;
+  const rawPosterUrl = sanitizeOptionalString(doc?.posterUrl);
 
   if (provider === "youtube" && !rawVideoUrl) {
-    return { skip: true, reason: "youtube_without_url" };
+    if (!youtubeId) {
+      return { skip: true, reason: "youtube_without_url" };
+    }
   }
 
   if (provider === "cloudflare" && !rawStreamId) {
@@ -215,28 +203,19 @@ export function mapLesson(
 
   const payload: LessonPayload = {
     title,
-    order: toNumber(doc?.order ?? 0, 0),
-    published: doc?.published !== false,
     moduleId,
+    provider,
+    videoUrl:
+      provider === "youtube"
+        ? (rawVideoUrl ??
+          (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null))
+        : (rawVideoUrl ?? null),
+    streamId:
+      provider === "cloudflare" ? (rawStreamId ?? null) : (rawStreamId ?? null),
+    posterUrl: rawPosterUrl ?? null,
     durationS: toNumber(doc?.durationS ?? 0, 0),
     requiresFullWatch: Boolean(doc?.requiresFullWatch ?? true)
   };
-
-  if (provider) {
-    payload.provider = provider;
-  }
-
-  if (provider === "youtube") {
-    payload.videoUrl = rawVideoUrl ?? null;
-  } else if (rawVideoUrl) {
-    payload.videoUrl = rawVideoUrl;
-  }
-
-  if (provider === "cloudflare") {
-    payload.streamId = rawStreamId ?? null;
-  } else if (rawStreamId) {
-    payload.streamId = rawStreamId;
-  }
 
   return payload;
 }
