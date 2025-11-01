@@ -509,7 +509,9 @@ export function SyncPanelCard() {
           <Heading size="sm">Sync from Sanity</Heading>
           <Text fontSize="sm" color="fg.muted">
             Pull the latest courses, modules, and lessons from Sanity without
-            leaving the admin dashboard.
+            leaving the admin dashboard. Sync is idempotent; unchanged content
+            will be skipped. Lessons missing platform IDs (YouTube URL or
+            Cloudflare streamId) are skipped with a reason.
           </Text>
         </Stack>
       </CardHeader>
