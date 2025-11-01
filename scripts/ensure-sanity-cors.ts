@@ -1,25 +1,24 @@
 import process from "node:process";
 
-const projectId =
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ??
-  process.env.SANITY_STUDIO_PROJECT_ID ??
-  process.env.SANITY_PROJECT_ID;
+import { env } from "@/lib/env";
+
+const projectId = env.SANITY_PROJECT_ID;
 
 const managementToken =
-  process.env.SANITY_MANAGEMENT_TOKEN ??
-  process.env.SANITY_DEPLOY_STUDIO_TOKEN ??
-  process.env.SANITY_MANAGE_TOKEN ??
-  process.env.SANITY_READ_TOKEN;
+  env.SANITY_MANAGEMENT_TOKEN ??
+  env.SANITY_DEPLOY_STUDIO_TOKEN ??
+  env.SANITY_MANAGE_TOKEN ??
+  env.SANITY_READ_TOKEN;
 
 const defaultOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
-const userDefinedOrigins = (process.env.SANITY_DEV_CORS_ORIGINS ?? "")
+const userDefinedOrigins = (env.SANITY_DEV_CORS_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
 const origins = Array.from(new Set([...defaultOrigins, ...userDefinedOrigins]));
 
-function log(message) {
+function log(message: string) {
   process.stdout.write(`\u001b[36m[sanity-cors]\u001b[0m ${message}\n`);
 }
 
@@ -52,8 +51,8 @@ async function ensureCors() {
   try {
     const response = await fetch(endpoint, {
       headers: {
-        Authorization: `Bearer ${managementToken}`,
-      },
+        Authorization: `Bearer ${managementToken}`
+      }
     });
 
     if (!response.ok) {
@@ -62,10 +61,16 @@ async function ensureCors() {
       return;
     }
 
-    const existing = await response.json();
+    const existing = (await response.json()) as {
+      origin?: string;
+      allowCredentials?: boolean;
+    }[];
 
     const missing = origins.filter(
-      (origin) => !existing.some((entry) => entry.origin === origin && entry.allowCredentials)
+      (origin) =>
+        !existing.some(
+          (entry) => entry.origin === origin && entry.allowCredentials
+        )
     );
 
     if (missing.length === 0) {
@@ -78,9 +83,9 @@ async function ensureCors() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${managementToken}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ origin, allowCredentials: true }),
+        body: JSON.stringify({ origin, allowCredentials: true })
       });
 
       if (res.ok) {
@@ -93,8 +98,12 @@ async function ensureCors() {
       }
     }
   } catch (error) {
-    log(`Unable to verify Sanity CORS configuration: ${error instanceof Error ? error.message : error}`);
+    log(
+      `Unable to verify Sanity CORS configuration: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
-await ensureCors();
+void ensureCors();

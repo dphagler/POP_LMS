@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.5.2",
   "scripts": {
-    "dev": "node scripts/ensure-sanity-cors.mjs && next dev",
+    "dev": "tsx scripts/ensure-sanity-cors.ts && next dev",
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",
@@ -20,7 +20,7 @@
     "db:seed": "prisma db seed",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "sanity:cors": "node scripts/ensure-sanity-cors.mjs",
+    "sanity:cors": "tsx scripts/ensure-sanity-cors.ts",
     "backfill:youtube": "tsx scripts/backfill-youtube.ts",
     "prepare": "husky"
   },

@@ -2,13 +2,45 @@ import { createClient } from "@sanity/client";
 import imageUrlBuilder from "@sanity/image-url";
 
 import { env } from "@/lib/env";
+import { publicEnv } from "@/lib/env.client";
 
 const SANITY_API_VERSION = "2024-08-01";
 
 type SanityClient = ReturnType<typeof createClient>;
 
-let cachedClient: SanityClient | null = null;
-let cachedBuilder: ReturnType<typeof imageUrlBuilder> | null = null;
+let cachedServerClient: SanityClient | null = null;
+let cachedServerBuilder: ReturnType<typeof imageUrlBuilder> | null = null;
+
+type SanityRuntimeConfig = {
+  projectId: string;
+  dataset: string;
+  token: string | undefined;
+  useCdn: boolean;
+};
+
+function getSanityServerConfig(): SanityRuntimeConfig {
+  return {
+    projectId: env.SANITY_PROJECT_ID,
+    dataset: env.SANITY_DATASET,
+    token: env.SANITY_READ_TOKEN || undefined,
+    useCdn: false
+  };
+}
+
+function getSanityBrowserConfig(): SanityRuntimeConfig {
+  return {
+    projectId: publicEnv.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: publicEnv.NEXT_PUBLIC_SANITY_DATASET,
+    token: undefined,
+    useCdn: true
+  };
+}
+
+function getSanityRuntimeConfig(): SanityRuntimeConfig {
+  return typeof window === "undefined"
+    ? getSanityServerConfig()
+    : getSanityBrowserConfig();
+}
 
 export type SanityLessonDocument = {
   _id?: string;
@@ -39,17 +71,9 @@ export type SanityCourseDocument = {
   modules?: SanityModuleDocument[];
 };
 
-function getSanityConfig() {
-  return {
-    projectId: env.SANITY_PROJECT_ID ?? env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-    dataset: env.SANITY_DATASET ?? env.NEXT_PUBLIC_SANITY_DATASET,
-    token: env.SANITY_READ_TOKEN
-  };
-}
-
 export function getMissingSanityEnvVars(): string[] {
   const missing: string[] = [];
-  const { projectId, dataset } = getSanityConfig();
+  const { projectId, dataset } = getSanityServerConfig();
 
   if (!projectId) {
     missing.push("SANITY_PROJECT_ID");
@@ -63,7 +87,14 @@ export function getMissingSanityEnvVars(): string[] {
 }
 
 function buildSanityClient(): SanityClient {
-  const { projectId, dataset, token } = getSanityConfig();
+  const { projectId, dataset, token, useCdn } = getSanityRuntimeConfig();
+
+  if (!projectId) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[sanity] projectId missing; check env (.env.local).");
+    }
+  }
+
   if (!projectId || !dataset) {
     const missing = getMissingSanityEnvVars();
     throw new Error(
@@ -75,23 +106,31 @@ function buildSanityClient(): SanityClient {
     projectId,
     dataset,
     apiVersion: SANITY_API_VERSION,
-    useCdn: false,
+    useCdn,
     token
   });
 }
 
 export function getSanityClient(): SanityClient {
-  if (!cachedClient) {
-    cachedClient = buildSanityClient();
+  if (typeof window === "undefined") {
+    if (!cachedServerClient) {
+      cachedServerClient = buildSanityClient();
+    }
+    return cachedServerClient;
   }
-  return cachedClient;
+
+  return buildSanityClient();
 }
 
 function getImageBuilder() {
-  if (!cachedBuilder) {
-    cachedBuilder = imageUrlBuilder(getSanityClient());
+  if (typeof window === "undefined") {
+    if (!cachedServerBuilder) {
+      cachedServerBuilder = imageUrlBuilder(getSanityClient());
+    }
+    return cachedServerBuilder;
   }
-  return cachedBuilder;
+
+  return imageUrlBuilder(getSanityClient());
 }
 
 export function urlFor(source: string) {
@@ -107,7 +146,7 @@ function resolveSanityStudioBaseUrl() {
     return explicit.replace(/\/$/, "");
   }
 
-  const { projectId } = getSanityConfig();
+  const { projectId } = getSanityServerConfig();
   if (!projectId) {
     return undefined;
   }
