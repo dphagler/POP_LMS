@@ -30,8 +30,17 @@ const RunSanitySyncSchema = z
     dryRun: z.boolean().optional(),
     allowDeletes: z.boolean().optional(),
     removeMissing: z.boolean().optional(),
-    since: z.string().optional(),
-    limit: z.number().optional()
+    since: z
+      .string()
+      .datetime()
+      .optional()
+      .or(
+        z
+          .string()
+          .regex(/^(\d{4}-\d{2}-\d{2}T.*Z)$/)
+          .optional()
+      ),
+    limit: z.number().int().positive().max(5000).optional()
   })
   .optional();
 
@@ -126,7 +135,23 @@ export async function enqueueSanitySyncJob({
     };
   }
 
-  let status = createSyncJob(orgId, options, "Sync job queued");
+  const jobOptions: SyncJobOptions = {
+    dryRun: options.dryRun,
+    allowDeletes: options.allowDeletes,
+    removeMissing: options.removeMissing
+  };
+
+  const since = sanitizeSince(options.since);
+  if (since) {
+    jobOptions.since = since;
+  }
+
+  const limit = sanitizeLimit(options.limit);
+  if (limit !== undefined) {
+    jobOptions.limit = limit;
+  }
+
+  let status = createSyncJob(orgId, jobOptions, "Sync job queued");
   status =
     updateSyncJob(status.id, {
       message: "Fetching content from Sanity…",
@@ -135,7 +160,7 @@ export async function enqueueSanitySyncJob({
 
   appendSyncJobLog(
     status.id,
-    `Started by user ${actorId}. Options: dryRun=${options.dryRun}, allowDeletes=${options.allowDeletes}, removeMissing=${options.removeMissing}, since=${options.since ?? "n/a"}, limit=${options.limit ?? "n/a"}`
+    `Started by user ${actorId}. Options: dryRun=${jobOptions.dryRun}, allowDeletes=${jobOptions.allowDeletes}, removeMissing=${jobOptions.removeMissing}, since=${jobOptions.since ?? "n/a"}, limit=${jobOptions.limit ?? "n/a"}`
   );
 
   await logAudit({
@@ -145,12 +170,12 @@ export async function enqueueSanitySyncJob({
     targetId: status.id,
     metadata: {
       jobId: status.id,
-      options
+      options: jobOptions
     }
   });
 
   setTimeout(() => {
-    void runSyncJob({ jobId: status.id, orgId, actorId, options });
+    void runSyncJob({ jobId: status.id, orgId, actorId, options: jobOptions });
   }, 0);
 
   return { ok: true, jobId: status.id, status };
@@ -752,8 +777,12 @@ function sanitizeLimit(value: number | undefined): number | undefined {
     return undefined;
   }
 
-  const normalized = Math.max(0, Math.floor(value));
-  return normalized;
+  const normalized = Math.floor(value);
+  if (normalized <= 0) {
+    return undefined;
+  }
+
+  return Math.min(normalized, 5000);
 }
 
 function createSyncDebugLogger(jobId: string) {
