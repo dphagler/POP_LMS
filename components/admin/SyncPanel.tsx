@@ -35,22 +35,44 @@ import {
   useState
 } from "react";
 
-import type { SyncJobCounts, SyncJobOptions, SyncStatus } from "@/lib/jobs/syncStatus";
+import type {
+  SyncJobCounts,
+  SyncJobOptions,
+  SyncStatus
+} from "@/lib/jobs/syncStatus";
 import { getSyncStatus, runSanitySync } from "@/lib/server-actions/sync";
 
-const DEFAULT_OPTIONS: SyncJobOptions = { dryRun: false, allowDeletes: false, removeMissing: false };
-const DEFAULT_COUNTS: SyncJobCounts = { created: 0, updated: 0, deleted: 0, skipped: 0 };
+const DEFAULT_OPTIONS: SyncJobOptions = {
+  dryRun: false,
+  allowDeletes: false,
+  removeMissing: false
+};
+const DEFAULT_COUNTS: SyncJobCounts = {
+  created: 0,
+  updated: 0,
+  deleted: 0,
+  skipped: 0
+};
 
-const timeFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
+type SyncBooleanOptionKey = "dryRun" | "allowDeletes" | "removeMissing";
+
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short"
+});
 
 type StartSyncResult =
   | { ok: true; status: SyncStatus | null }
-  | { ok: false; reason: "disabled" | "already_running" | "error" | "unknown"; status?: SyncStatus | null };
+  | {
+      ok: false;
+      reason: "disabled" | "already_running" | "error" | "unknown";
+      status?: SyncStatus | null;
+    };
 
 type SyncPanelContextValue = {
   status: SyncStatus | null;
   options: SyncJobOptions;
-  updateOption: (key: keyof SyncJobOptions, value: boolean) => void;
+  updateOption: (key: SyncBooleanOptionKey, value: boolean) => void;
   startSync: () => Promise<StartSyncResult>;
   isSubmitting: boolean;
   isRunning: boolean;
@@ -68,13 +90,17 @@ type SerializableStatus = SyncStatus & {
   finishedAt: Date | string | null;
 };
 
-function coerceStatus(raw: SerializableStatus | SyncStatus | null | undefined): SyncStatus | null {
+function coerceStatus(
+  raw: SerializableStatus | SyncStatus | null | undefined
+): SyncStatus | null {
   if (!raw) {
     return null;
   }
 
-  const startedAt = raw.startedAt instanceof Date ? raw.startedAt : new Date(raw.startedAt);
-  const updatedAt = raw.updatedAt instanceof Date ? raw.updatedAt : new Date(raw.updatedAt);
+  const startedAt =
+    raw.startedAt instanceof Date ? raw.startedAt : new Date(raw.startedAt);
+  const updatedAt =
+    raw.updatedAt instanceof Date ? raw.updatedAt : new Date(raw.updatedAt);
   const finishedAt = raw.finishedAt
     ? raw.finishedAt instanceof Date
       ? raw.finishedAt
@@ -118,16 +144,25 @@ type SyncPanelProviderProps = {
   children: ReactNode;
 };
 
-export function SyncPanelProvider({ initialStatus, disabled = false, disabledReason, children }: SyncPanelProviderProps) {
+export function SyncPanelProvider({
+  initialStatus,
+  disabled = false,
+  disabledReason,
+  children
+}: SyncPanelProviderProps) {
   const toast = useToast();
   const initial = useMemo(() => coerceStatus(initialStatus), [initialStatus]);
   const [status, setStatus] = useState<SyncStatus | null>(initial);
-  const [options, setOptions] = useState<SyncJobOptions>(() => initial?.options ?? { ...DEFAULT_OPTIONS });
+  const [options, setOptions] = useState<SyncJobOptions>(
+    () => initial?.options ?? { ...DEFAULT_OPTIONS }
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchInFlight = useRef(false);
   const panelNodeRef = useRef<HTMLDivElement | null>(null);
-  const previousPhaseRef = useRef<SyncStatus["phase"] | null>(initial?.phase ?? null);
+  const previousPhaseRef = useRef<SyncStatus["phase"] | null>(
+    initial?.phase ?? null
+  );
   const initialJobIdRef = useRef<string | undefined>(initial?.id);
 
   const isRunning = isStatusActive(status);
@@ -143,46 +178,50 @@ export function SyncPanelProvider({ initialStatus, disabled = false, disabledRea
     panelNodeRef.current = node;
   }, []);
 
-  const updateOption = useCallback((key: keyof SyncJobOptions, value: boolean) => {
-    setOptions((prev) => {
-      const next: SyncJobOptions = { ...prev, [key]: value };
+  const updateOption = useCallback(
+    (key: SyncBooleanOptionKey, value: boolean) => {
+      setOptions((prev) => {
+        const next: SyncJobOptions = { ...prev, [key]: value };
 
-      if (key === "dryRun" && value) {
-        next.allowDeletes = false;
-        next.removeMissing = false;
-      }
+        if (key === "dryRun" && value) {
+          next.allowDeletes = false;
+          next.removeMissing = false;
+        }
 
-      if ((key === "allowDeletes" && !value) || (key === "dryRun" && value)) {
-        next.removeMissing = false;
-      }
+        if ((key === "allowDeletes" && !value) || (key === "dryRun" && value)) {
+          next.removeMissing = false;
+        }
 
-      return next;
-    });
-  }, []);
-
-  const fetchStatus = useCallback(
-    async (jobId?: string | null) => {
-      if (fetchInFlight.current) {
-        return;
-      }
-
-      fetchInFlight.current = true;
-      try {
-        const next = await getSyncStatus(jobId ?? undefined);
-        setStatus(coerceStatus(next));
-      } catch (error) {
-        console.error("Unable to load sync status", error);
-      } finally {
-        fetchInFlight.current = false;
-      }
+        return next;
+      });
     },
     []
   );
 
+  const fetchStatus = useCallback(async (jobId?: string | null) => {
+    if (fetchInFlight.current) {
+      return;
+    }
+
+    fetchInFlight.current = true;
+    try {
+      const next = await getSyncStatus(jobId ?? undefined);
+      setStatus(coerceStatus(next));
+    } catch (error) {
+      console.error("Unable to load sync status", error);
+    } finally {
+      fetchInFlight.current = false;
+    }
+  }, []);
+
   const startSync = useCallback(async (): Promise<StartSyncResult> => {
     if (disabled) {
       if (disabledReason) {
-        toast({ title: "Sync unavailable", description: disabledReason, status: "info" });
+        toast({
+          title: "Sync unavailable",
+          description: disabledReason,
+          status: "info"
+        });
       }
       return { ok: false, reason: "disabled", status };
     }
@@ -236,8 +275,13 @@ export function SyncPanelProvider({ initialStatus, disabled = false, disabledRea
 
       return { ok: true, status: nextStatus };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to start sync.";
-      toast({ title: "Unable to start sync", description: message, status: "error" });
+      const message =
+        error instanceof Error ? error.message : "Unable to start sync.";
+      toast({
+        title: "Unable to start sync",
+        description: message,
+        status: "error"
+      });
       return { ok: false, reason: "unknown", status };
     } finally {
       setIsSubmitting(false);
@@ -260,7 +304,9 @@ export function SyncPanelProvider({ initialStatus, disabled = false, disabledRea
 
     if (phase && phase !== previous) {
       if (phase === "done" && status) {
-        const title = status.options.dryRun ? "Dry run complete" : "Sync complete";
+        const title = status.options.dryRun
+          ? "Dry run complete"
+          : "Sync complete";
         toast({
           title,
           description: formatCounts(status.counts),
@@ -269,7 +315,8 @@ export function SyncPanelProvider({ initialStatus, disabled = false, disabledRea
       } else if (phase === "error" && status) {
         toast({
           title: "Sync failed",
-          description: status.message ?? "An unexpected error occurred during sync.",
+          description:
+            status.message ?? "An unexpected error occurred during sync.",
           status: "error"
         });
       }
@@ -342,7 +389,11 @@ export function SyncPanelProvider({ initialStatus, disabled = false, disabledRea
     ]
   );
 
-  return <SyncPanelContext.Provider value={contextValue}>{children}</SyncPanelContext.Provider>;
+  return (
+    <SyncPanelContext.Provider value={contextValue}>
+      {children}
+    </SyncPanelContext.Provider>
+  );
 }
 
 export function useSyncPanel(): SyncPanelContextValue {
@@ -424,7 +475,8 @@ export function SyncPanelCard() {
   const phaseLabel = status ? phaseLabels[status.phase] : "Idle";
   const phaseColor = status ? phaseColors[status.phase] : "gray";
   const lastUpdated = status ? timeFormatter.format(status.updatedAt) : null;
-  const message = status?.message ?? "Use the controls to start a sync when you’re ready.";
+  const message =
+    status?.message ?? "Use the controls to start a sync when you’re ready.";
 
   const handleCopyLogs = useCallback(async () => {
     if (!status?.logs?.length) {
@@ -439,7 +491,8 @@ export function SyncPanelCard() {
         toast({ title: "Clipboard unavailable", status: "warning" });
       }
     } catch (error) {
-      const description = error instanceof Error ? error.message : "Unable to copy logs.";
+      const description =
+        error instanceof Error ? error.message : "Unable to copy logs.";
       toast({ title: "Unable to copy logs", description, status: "error" });
     }
   }, [status, toast]);
@@ -455,7 +508,8 @@ export function SyncPanelCard() {
         <Stack spacing={2}>
           <Heading size="sm">Sync from Sanity</Heading>
           <Text fontSize="sm" color="fg.muted">
-            Pull the latest courses, modules, and lessons from Sanity without leaving the admin dashboard.
+            Pull the latest courses, modules, and lessons from Sanity without
+            leaving the admin dashboard.
           </Text>
         </Stack>
       </CardHeader>
@@ -463,17 +517,27 @@ export function SyncPanelCard() {
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} alignItems="start">
           <Stack spacing={4} fontSize="sm" color="fg.muted">
             <Text>
-              Ensure your database stays aligned with your headless CMS. Dry runs preview a subset of documents before committing
-              changes, and you can optionally allow deletes when you’re ready to mirror removals from Sanity.
+              Ensure your database stays aligned with your headless CMS. Dry
+              runs preview a subset of documents before committing changes, and
+              you can optionally allow deletes when you’re ready to mirror
+              removals from Sanity.
             </Text>
             {disabled ? (
               <Alert status="error" borderRadius="lg">
                 <AlertIcon />
-                <AlertDescription>{disabledReason ?? "Sanity sync is currently unavailable."}</AlertDescription>
+                <AlertDescription>
+                  {disabledReason ?? "Sanity sync is currently unavailable."}
+                </AlertDescription>
               </Alert>
             ) : (
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.2em" color="fg.muted">
-                Syncs run in the background—feel free to navigate away once submitted.
+              <Text
+                fontSize="xs"
+                textTransform="uppercase"
+                letterSpacing="0.2em"
+                color="fg.muted"
+              >
+                Syncs run in the background—feel free to navigate away once
+                submitted.
               </Text>
             )}
             {status?.phase === "error" ? (
@@ -485,11 +549,17 @@ export function SyncPanelCard() {
                     {status.message ? (
                       <AlertDescription>{status.message}</AlertDescription>
                     ) : (
-                      <AlertDescription>An unexpected error occurred during the sync.</AlertDescription>
+                      <AlertDescription>
+                        An unexpected error occurred during the sync.
+                      </AlertDescription>
                     )}
                   </Box>
                   {status.logs?.length ? (
-                    <Button size="sm" alignSelf="flex-start" onClick={handleCopyLogs}>
+                    <Button
+                      size="sm"
+                      alignSelf="flex-start"
+                      onClick={handleCopyLogs}
+                    >
                       Copy logs
                     </Button>
                   ) : null}
@@ -509,7 +579,11 @@ export function SyncPanelCard() {
             <ToggleRow
               id="allow-deletes-toggle"
               label="Allow deletes"
-              description={options.dryRun ? "Disable dry run to enable deletes." : "Allow deletions flagged from Sanity."}
+              description={
+                options.dryRun
+                  ? "Disable dry run to enable deletes."
+                  : "Allow deletions flagged from Sanity."
+              }
               isChecked={options.allowDeletes}
               onChange={(value) => updateOption("allowDeletes", value)}
               isDisabled={allowDeletesDisabled}
@@ -548,7 +622,11 @@ export function SyncPanelCard() {
           >
             <Stack spacing={1}>
               <HStack spacing={3} align="center">
-                <Badge colorScheme={phaseColor} fontSize="xs" textTransform="uppercase">
+                <Badge
+                  colorScheme={phaseColor}
+                  fontSize="xs"
+                  textTransform="uppercase"
+                >
                   {phaseLabel}
                 </Badge>
                 {lastUpdated ? (
@@ -563,7 +641,12 @@ export function SyncPanelCard() {
             </Stack>
             <HStack spacing={2} flexWrap="wrap">
               {formatCountsBadges(counts).map((entry) => (
-                <Badge key={entry.label} colorScheme={entry.color} variant="subtle" fontSize="xs">
+                <Badge
+                  key={entry.label}
+                  colorScheme={entry.color}
+                  variant="subtle"
+                  fontSize="xs"
+                >
                   {entry.label}: {entry.value}
                 </Badge>
               ))}
@@ -576,19 +659,32 @@ export function SyncPanelCard() {
 }
 
 export function SyncQuickActionTile() {
-  const { status, options, startSync, isSubmitting, isRunning, disabled, disabledReason, scrollToPanel } = useSyncPanel();
+  const {
+    status,
+    options,
+    startSync,
+    isSubmitting,
+    isRunning,
+    disabled,
+    disabledReason,
+    scrollToPanel
+  } = useSyncPanel();
 
   const counts = status?.counts ?? DEFAULT_COUNTS;
   const phase = status?.phase;
   const hasActiveJob = Boolean(status) && isRunning;
 
   const description = disabled
-    ? disabledReason ?? "Sync is currently unavailable."
+    ? (disabledReason ?? "Sync is currently unavailable.")
     : hasActiveJob && status
       ? `${phaseLabels[phase!]} · ${formatCounts(counts)}`
       : "Run a manual sync to pull the latest CMS content into the LMS.";
 
-  const buttonLabel = hasActiveJob ? "View progress" : options.dryRun ? "Run dry run" : "Run sync";
+  const buttonLabel = hasActiveJob
+    ? "View progress"
+    : options.dryRun
+      ? "Run dry run"
+      : "Run sync";
 
   const handleClick = async () => {
     if (hasActiveJob) {

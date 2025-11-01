@@ -18,6 +18,7 @@ import {
   updateSyncJob
 } from "@/lib/jobs/syncStatus";
 import {
+  fetchChangedSince,
   fetchPublishedCourses,
   getMissingSanityEnvVars,
   type SanityLessonDocument
@@ -28,7 +29,9 @@ const RunSanitySyncSchema = z
   .object({
     dryRun: z.boolean().optional(),
     allowDeletes: z.boolean().optional(),
-    removeMissing: z.boolean().optional()
+    removeMissing: z.boolean().optional(),
+    since: z.string().optional(),
+    limit: z.number().optional()
   })
   .optional();
 
@@ -51,12 +54,18 @@ type EnqueueSyncArgs = {
 
 type SyncJobContext = EnqueueSyncArgs & { jobId: string };
 
-export async function runSanitySync(rawInput?: RunSanitySyncInput): Promise<RunSanitySyncResult> {
+export async function runSanitySync(
+  rawInput?: RunSanitySyncInput
+): Promise<RunSanitySyncResult> {
   const { session } = await requireAdminAccess(["ADMIN"]);
   const orgId = session.user.orgId;
 
   if (!orgId) {
-    return { ok: false, reason: "missing_org", message: "Organization not found for admin user." };
+    return {
+      ok: false,
+      reason: "missing_org",
+      message: "Organization not found for admin user."
+    };
   }
 
   const normalizedOptions = normalizeOptions(rawInput ?? {});
@@ -69,12 +78,16 @@ export async function runSanitySync(rawInput?: RunSanitySyncInput): Promise<RunS
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to start Sanity sync at this time.";
+      error instanceof Error
+        ? error.message
+        : "Unable to start Sanity sync at this time.";
     return { ok: false, reason: "unknown", message };
   }
 }
 
-export async function getSyncStatus(jobId?: string): Promise<SyncStatus | null> {
+export async function getSyncStatus(
+  jobId?: string
+): Promise<SyncStatus | null> {
   const { session } = await requireAdminAccess(["ADMIN"]);
   const orgId = session.user.orgId;
 
@@ -114,14 +127,15 @@ export async function enqueueSanitySyncJob({
   }
 
   let status = createSyncJob(orgId, options, "Sync job queued");
-  status = updateSyncJob(status.id, {
-    message: "Fetching content from Sanity…",
-    counts: status.counts
-  }) ?? status;
+  status =
+    updateSyncJob(status.id, {
+      message: "Fetching content from Sanity…",
+      counts: status.counts
+    }) ?? status;
 
   appendSyncJobLog(
     status.id,
-    `Started by user ${actorId}. Options: dryRun=${options.dryRun}, allowDeletes=${options.allowDeletes}, removeMissing=${options.removeMissing}`
+    `Started by user ${actorId}. Options: dryRun=${options.dryRun}, allowDeletes=${options.allowDeletes}, removeMissing=${options.removeMissing}, since=${options.since ?? "n/a"}, limit=${options.limit ?? "n/a"}`
   );
 
   await logAudit({
@@ -142,16 +156,31 @@ export async function enqueueSanitySyncJob({
   return { ok: true, jobId: status.id, status };
 }
 
-function normalizeOptions(input: RunSanitySyncInput | undefined): SyncJobOptions {
+function normalizeOptions(
+  input: RunSanitySyncInput | undefined
+): SyncJobOptions {
   const base: SyncJobOptions = {
     dryRun: Boolean(input?.dryRun),
     allowDeletes: Boolean(input?.allowDeletes),
     removeMissing: Boolean(input?.removeMissing)
   };
 
+  const since = sanitizeSince(input?.since);
+  if (since) {
+    base.since = since;
+  }
+
+  const limit = sanitizeLimit(input?.limit);
+  if (limit !== undefined) {
+    base.limit = limit;
+  }
+
   if (base.dryRun) {
     base.allowDeletes = false;
     base.removeMissing = false;
+    if (base.limit === undefined) {
+      base.limit = 5;
+    }
   } else if (!base.allowDeletes) {
     base.removeMissing = false;
   }
@@ -160,12 +189,20 @@ function normalizeOptions(input: RunSanitySyncInput | undefined): SyncJobOptions
 }
 
 async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
-  const counts: SyncJobCounts = { created: 0, updated: 0, deleted: 0, skipped: 0 };
+  const counts: SyncJobCounts = {
+    created: 0,
+    updated: 0,
+    deleted: 0,
+    skipped: 0
+  };
   const startedAt = Date.now();
   let success = false;
   let error: unknown = null;
+  const debugLog = createSyncDebugLogger(jobId);
 
-  const commitStatus = (update: { phase?: SyncStatus["phase"]; message?: string } = {}) => {
+  const commitStatus = (
+    update: { phase?: SyncStatus["phase"]; message?: string } = {}
+  ) => {
     const payload: {
       phase?: SyncStatus["phase"];
       message?: string;
@@ -192,15 +229,30 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
   try {
     commitStatus({ phase: "fetch", message: "Fetching content from Sanity…" });
 
-    const limit = options.dryRun ? 5 : undefined;
-    const courses = await fetchPublishedCourses({ limit });
+    const since = sanitizeSince(options.since);
+    const limit =
+      sanitizeLimit(options.limit) ?? (options.dryRun ? 5 : undefined);
+    const courses = since
+      ? await fetchChangedSince(since, limit)
+      : await fetchPublishedCourses({ limit });
+
+    debugLog(
+      `Fetched ${courses.length} course${courses.length === 1 ? "" : "s"} (since=${since ?? "none"}, limit=${
+        limit ?? "∞"
+      })`
+    );
 
     appendSyncJobLog(
       jobId,
-      `Fetched ${courses.length} course${courses.length === 1 ? "" : "s"} from Sanity.`
+      since
+        ? `Fetched ${courses.length} course${courses.length === 1 ? "" : "s"} changed since ${since}.`
+        : `Fetched ${courses.length} course${courses.length === 1 ? "" : "s"} from Sanity.`
     );
 
-    commitStatus({ phase: "upsert", message: "Applying updates to LMS content…" });
+    commitStatus({
+      phase: "upsert",
+      message: "Applying updates to LMS content…"
+    });
 
     const seenCourseIds = new Set<string>();
     const seenModuleIds = new Set<string>();
@@ -228,20 +280,39 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
 
       seenCourseIds.add(courseId);
 
-      const existingCourse = await prisma.course.findUnique({ where: { id: courseId } });
+      const existingCourse = await prisma.course.findUnique({
+        where: { id: courseId }
+      });
+      let courseAction: "created" | "updated";
 
       if (options.dryRun) {
-        counts[existingCourse ? "updated" : "created"] += 1;
-        commitStatus({ message: `Previewing course ${courseIndex + 1}: ${courseTitle}` });
+        courseAction = existingCourse ? "updated" : "created";
+        counts[courseAction === "updated" ? "updated" : "created"] += 1;
+        commitStatus({
+          message: `Previewing course ${courseIndex + 1}: ${courseTitle}`
+        });
       } else if (existingCourse) {
-        await prisma.course.update({ where: { id: courseId }, data: courseData });
+        await prisma.course.update({
+          where: { id: courseId },
+          data: courseData
+        });
         counts.updated += 1;
-        commitStatus({ message: `Updated course ${courseIndex + 1}: ${courseTitle}` });
+        courseAction = "updated";
+        commitStatus({
+          message: `Updated course ${courseIndex + 1}: ${courseTitle}`
+        });
       } else {
         await prisma.course.create({ data: { id: courseId, ...courseData } });
         counts.created += 1;
-        commitStatus({ message: `Created course ${courseIndex + 1}: ${courseTitle}` });
+        courseAction = "created";
+        commitStatus({
+          message: `Created course ${courseIndex + 1}: ${courseTitle}`
+        });
       }
+
+      debugLog(
+        `${options.dryRun ? "Preview" : "Upserted"} course ${courseId} (${courseTitle}) -> ${courseAction}`
+      );
 
       if (!Array.isArray(course?.modules)) {
         continue;
@@ -274,20 +345,26 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
           courseId,
           title: moduleTitle,
           order:
-            typeof moduleDoc?.order === "number" && Number.isFinite(moduleDoc.order)
+            typeof moduleDoc?.order === "number" &&
+            Number.isFinite(moduleDoc.order)
               ? moduleDoc.order
               : moduleIndex
         };
 
         seenModuleIds.add(moduleId);
 
-        const existingModule = await prisma.module.findUnique({ where: { id: moduleId } });
+        const existingModule = await prisma.module.findUnique({
+          where: { id: moduleId }
+        });
 
         if (options.dryRun) {
           counts[existingModule ? "updated" : "created"] += 1;
           commitStatus();
         } else if (existingModule) {
-          await prisma.module.update({ where: { id: moduleId }, data: moduleData });
+          await prisma.module.update({
+            where: { id: moduleId },
+            data: moduleData
+          });
           counts.updated += 1;
           commitStatus();
         } else {
@@ -319,23 +396,62 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
           }
 
           const lessonId = `sanity-${lessonDocId}`;
+          const provider = lessonDoc?.youtubeId ? "youtube" : "cloudflare";
           const lessonData = buildLessonData(moduleId, lessonDoc, lessonTitle);
 
           seenLessonIds.add(lessonId);
 
-          const existingLesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+          const existingLesson = await prisma.lesson.findUnique({
+            where: { id: lessonId }
+          });
+          let lessonAction: "created" | "updated";
 
           if (options.dryRun) {
-            counts[existingLesson ? "updated" : "created"] += 1;
+            lessonAction = existingLesson ? "updated" : "created";
+            counts[lessonAction === "updated" ? "updated" : "created"] += 1;
             commitStatus();
           } else if (existingLesson) {
-            await prisma.lesson.update({ where: { id: lessonId }, data: lessonData });
+            await prisma.lesson.update({
+              where: { id: lessonId },
+              data: lessonData
+            });
             counts.updated += 1;
+            lessonAction = "updated";
             commitStatus();
           } else {
-            await prisma.lesson.create({ data: { id: lessonId, ...lessonData } });
+            await prisma.lesson.create({
+              data: { id: lessonId, ...lessonData }
+            });
             counts.created += 1;
+            lessonAction = "created";
             commitStatus();
+          }
+
+          if (!options.dryRun) {
+            const last = await prisma.lessonRuntimeSnapshot.findFirst({
+              where: { orgId, lessonId },
+              orderBy: { version: "desc" }
+            });
+            const nextVersion = (last?.version ?? 0) + 1;
+            const runtimeJson: Prisma.JsonObject = {
+              id: lessonId,
+              title: lessonTitle,
+              objectives: [],
+              streamId: lessonData.streamId ?? "",
+              durationSec: lessonData.durationS ?? 0,
+              assessmentType: "QUIZ",
+              augmentations: [],
+              provider
+            };
+            await prisma.lessonRuntimeSnapshot.create({
+              data: {
+                orgId,
+                lessonId,
+                version: nextVersion,
+                runtimeJson
+              }
+            });
+            debugLog(`Snapshot v${nextVersion} for lesson ${lessonId}`);
           }
         }
       }
@@ -349,7 +465,8 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
         seenModuleIds,
         seenLessonIds,
         counts,
-        commitStatus
+        commitStatus,
+        debugLog
       });
     }
 
@@ -368,7 +485,9 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
   } catch (err) {
     error = err;
     const message =
-      err instanceof Error ? err.message : "An unexpected error occurred while syncing.";
+      err instanceof Error
+        ? err.message
+        : "An unexpected error occurred while syncing.";
     appendSyncJobLog(jobId, `Sync failed: ${message}`);
     commitStatus({ phase: "error", message });
   } finally {
@@ -384,7 +503,10 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
         options,
         durationMs,
         success,
-        error: error instanceof Error ? { message: error.message, stack: error.stack } : undefined
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : undefined
       }
     }).catch(() => {
       /* noop */
@@ -392,7 +514,9 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
   }
 }
 
-function resolveDocId(doc: { _id?: string; _ref?: string } | null | undefined): string | undefined {
+function resolveDocId(
+  doc: { _id?: string; _ref?: string } | null | undefined
+): string | undefined {
   if (doc && typeof doc._id === "string" && doc._id.length > 0) {
     return doc._id;
   }
@@ -411,13 +535,18 @@ function normalizeOptionalString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function resolveLessonProvider(lessonDoc: SanityLessonDocument): VideoProviderName | null {
+function resolveLessonProvider(
+  lessonDoc: SanityLessonDocument
+): VideoProviderName | null {
   const explicit = normalizeOptionalString(lessonDoc.provider);
   if (explicit === "youtube" || explicit === "cloudflare") {
     return explicit;
   }
 
-  if (normalizeOptionalString(lessonDoc.youtubeId) || normalizeOptionalString(lessonDoc.videoUrl)) {
+  if (
+    normalizeOptionalString(lessonDoc.youtubeId) ||
+    normalizeOptionalString(lessonDoc.videoUrl)
+  ) {
     return "youtube";
   }
 
@@ -437,7 +566,9 @@ function buildLessonData(
   const youtubeId = normalizeOptionalString(lessonDoc?.youtubeId);
   const explicitVideoUrl = normalizeOptionalString(lessonDoc?.videoUrl);
   const provider = resolveLessonProvider(lessonDoc);
-  const videoUrl = explicitVideoUrl ?? (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
+  const videoUrl =
+    explicitVideoUrl ??
+    (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
   const posterUrl = normalizeOptionalString(lessonDoc?.posterUrl);
 
   return {
@@ -448,11 +579,14 @@ function buildLessonData(
     videoUrl,
     posterUrl,
     durationS:
-      typeof lessonDoc?.durationS === "number" && Number.isFinite(lessonDoc.durationS)
+      typeof lessonDoc?.durationS === "number" &&
+      Number.isFinite(lessonDoc.durationS)
         ? lessonDoc.durationS
         : 0,
     requiresFullWatch:
-      typeof lessonDoc?.requiresFullWatch === "boolean" ? lessonDoc.requiresFullWatch : true
+      typeof lessonDoc?.requiresFullWatch === "boolean"
+        ? lessonDoc.requiresFullWatch
+        : true
   };
 }
 
@@ -463,7 +597,11 @@ type RemoveMissingParams = {
   seenModuleIds: Set<string>;
   seenLessonIds: Set<string>;
   counts: SyncJobCounts;
-  commitStatus: (update?: { phase?: SyncStatus["phase"]; message?: string }) => void;
+  commitStatus: (update?: {
+    phase?: SyncStatus["phase"];
+    message?: string;
+  }) => void;
+  debugLog: (message: string) => void;
 };
 
 async function removeMissingRecords({
@@ -473,7 +611,8 @@ async function removeMissingRecords({
   seenModuleIds,
   seenLessonIds,
   counts,
-  commitStatus
+  commitStatus,
+  debugLog
 }: RemoveMissingParams) {
   commitStatus({ message: "Removing local records missing from Sanity…" });
 
@@ -572,7 +711,10 @@ async function removeMissingRecords({
   let deletedLessons = 0;
 
   for (const lesson of lessonsToDelete) {
-    if (lesson.module?.courseId && deletedCourseIds.has(lesson.module.courseId)) {
+    if (
+      lesson.module?.courseId &&
+      deletedCourseIds.has(lesson.module.courseId)
+    ) {
       continue;
     }
     if (deletedModuleIds.has(lesson.moduleId)) {
@@ -590,4 +732,36 @@ async function removeMissingRecords({
     );
     commitStatus();
   }
+
+  debugLog(
+    `Delete totals — courses: ${deletedCourseIds.size}, modules: ${deletedModuleIds.size}, lessons: ${deletedLessons}`
+  );
+}
+
+function sanitizeSince(value: string | undefined): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function sanitizeLimit(value: number | undefined): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  const normalized = Math.max(0, Math.floor(value));
+  return normalized;
+}
+
+function createSyncDebugLogger(jobId: string) {
+  if (process.env.SYNC_DEBUG !== "1") {
+    return () => {};
+  }
+
+  return (message: string) => {
+    console.warn(`[sanity-sync:${jobId}] ${message}`);
+  };
 }
