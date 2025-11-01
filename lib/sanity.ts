@@ -46,6 +46,9 @@ export type SanityLessonDocument = {
   _id?: string;
   _ref?: string;
   title?: string;
+  module?: { _ref?: string } | SanityModuleDocument | null;
+  published?: boolean;
+  order?: number;
   streamId?: string;
   youtubeId?: string;
   videoUrl?: string;
@@ -59,7 +62,10 @@ export type SanityModuleDocument = {
   _id?: string;
   _ref?: string;
   title?: string;
+  slug?: { current?: string } | null;
   order?: number;
+  published?: boolean;
+  course?: { _ref?: string } | SanityCourseDocument | null;
   lessons?: SanityLessonDocument[];
 };
 
@@ -68,6 +74,9 @@ export type SanityCourseDocument = {
   _ref?: string;
   title?: string;
   description?: string;
+  slug?: { current?: string } | null;
+  order?: number;
+  published?: boolean;
   modules?: SanityModuleDocument[];
 };
 
