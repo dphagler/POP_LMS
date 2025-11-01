@@ -420,21 +420,47 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
             continue;
           }
 
-          if (
-            !normalizeOptionalString(lessonDoc?.streamId) &&
-            !normalizeOptionalString(lessonDoc?.youtubeId)
-          ) {
+          const lessonId = `sanity-${lessonDocId}`;
+          const streamId = normalizeOptionalString(lessonDoc?.streamId);
+          const youtubeId = normalizeOptionalString(lessonDoc?.youtubeId);
+          const explicitVideoUrl = normalizeOptionalString(lessonDoc?.videoUrl);
+          const provider = resolveLessonProvider(lessonDoc);
+          const videoUrl =
+            explicitVideoUrl ??
+            (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
+
+          if (!provider) {
             increment("skipped");
             appendSyncJobLog(
               jobId,
-              `Skipped lesson "${lessonTitle}": missing streamId/youtubeId.`
+              `Skipped lesson "${lessonTitle}": unable to determine provider.`
             );
             continue;
           }
 
-          const lessonId = `sanity-${lessonDocId}`;
-          const provider = lessonDoc?.youtubeId ? "youtube" : "cloudflare";
-          const lessonData = buildLessonData(moduleId, lessonDoc, lessonTitle);
+          if (provider === "youtube" && !videoUrl) {
+            increment("skipped");
+            appendSyncJobLog(
+              jobId,
+              `Skipped lesson "${lessonTitle}" (reason: youtube_without_url).`
+            );
+            continue;
+          }
+
+          if (provider === "cloudflare" && !streamId) {
+            increment("skipped");
+            appendSyncJobLog(
+              jobId,
+              `Skipped lesson "${lessonTitle}" (reason: cloudflare_without_streamId).`
+            );
+            continue;
+          }
+
+          const lessonData = buildLessonData(moduleId, lessonDoc, lessonTitle, {
+            provider,
+            streamId,
+            videoUrl
+          });
 
           seenLessonIds.add(lessonId);
 
@@ -478,7 +504,7 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
               durationSec: lessonData.durationS ?? 0,
               assessmentType: "QUIZ",
               augmentations: [],
-              provider
+              provider: lessonData.provider ?? null
             };
             await prisma.lessonRuntimeSnapshot.create({
               data: {
@@ -572,11 +598,19 @@ function normalizeOptionalString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function normalizeProvider(value: unknown): VideoProviderName | null {
+  const normalized = normalizeOptionalString(value);
+  if (normalized === "youtube" || normalized === "cloudflare") {
+    return normalized;
+  }
+  return null;
+}
+
 function resolveLessonProvider(
   lessonDoc: SanityLessonDocument
 ): VideoProviderName | null {
-  const explicit = normalizeOptionalString(lessonDoc.provider);
-  if (explicit === "youtube" || explicit === "cloudflare") {
+  const explicit = normalizeProvider(lessonDoc?.provider);
+  if (explicit) {
     return explicit;
   }
 
@@ -597,23 +631,21 @@ function resolveLessonProvider(
 function buildLessonData(
   moduleId: string,
   lessonDoc: SanityLessonDocument,
-  lessonTitle: string
+  lessonTitle: string,
+  overrides: {
+    provider: VideoProviderName;
+    streamId: string | null;
+    videoUrl: string | null;
+  }
 ) {
-  const streamId = normalizeOptionalString(lessonDoc?.streamId);
-  const youtubeId = normalizeOptionalString(lessonDoc?.youtubeId);
-  const explicitVideoUrl = normalizeOptionalString(lessonDoc?.videoUrl);
-  const provider = resolveLessonProvider(lessonDoc);
-  const videoUrl =
-    explicitVideoUrl ??
-    (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
   const posterUrl = normalizeOptionalString(lessonDoc?.posterUrl);
 
   return {
     moduleId,
     title: lessonTitle,
-    streamId,
-    provider,
-    videoUrl,
+    streamId: overrides.streamId,
+    provider: overrides.provider,
+    videoUrl: overrides.videoUrl,
     posterUrl,
     durationS:
       typeof lessonDoc?.durationS === "number" &&
