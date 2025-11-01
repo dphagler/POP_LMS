@@ -1,10 +1,18 @@
 "use client";
 
-import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+  useEffect,
+  useState
+} from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -44,7 +52,12 @@ interface ContentSyncControlsProps {
 }
 
 function getSectionCounts(section?: SyncSummarySection) {
-  const target = section ?? { created: [], updated: [], deleted: [], skipped: [] };
+  const target = section ?? {
+    created: [],
+    updated: [],
+    deleted: [],
+    skipped: []
+  };
   return {
     created: target.created.length,
     updated: target.updated.length,
@@ -79,12 +92,21 @@ function formatSummary(summary?: SyncSummary | null) {
     .join(" · ");
 }
 
-export default function ContentSyncControls({ disabled, disabledReason }: ContentSyncControlsProps) {
+export default function ContentSyncControls({
+  disabled,
+  disabledReason
+}: ContentSyncControlsProps) {
   const [dryRun, setDryRun] = useState(false);
   const [allowDeletes, setAllowDeletes] = useState(false);
+  const [since, setSince] = useState<string>("");
+  const [limit, setLimit] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [summary, setSummary] = useState<SyncSummary | null>(null);
+  const [lastRunFilters, setLastRunFilters] = useState<{
+    since?: string;
+    limit?: number;
+  }>({});
   const [logs, setLogs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -107,19 +129,31 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
     setToast(null);
     setSummary(null);
 
-    appendLog(setLogs, `▶ Starting ${dryRun ? "dry run" : "sync"}${allowDeletes ? " (deletes enabled)" : ""}.`);
+    appendLog(
+      setLogs,
+      `▶ Starting ${dryRun ? "dry run" : "sync"}${allowDeletes ? " (deletes enabled)" : ""}.`
+    );
 
     try {
+      const trimmedSince = since.trim();
+      const limitValue =
+        typeof limit === "number" && Number.isFinite(limit) ? limit : undefined;
       const response = await fetch("/api/admin/sync", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ dryRun, allowDeletes })
+        body: JSON.stringify({
+          dryRun,
+          allowDeletes,
+          since: trimmedSince || undefined,
+          limit: limitValue
+        })
       });
 
       const payload = await response.json();
-      const requestId = typeof payload?.requestId === "string" ? payload.requestId : undefined;
+      const requestId =
+        typeof payload?.requestId === "string" ? payload.requestId : undefined;
 
       if (!response.ok) {
         const message =
@@ -132,27 +166,42 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
           description: message,
           requestId
         });
-        appendLog(setLogs, `✖ Sync failed${requestId ? ` (request ${requestId})` : ""}: ${message}`);
+        appendLog(
+          setLogs,
+          `✖ Sync failed${requestId ? ` (request ${requestId})` : ""}: ${message}`
+        );
         return;
       }
 
       const summaryDescription =
-        formatSummary(payload?.summary) ?? (dryRun ? "Dry run completed." : "Sync completed successfully.");
+        formatSummary(payload?.summary) ??
+        (dryRun ? "Dry run completed." : "Sync completed successfully.");
       setSummary(payload?.summary ?? null);
+      setLastRunFilters({
+        since: trimmedSince || undefined,
+        limit: limitValue
+      });
       setToast({
         variant: "success",
         title: dryRun ? "Dry run complete" : "Sync complete",
         description: summaryDescription,
         requestId
       });
-      appendLog(setLogs, `✔ ${dryRun ? "Dry run" : "Sync"} completed${requestId ? ` (request ${requestId})` : ""}.`);
-      formatSummaryLines(payload?.summary).forEach((line) => appendLog(setLogs, line));
+      appendLog(
+        setLogs,
+        `✔ ${dryRun ? "Dry run" : "Sync"} completed${requestId ? ` (request ${requestId})` : ""}.`
+      );
+      formatSummaryLines(payload?.summary).forEach((line) =>
+        appendLog(setLogs, line)
+      );
     } catch (error) {
       setToast({
         variant: "error",
         title: "Sync failed",
         description:
-          error instanceof Error ? error.message : "An unexpected error occurred while syncing."
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred while syncing."
       });
       appendLog(
         setLogs,
@@ -163,7 +212,9 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
     }
   }
 
-  const allowDeletesHint = dryRun ? "Disable dry run to enable deletes." : undefined;
+  const allowDeletesHint = dryRun
+    ? "Disable dry run to enable deletes."
+    : undefined;
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -181,7 +232,9 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
               <span className="mt-1 leading-relaxed">{toast.description}</span>
             ) : null}
             {toast.requestId ? (
-              <span className="mt-2 text-xs opacity-80">Request ID: {toast.requestId}</span>
+              <span className="mt-2 text-xs opacity-80">
+                Request ID: {toast.requestId}
+              </span>
             ) : null}
           </div>
         </div>
@@ -206,6 +259,43 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
             disabled={isSubmitting || dryRun}
             hint={allowDeletesHint}
           />
+        </div>
+        <div className="grid gap-3">
+          <div className="flex flex-col gap-1 sm:max-w-md">
+            <Label htmlFor="sync-since">Since (ISO)</Label>
+            <Input
+              id="sync-since"
+              placeholder="YYYY-MM-DDTHH:mm:ssZ"
+              value={since}
+              onChange={(event) => setSince(event.target.value)}
+              disabled={isSubmitting}
+              w="full"
+            />
+          </div>
+          <div className="flex flex-col gap-1 sm:max-w-[8rem]">
+            <Label htmlFor="sync-limit">Limit</Label>
+            <Input
+              id="sync-limit"
+              type="number"
+              placeholder="e.g., 100"
+              value={
+                typeof limit === "number" && Number.isFinite(limit) ? limit : ""
+              }
+              onChange={(event) => {
+                const value = event.target.value;
+                if (value === "") {
+                  setLimit(undefined);
+                  return;
+                }
+                const parsed = Number(value);
+                setLimit(Number.isFinite(parsed) ? parsed : undefined);
+              }}
+              disabled={isSubmitting}
+              w="full"
+              inputMode="numeric"
+              min={0}
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {disabled && disabledReason ? (
@@ -236,13 +326,16 @@ export default function ContentSyncControls({ disabled, disabledReason }: Conten
       {isSubmitting ? (
         <Skeleton className="h-36 w-full rounded-xl bg-muted/60" aria-hidden />
       ) : summary ? (
-        <SyncReport summary={summary} />
+        <SyncReport summary={summary} filters={lastRunFilters} />
       ) : null}
     </div>
   );
 }
 
-function appendLog(setter: Dispatch<SetStateAction<string[]>>, message: string) {
+function appendLog(
+  setter: Dispatch<SetStateAction<string[]>>,
+  message: string
+) {
   const timestamp = new Date().toLocaleTimeString();
   setter((previous) => {
     const next = [...previous, `[${timestamp}] ${message}`];
@@ -258,16 +351,26 @@ const ACTION_DEFINITIONS = [
   { key: "updated", label: "Updated" },
   { key: "deleted", label: "Deleted" },
   { key: "skipped", label: "Skipped" }
-] as const satisfies ReadonlyArray<{ key: keyof SyncSummarySection; label: string }>;
+] as const satisfies ReadonlyArray<{
+  key: keyof SyncSummarySection;
+  label: string;
+}>;
 
-const ACTION_STYLES: Record<keyof SyncSummarySection, { colorScheme: string }> = {
-  created: { colorScheme: "green" },
-  updated: { colorScheme: "blue" },
-  deleted: { colorScheme: "red" },
-  skipped: { colorScheme: "yellow" }
-};
+const ACTION_STYLES: Record<keyof SyncSummarySection, { colorScheme: string }> =
+  {
+    created: { colorScheme: "green" },
+    updated: { colorScheme: "blue" },
+    deleted: { colorScheme: "red" },
+    skipped: { colorScheme: "yellow" }
+  };
 
-function SyncReport({ summary }: { summary: SyncSummary }) {
+function SyncReport({
+  summary,
+  filters
+}: {
+  summary: SyncSummary;
+  filters?: { since?: string; limit?: number };
+}) {
   const totals = ACTION_DEFINITIONS.reduce(
     (acc, action) => {
       acc[action.key] =
@@ -276,7 +379,10 @@ function SyncReport({ summary }: { summary: SyncSummary }) {
         summary.lessons[action.key].length;
       return acc;
     },
-    { created: 0, updated: 0, deleted: 0, skipped: 0 } as Record<keyof SyncSummarySection, number>
+    { created: 0, updated: 0, deleted: 0, skipped: 0 } as Record<
+      keyof SyncSummarySection,
+      number
+    >
   );
 
   const sections = [
@@ -298,18 +404,45 @@ function SyncReport({ summary }: { summary: SyncSummary }) {
           <StatusBadge action="skipped" count={totals.skipped} />
         </div>
       </div>
+      {filters?.since || filters?.limit ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          {filters?.since ? (
+            <Badge tone="outline" variant="outline">
+              since {filters.since}
+            </Badge>
+          ) : null}
+          {typeof filters?.limit === "number" ? (
+            <Badge tone="outline" variant="outline">
+              limit {filters.limit}
+            </Badge>
+          ) : null}
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-4">
         {sections.map((section) => (
-          <SummarySection key={section.label} label={section.label} data={section.data} />
+          <SummarySection
+            key={section.label}
+            label={section.label}
+            data={section.data}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function SummarySection({ label, data }: { label: string; data: SyncSummarySection }) {
+function SummarySection({
+  label,
+  data
+}: {
+  label: string;
+  data: SyncSummarySection;
+}) {
   const counts = getSectionCounts(data);
-  const totalEntries = ACTION_DEFINITIONS.reduce((acc, action) => acc + data[action.key].length, 0);
+  const totalEntries = ACTION_DEFINITIONS.reduce(
+    (acc, action) => acc + data[action.key].length,
+    0
+  );
 
   return (
     <section className="rounded-box border border-base-300 bg-base-100/80 p-4 shadow-sm">
@@ -324,7 +457,9 @@ function SummarySection({ label, data }: { label: string; data: SyncSummarySecti
       </div>
 
       {totalEntries === 0 ? (
-        <p className="mt-2 text-xs text-muted-foreground">No changes detected for this section.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          No changes detected for this section.
+        </p>
       ) : (
         <div className="mt-3 space-y-3">
           {ACTION_DEFINITIONS.map((action) => {
@@ -360,7 +495,7 @@ function formatSummaryLines(summary?: SyncSummary | null) {
   const sections = [
     ["Courses", summary.courses],
     ["Modules", summary.modules],
-    ["Lessons", summary.lessons],
+    ["Lessons", summary.lessons]
   ] as const;
 
   return sections.map(([label, section]) => {
@@ -385,9 +520,13 @@ function SyncItemDetails({ item }: { item: SyncItem }) {
         <span className="font-medium">{item.title}</span>
       )}
       {item.parentTitle ? (
-        <span className="text-xs text-muted-foreground">({item.parentTitle})</span>
+        <span className="text-xs text-muted-foreground">
+          ({item.parentTitle})
+        </span>
       ) : null}
-      {item.reason ? <span className="text-xs text-muted-foreground">— {item.reason}</span> : null}
+      {item.reason ? (
+        <span className="text-xs text-muted-foreground">— {item.reason}</span>
+      ) : null}
     </span>
   );
 }
@@ -402,10 +541,19 @@ type ToggleRowProps = {
   disabled?: boolean;
 };
 
-function ToggleRow({ id, label, description, hint, checked, onCheckedChange, disabled }: ToggleRowProps) {
+function ToggleRow({
+  id,
+  label,
+  description,
+  hint,
+  checked,
+  onCheckedChange,
+  disabled
+}: ToggleRowProps) {
   const descriptionId = description ? `${id}-description` : undefined;
   const hintId = hint ? `${id}-hint` : undefined;
-  const describedBy = [descriptionId, hintId].filter(Boolean).join(" ") || undefined;
+  const describedBy =
+    [descriptionId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-100/80 p-4 shadow-sm">
@@ -419,7 +567,9 @@ function ToggleRow({ id, label, description, hint, checked, onCheckedChange, dis
           </p>
         ) : null}
         {hint ? (
-          <p id={hintId} className="text-xs text-muted-foreground">{hint}</p>
+          <p id={hintId} className="text-xs text-muted-foreground">
+            {hint}
+          </p>
         ) : null}
       </div>
       <Switch
@@ -457,22 +607,35 @@ function StatusBadge({ action, count }: StatusBadgeProps) {
   );
 }
 
-function LogPanel({ logs, isSubmitting }: { logs: string[]; isSubmitting: boolean }) {
+function LogPanel({
+  logs,
+  isSubmitting
+}: {
+  logs: string[];
+  isSubmitting: boolean;
+}) {
   return (
-    <div className="rounded-box bg-base-200 p-4 font-mono text-xs text-base-content shadow-inner" aria-live="polite">
+    <div
+      className="rounded-box bg-base-200 p-4 font-mono text-xs text-base-content shadow-inner"
+      aria-live="polite"
+    >
       <div className="flex max-h-48 flex-col gap-2 overflow-y-auto">
         {logs.length === 0 ? (
           <p className="text-base-content/60">No sync activity yet.</p>
         ) : (
           logs.map((log, index) => (
-            <p key={`${index}-${log}`} className="whitespace-pre-wrap break-words">
+            <p
+              key={`${index}-${log}`}
+              className="whitespace-pre-wrap break-words"
+            >
               {log}
             </p>
           ))
         )}
         {isSubmitting ? (
           <p className="flex items-center gap-2 text-base-content/80">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Processing…
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />{" "}
+            Processing…
           </p>
         ) : null}
       </div>
