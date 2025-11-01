@@ -20,10 +20,14 @@ import {
 import {
   fetchChangedSince,
   fetchPublishedCourses,
-  getMissingSanityEnvVars,
-  type SanityLessonDocument
+  getMissingSanityEnvVars
 } from "@/lib/sanity";
-import type { VideoProviderName } from "@/lib/video/provider";
+import {
+  hashContentForDiff,
+  mapCourse,
+  mapLesson,
+  mapModule
+} from "@/lib/sanity/map";
 
 const RunSanitySyncSchema = z
   .object({
@@ -297,46 +301,77 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
       }
 
       const courseId = `sanity-${courseDocId}`;
+      const mappedCourse = mapCourse(course);
+      if ("skip" in mappedCourse) {
+        increment("skipped");
+        appendSyncJobLog(
+          jobId,
+          `Skipped course ${courseIndex + 1}: ${courseTitle} (reason: ${mappedCourse.reason}).`
+        );
+        debugLog(
+          `Skipped course ${courseId} (${courseTitle}) — reason: ${mappedCourse.reason}`
+        );
+        continue;
+      }
+
       const courseData = {
         orgId,
-        title: courseTitle,
-        description: course?.description ?? null
+        title: mappedCourse.title,
+        description: mappedCourse.description
       };
+
+      const newCourseHash = hashContentForDiff(courseData);
+      const existingCourse = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true, orgId: true, title: true, description: true }
+      });
 
       seenCourseIds.add(courseId);
 
-      const existingCourse = await prisma.course.findUnique({
-        where: { id: courseId }
-      });
-      let courseAction: "created" | "updated";
+      const oldCourseHash = existingCourse
+        ? hashContentForDiff({
+            orgId: existingCourse.orgId,
+            title: existingCourse.title,
+            description: existingCourse.description ?? null
+          })
+        : null;
+
+      if (oldCourseHash && oldCourseHash === newCourseHash) {
+        increment("skipped");
+        appendSyncJobLog(
+          jobId,
+          `Skipped course ${courseIndex + 1}: ${mappedCourse.title} (reason: unchanged).`
+        );
+        debugLog(`No changes for course ${courseId} (${mappedCourse.title}).`);
+        continue;
+      }
+
+      const courseAction: "created" | "updated" = existingCourse
+        ? "updated"
+        : "created";
 
       if (options.dryRun) {
-        courseAction = existingCourse ? "updated" : "created";
-        counts[courseAction === "updated" ? "updated" : "created"] += 1;
+        counts[courseAction] += 1;
         commitStatus({
-          message: `Previewing course ${courseIndex + 1}: ${courseTitle}`
-        });
-      } else if (existingCourse) {
-        await prisma.course.update({
-          where: { id: courseId },
-          data: courseData
-        });
-        counts.updated += 1;
-        courseAction = "updated";
-        commitStatus({
-          message: `Updated course ${courseIndex + 1}: ${courseTitle}`
+          message: `Previewing course ${courseIndex + 1}: ${mappedCourse.title} (${courseAction})`
         });
       } else {
-        await prisma.course.create({ data: { id: courseId, ...courseData } });
-        counts.created += 1;
-        courseAction = "created";
+        if (courseAction === "updated") {
+          await prisma.course.update({
+            where: { id: courseId },
+            data: courseData
+          });
+        } else {
+          await prisma.course.create({ data: { id: courseId, ...courseData } });
+        }
+        counts[courseAction] += 1;
         commitStatus({
-          message: `Created course ${courseIndex + 1}: ${courseTitle}`
+          message: `${courseAction === "updated" ? "Updated" : "Created"} course ${courseIndex + 1}: ${mappedCourse.title}`
         });
       }
 
       debugLog(
-        `${options.dryRun ? "Preview" : "Upserted"} course ${courseId} (${courseTitle}) -> ${courseAction}`
+        `${options.dryRun ? "Preview" : "Upserted"} course ${courseId} (${mappedCourse.title}) -> ${courseAction}`
       );
 
       if (!Array.isArray(course?.modules)) {
@@ -366,35 +401,77 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
         }
 
         const moduleId = `sanity-${moduleDocId}`;
+        const mappedModule = mapModule(moduleDoc, courseId);
+        if ("skip" in mappedModule) {
+          increment("skipped");
+          appendSyncJobLog(
+            jobId,
+            `Skipped module ${moduleIndex + 1} in course ${courseTitle} (reason: ${mappedModule.reason}).`
+          );
+          debugLog(
+            `Skipped module ${moduleId} (${moduleTitle}) — reason: ${mappedModule.reason}`
+          );
+          continue;
+        }
+
+        const moduleOrder =
+          typeof moduleDoc?.order === "number" &&
+          Number.isFinite(moduleDoc.order)
+            ? moduleDoc.order
+            : moduleIndex;
         const moduleData = {
-          courseId,
-          title: moduleTitle,
-          order:
-            typeof moduleDoc?.order === "number" &&
-            Number.isFinite(moduleDoc.order)
-              ? moduleDoc.order
-              : moduleIndex
+          courseId: mappedModule.courseId,
+          title: mappedModule.title,
+          order: moduleOrder
         };
+
+        const newModuleHash = hashContentForDiff(moduleData);
+        const existingModule = await prisma.module.findUnique({
+          where: { id: moduleId },
+          select: { id: true, courseId: true, title: true, order: true }
+        });
 
         seenModuleIds.add(moduleId);
 
-        const existingModule = await prisma.module.findUnique({
-          where: { id: moduleId }
-        });
+        const oldModuleHash = existingModule
+          ? hashContentForDiff({
+              courseId: existingModule.courseId,
+              title: existingModule.title,
+              order: existingModule.order
+            })
+          : null;
+
+        if (oldModuleHash && oldModuleHash === newModuleHash) {
+          increment("skipped");
+          appendSyncJobLog(
+            jobId,
+            `Skipped module ${moduleIndex + 1} in course ${mappedCourse.title} (reason: unchanged).`
+          );
+          debugLog(
+            `No changes for module ${moduleId} (${mappedModule.title}).`
+          );
+          continue;
+        }
+
+        const moduleAction: "created" | "updated" = existingModule
+          ? "updated"
+          : "created";
 
         if (options.dryRun) {
-          counts[existingModule ? "updated" : "created"] += 1;
-          commitStatus();
-        } else if (existingModule) {
-          await prisma.module.update({
-            where: { id: moduleId },
-            data: moduleData
-          });
-          counts.updated += 1;
+          counts[moduleAction] += 1;
           commitStatus();
         } else {
-          await prisma.module.create({ data: { id: moduleId, ...moduleData } });
-          counts.created += 1;
+          if (moduleAction === "updated") {
+            await prisma.module.update({
+              where: { id: moduleId },
+              data: moduleData
+            });
+          } else {
+            await prisma.module.create({
+              data: { id: moduleId, ...moduleData }
+            });
+          }
+          counts[moduleAction] += 1;
           commitStatus();
         }
 
@@ -421,72 +498,92 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
           }
 
           const lessonId = `sanity-${lessonDocId}`;
-          const streamId = normalizeOptionalString(lessonDoc?.streamId);
-          const youtubeId = normalizeOptionalString(lessonDoc?.youtubeId);
-          const explicitVideoUrl = normalizeOptionalString(lessonDoc?.videoUrl);
-          const provider = resolveLessonProvider(lessonDoc);
-          const videoUrl =
-            explicitVideoUrl ??
-            (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
-
-          if (!provider) {
+          const mappedLesson = mapLesson(lessonDoc, moduleId);
+          if ("skip" in mappedLesson) {
             increment("skipped");
             appendSyncJobLog(
               jobId,
-              `Skipped lesson "${lessonTitle}": unable to determine provider.`
+              `Skipped lesson "${lessonTitle}" in module ${moduleTitle} (reason: ${mappedLesson.reason}).`
+            );
+            debugLog(
+              `Skipped lesson ${lessonId} (${lessonTitle}) — reason: ${mappedLesson.reason}`
             );
             continue;
           }
 
-          if (provider === "youtube" && !videoUrl) {
-            increment("skipped");
-            appendSyncJobLog(
-              jobId,
-              `Skipped lesson "${lessonTitle}" (reason: youtube_without_url).`
-            );
-            continue;
-          }
+          const lessonData = {
+            moduleId: mappedLesson.moduleId,
+            title: mappedLesson.title,
+            streamId: mappedLesson.streamId,
+            provider: mappedLesson.provider,
+            videoUrl: mappedLesson.videoUrl,
+            posterUrl: mappedLesson.posterUrl,
+            durationS: mappedLesson.durationS,
+            requiresFullWatch: mappedLesson.requiresFullWatch
+          };
 
-          if (provider === "cloudflare" && !streamId) {
-            increment("skipped");
-            appendSyncJobLog(
-              jobId,
-              `Skipped lesson "${lessonTitle}" (reason: cloudflare_without_streamId).`
-            );
-            continue;
-          }
-
-          const lessonData = buildLessonData(moduleId, lessonDoc, lessonTitle, {
-            provider,
-            streamId,
-            videoUrl
+          const newLessonHash = hashContentForDiff(lessonData);
+          const existingLesson = await prisma.lesson.findUnique({
+            where: { id: lessonId },
+            select: {
+              id: true,
+              moduleId: true,
+              title: true,
+              streamId: true,
+              provider: true,
+              videoUrl: true,
+              posterUrl: true,
+              durationS: true,
+              requiresFullWatch: true
+            }
           });
 
           seenLessonIds.add(lessonId);
 
-          const existingLesson = await prisma.lesson.findUnique({
-            where: { id: lessonId }
-          });
-          let lessonAction: "created" | "updated";
+          const oldLessonHash = existingLesson
+            ? hashContentForDiff({
+                moduleId: existingLesson.moduleId,
+                title: existingLesson.title,
+                streamId: existingLesson.streamId ?? null,
+                provider: existingLesson.provider ?? null,
+                videoUrl: existingLesson.videoUrl ?? null,
+                posterUrl: existingLesson.posterUrl ?? null,
+                durationS: existingLesson.durationS,
+                requiresFullWatch: existingLesson.requiresFullWatch
+              })
+            : null;
+
+          if (oldLessonHash && oldLessonHash === newLessonHash) {
+            increment("skipped");
+            appendSyncJobLog(
+              jobId,
+              `Skipped lesson "${mappedLesson.title}" in module ${mappedModule.title} (reason: unchanged).`
+            );
+            debugLog(
+              `No changes for lesson ${lessonId} (${mappedLesson.title}).`
+            );
+            continue;
+          }
+
+          const lessonAction: "created" | "updated" = existingLesson
+            ? "updated"
+            : "created";
 
           if (options.dryRun) {
-            lessonAction = existingLesson ? "updated" : "created";
-            counts[lessonAction === "updated" ? "updated" : "created"] += 1;
-            commitStatus();
-          } else if (existingLesson) {
-            await prisma.lesson.update({
-              where: { id: lessonId },
-              data: lessonData
-            });
-            counts.updated += 1;
-            lessonAction = "updated";
+            counts[lessonAction] += 1;
             commitStatus();
           } else {
-            await prisma.lesson.create({
-              data: { id: lessonId, ...lessonData }
-            });
-            counts.created += 1;
-            lessonAction = "created";
+            if (lessonAction === "updated") {
+              await prisma.lesson.update({
+                where: { id: lessonId },
+                data: lessonData
+              });
+            } else {
+              await prisma.lesson.create({
+                data: { id: lessonId, ...lessonData }
+              });
+            }
+            counts[lessonAction] += 1;
             commitStatus();
           }
 
@@ -498,7 +595,7 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
             const nextVersion = (last?.version ?? 0) + 1;
             const runtimeJson: Prisma.JsonObject = {
               id: lessonId,
-              title: lessonTitle,
+              title: mappedLesson.title,
               objectives: [],
               streamId: lessonData.streamId ?? "",
               durationSec: lessonData.durationS ?? 0,
@@ -589,76 +686,6 @@ function resolveDocId(
   return undefined;
 }
 
-function normalizeOptionalString(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function normalizeProvider(value: unknown): VideoProviderName | null {
-  const normalized = normalizeOptionalString(value);
-  if (normalized === "youtube" || normalized === "cloudflare") {
-    return normalized;
-  }
-  return null;
-}
-
-function resolveLessonProvider(
-  lessonDoc: SanityLessonDocument
-): VideoProviderName | null {
-  const explicit = normalizeProvider(lessonDoc?.provider);
-  if (explicit) {
-    return explicit;
-  }
-
-  if (
-    normalizeOptionalString(lessonDoc.youtubeId) ||
-    normalizeOptionalString(lessonDoc.videoUrl)
-  ) {
-    return "youtube";
-  }
-
-  if (normalizeOptionalString(lessonDoc.streamId)) {
-    return "cloudflare";
-  }
-
-  return null;
-}
-
-function buildLessonData(
-  moduleId: string,
-  lessonDoc: SanityLessonDocument,
-  lessonTitle: string,
-  overrides: {
-    provider: VideoProviderName;
-    streamId: string | null;
-    videoUrl: string | null;
-  }
-) {
-  const posterUrl = normalizeOptionalString(lessonDoc?.posterUrl);
-
-  return {
-    moduleId,
-    title: lessonTitle,
-    streamId: overrides.streamId,
-    provider: overrides.provider,
-    videoUrl: overrides.videoUrl,
-    posterUrl,
-    durationS:
-      typeof lessonDoc?.durationS === "number" &&
-      Number.isFinite(lessonDoc.durationS)
-        ? lessonDoc.durationS
-        : 0,
-    requiresFullWatch:
-      typeof lessonDoc?.requiresFullWatch === "boolean"
-        ? lessonDoc.requiresFullWatch
-        : true
-  };
-}
-
 type RemoveMissingParams = {
   jobId: string;
   orgId: string;
@@ -700,21 +727,9 @@ async function removeMissingRecords({
     select: { id: true, title: true }
   });
 
-  const deletedCourseIds = new Set<string>();
-
-  for (const course of coursesToDelete) {
-    await prisma.course.delete({ where: { id: course.id } });
-    counts.deleted += 1;
-    deletedCourseIds.add(course.id);
-  }
-
-  if (coursesToDelete.length > 0) {
-    appendSyncJobLog(
-      jobId,
-      `Removed ${coursesToDelete.length} course${coursesToDelete.length === 1 ? "" : "s"} missing from Sanity.`
-    );
-    commitStatus();
-  }
+  const courseIdsToDelete = new Set<string>(
+    coursesToDelete.map((course) => course.id)
+  );
 
   const seenModuleList = Array.from(seenModuleIds);
   const moduleWhere: Prisma.ModuleWhereInput = {
@@ -735,24 +750,9 @@ async function removeMissingRecords({
     }
   });
 
-  const deletedModuleIds = new Set<string>();
-
-  for (const moduleRecord of modulesToDelete) {
-    if (deletedCourseIds.has(moduleRecord.courseId)) {
-      continue;
-    }
-    await prisma.module.delete({ where: { id: moduleRecord.id } });
-    counts.deleted += 1;
-    deletedModuleIds.add(moduleRecord.id);
-  }
-
-  if (modulesToDelete.length > 0) {
-    appendSyncJobLog(
-      jobId,
-      `Removed ${deletedModuleIds.size} module${deletedModuleIds.size === 1 ? "" : "s"} missing from Sanity.`
-    );
-    commitStatus();
-  }
+  const moduleIdsToDelete = new Set<string>(
+    modulesToDelete.map((module) => module.id)
+  );
 
   const seenLessonList = Array.from(seenLessonIds);
   const lessonWhere: Prisma.LessonWhereInput = {
@@ -780,13 +780,11 @@ async function removeMissingRecords({
   let deletedLessons = 0;
 
   for (const lesson of lessonsToDelete) {
-    if (
-      lesson.module?.courseId &&
-      deletedCourseIds.has(lesson.module.courseId)
-    ) {
+    const parentCourseId = lesson.module?.courseId;
+    if (parentCourseId && courseIdsToDelete.has(parentCourseId)) {
       continue;
     }
-    if (deletedModuleIds.has(lesson.moduleId)) {
+    if (moduleIdsToDelete.has(lesson.moduleId)) {
       continue;
     }
     await prisma.lesson.delete({ where: { id: lesson.id } });
@@ -802,8 +800,43 @@ async function removeMissingRecords({
     commitStatus();
   }
 
+  let deletedModules = 0;
+
+  for (const moduleRecord of modulesToDelete) {
+    if (courseIdsToDelete.has(moduleRecord.courseId)) {
+      continue;
+    }
+    await prisma.module.delete({ where: { id: moduleRecord.id } });
+    counts.deleted += 1;
+    deletedModules += 1;
+  }
+
+  if (deletedModules > 0) {
+    appendSyncJobLog(
+      jobId,
+      `Removed ${deletedModules} module${deletedModules === 1 ? "" : "s"} missing from Sanity.`
+    );
+    commitStatus();
+  }
+
+  let deletedCourses = 0;
+
+  for (const course of coursesToDelete) {
+    await prisma.course.delete({ where: { id: course.id } });
+    counts.deleted += 1;
+    deletedCourses += 1;
+  }
+
+  if (deletedCourses > 0) {
+    appendSyncJobLog(
+      jobId,
+      `Removed ${deletedCourses} course${deletedCourses === 1 ? "" : "s"} missing from Sanity.`
+    );
+    commitStatus();
+  }
+
   debugLog(
-    `Delete totals — courses: ${deletedCourseIds.size}, modules: ${deletedModuleIds.size}, lessons: ${deletedLessons}`
+    `Delete totals — courses: ${deletedCourses}, modules: ${deletedModules}, lessons: ${deletedLessons}`
   );
 }
 
