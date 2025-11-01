@@ -28,8 +28,8 @@ export const ServerEnv = z.object({
     .positive()
     .default(10 * 60),
   SHADOW_DATABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1).default("sanity-demo"),
-  NEXT_PUBLIC_SANITY_DATASET: z.string().min(1).default("production"),
+  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().default(""),
+  NEXT_PUBLIC_SANITY_DATASET: z.string().default("production"),
   NEXT_PUBLIC_SANITY_API_VERSION: z.string().default("2025-10-21"),
   NEXT_PUBLIC_SANITY_STUDIO_URL: z.string().url().optional(),
   SANITY_PROJECT_ID: z.string().optional(),
@@ -103,10 +103,18 @@ const resolvedNextAuthSecret =
     ? undefined
     : "development_secret_value_please_change");
 
+const resolvedSanityProjectId =
+  rawEnv.NEXT_PUBLIC_SANITY_PROJECT_ID || rawEnv.SANITY_PROJECT_ID || "";
+
+const resolvedSanityDataset =
+  rawEnv.NEXT_PUBLIC_SANITY_DATASET || rawEnv.SANITY_DATASET || "production";
+
 export const env = {
   ...rawEnv,
   DATABASE_URL: resolvedDatabaseUrl,
   NEXTAUTH_SECRET: resolvedNextAuthSecret,
+  SANITY_PROJECT_ID: resolvedSanityProjectId,
+  SANITY_DATASET: resolvedSanityDataset,
   authEmailEnabled: rawEnv.AUTH_EMAIL_ENABLED === "true",
   streamEnabled: rawEnv.STREAM_ENABLED === "true",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
@@ -116,3 +124,20 @@ export const env = {
 } as const;
 
 export type ServerEnv = typeof env;
+
+const globalForSanityLog = globalThis as typeof globalThis & {
+  __LOGGED_SANITY_ENV__?: boolean;
+};
+
+if (
+  process.env.NODE_ENV !== "production" &&
+  !globalForSanityLog.__LOGGED_SANITY_ENV__
+) {
+  globalForSanityLog.__LOGGED_SANITY_ENV__ = true;
+  // eslint-disable-next-line no-console
+  console.log(
+    "[sanity] projectId=%s dataset=%s (server)",
+    env.SANITY_PROJECT_ID,
+    env.SANITY_DATASET
+  );
+}

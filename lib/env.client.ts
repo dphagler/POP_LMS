@@ -11,8 +11,8 @@ export const ClientEnvSchema = z.object({
   NEXT_PUBLIC_TELEMETRY_DEBUG: telemetryFlag,
   NEXT_PUBLIC_AUGMENT_ENABLE: augmentFlag,
   AUGMENT_ENABLE: augmentFlag,
-  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1).default("sanity-demo"),
-  NEXT_PUBLIC_SANITY_DATASET: z.string().min(1).default("production"),
+  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().default(""),
+  NEXT_PUBLIC_SANITY_DATASET: z.string().default("production"),
   NEXT_PUBLIC_SANITY_STUDIO_URL: z.string().url().optional()
 });
 
