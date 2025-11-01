@@ -420,6 +420,18 @@ async function runSyncJob({ jobId, orgId, actorId, options }: SyncJobContext) {
             continue;
           }
 
+          if (
+            !normalizeOptionalString(lessonDoc?.streamId) &&
+            !normalizeOptionalString(lessonDoc?.youtubeId)
+          ) {
+            increment("skipped");
+            appendSyncJobLog(
+              jobId,
+              `Skipped lesson "${lessonTitle}": missing streamId/youtubeId.`
+            );
+            continue;
+          }
+
           const lessonId = `sanity-${lessonDocId}`;
           const provider = lessonDoc?.youtubeId ? "youtube" : "cloudflare";
           const lessonData = buildLessonData(moduleId, lessonDoc, lessonTitle);
