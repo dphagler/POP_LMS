@@ -6,6 +6,8 @@ export type SyncJobOptions = {
   dryRun: boolean;
   allowDeletes: boolean;
   removeMissing: boolean;
+  since?: string;
+  limit?: number;
 };
 
 export type SyncJobCounts = {
@@ -104,7 +106,10 @@ export function createSyncJob(
   return cloneStatus(record);
 }
 
-export function updateSyncJob(jobId: string, update: SyncJobUpdate): SyncStatus | null {
+export function updateSyncJob(
+  jobId: string,
+  update: SyncJobUpdate
+): SyncStatus | null {
   const current = jobsById.get(jobId);
   if (!current) {
     return null;
@@ -136,7 +141,10 @@ export function updateSyncJob(jobId: string, update: SyncJobUpdate): SyncStatus 
   return cloneStatus(next);
 }
 
-export function appendSyncJobLog(jobId: string, entry: string): SyncStatus | null {
+export function appendSyncJobLog(
+  jobId: string,
+  entry: string
+): SyncStatus | null {
   return updateSyncJob(jobId, { appendLog: entry });
 }
 
@@ -154,7 +162,10 @@ export function getLatestSyncStatusForOrg(orgId: string): SyncStatus | null {
   return status && status.orgId === orgId ? cloneStatus(status) : null;
 }
 
-export function getSyncStatusForOrg(orgId: string, jobId: string): SyncStatus | null {
+export function getSyncStatusForOrg(
+  orgId: string,
+  jobId: string
+): SyncStatus | null {
   const status = jobsById.get(jobId);
   if (!status || status.orgId !== orgId) {
     return null;

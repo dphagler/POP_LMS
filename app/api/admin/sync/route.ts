@@ -8,18 +8,40 @@ import {
   type SyncJobOptions
 } from "@/lib/jobs/syncStatus";
 import { createRequestLogger, serializeError, type Logger } from "@/lib/logger";
-import { enqueueSanitySyncJob, type RunSanitySyncInput } from "@/lib/server-actions/sync";
+import {
+  enqueueSanitySyncJob,
+  type RunSanitySyncInput
+} from "@/lib/server-actions/sync";
 
-function normalizeOptions(input: RunSanitySyncInput | undefined): SyncJobOptions {
+function normalizeOptions(
+  input: RunSanitySyncInput | undefined
+): SyncJobOptions {
   const options: SyncJobOptions = {
     dryRun: Boolean(input?.dryRun),
     allowDeletes: Boolean(input?.allowDeletes),
     removeMissing: Boolean(input?.removeMissing)
   };
 
+  const since =
+    typeof input?.since === "string" ? input.since.trim() : undefined;
+  if (since) {
+    options.since = since;
+  }
+
+  const limit =
+    typeof input?.limit === "number" && Number.isFinite(input.limit)
+      ? Math.max(0, Math.floor(input.limit))
+      : undefined;
+  if (limit !== undefined) {
+    options.limit = limit;
+  }
+
   if (options.dryRun) {
     options.allowDeletes = false;
     options.removeMissing = false;
+    if (options.limit === undefined) {
+      options.limit = 5;
+    }
   } else if (!options.allowDeletes) {
     options.removeMissing = false;
   }
@@ -27,7 +49,10 @@ function normalizeOptions(input: RunSanitySyncInput | undefined): SyncJobOptions
   return options;
 }
 
-async function parseRequestBody(request: Request, logger: Logger): Promise<RunSanitySyncInput | undefined> {
+async function parseRequestBody(
+  request: Request,
+  logger: Logger
+): Promise<RunSanitySyncInput | undefined> {
   const contentType = request.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     return undefined;
@@ -46,14 +71,19 @@ async function parseRequestBody(request: Request, logger: Logger): Promise<RunSa
 }
 
 export async function POST(request: Request) {
-  const { logger, requestId } = createRequestLogger(request, { route: "admin.sanity_sync" });
+  const { logger, requestId } = createRequestLogger(request, {
+    route: "admin.sanity_sync"
+  });
 
   try {
     const session = await requireRole("ADMIN");
     const orgId = session.user.orgId ?? undefined;
 
     if (!orgId) {
-      logger.warn({ event: "admin.sanity_sync.missing_org", message: "Organization missing on admin session" });
+      logger.warn({
+        event: "admin.sanity_sync.missing_org",
+        message: "Organization missing on admin session"
+      });
       return NextResponse.json(
         { ok: false, error: "Organization not found.", requestId },
         { status: 400 }
@@ -72,8 +102,18 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      const status = result.reason === "already_running" ? 409 : result.reason === "missing_env" ? 400 : 500;
-      logger.warn({ event: "admin.sanity_sync.rejected", orgId, reason: result.reason, message: result.message });
+      const status =
+        result.reason === "already_running"
+          ? 409
+          : result.reason === "missing_env"
+            ? 400
+            : 500;
+      logger.warn({
+        event: "admin.sanity_sync.rejected",
+        orgId,
+        reason: result.reason,
+        message: result.message
+      });
       return NextResponse.json(
         {
           ok: false,
@@ -86,7 +126,11 @@ export async function POST(request: Request) {
       );
     }
 
-    logger.info({ event: "admin.sanity_sync.accepted", orgId, jobId: result.jobId });
+    logger.info({
+      event: "admin.sanity_sync.accepted",
+      orgId,
+      jobId: result.jobId
+    });
 
     return NextResponse.json(
       {
@@ -111,7 +155,9 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const { logger, requestId } = createRequestLogger(request, { route: "admin.sanity_sync.status" });
+  const { logger, requestId } = createRequestLogger(request, {
+    route: "admin.sanity_sync.status"
+  });
 
   try {
     const session = await requireRole("ADMIN");
@@ -126,9 +172,16 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const jobId = url.searchParams.get("jobId") ?? undefined;
-    const status = jobId ? getSyncStatusForOrg(orgId, jobId) : getLatestSyncStatusForOrg(orgId);
+    const status = jobId
+      ? getSyncStatusForOrg(orgId, jobId)
+      : getLatestSyncStatusForOrg(orgId);
 
-    logger.info({ event: "admin.sanity_sync.status", orgId, jobId, phase: status?.phase });
+    logger.info({
+      event: "admin.sanity_sync.status",
+      orgId,
+      jobId,
+      phase: status?.phase
+    });
 
     return NextResponse.json(
       { ok: true, status: syncStatusToJson(status), requestId },
