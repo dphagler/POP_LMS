@@ -1,16 +1,451 @@
-// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
 
-// ------------- Data source & generator (top-level) -------------
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Organization {
+  id                   String                  @id @default(cuid())
+  name                 String
+  themePrimary         String?
+  themeAccent          String?
+  loginBlurb           String?
+  createdAt            DateTime                @default(now())
+  assignments          Assignment[]
+  auditLogs            AuditLog[]
+  augmentationMessages AugmentationMessage[]
+  augmentationsServed  AugmentationServed[]
+  courses              Course[]
+  domains              Domain[]
+  importJobs           ImportJob[]
+  runtimeSnapshots     LessonRuntimeSnapshot[]
+  groups               OrgGroup[]
+  invites              OrgInvite[]
+  memberships          OrgMembership[]
+  progresses           Progress[]
+  progressDaily        ProgressDaily[]
+  users                User[]
 }
 
-// ------------- Enums -------------
+model User {
+  id                   String                @id @default(cuid())
+  orgId                String
+  email                String                @unique
+  name                 String?
+  image                String?
+  passwordHash         String?
+  role                 UserRole              @default(LEARNER)
+  source               UserSource?           @default(sso)
+  createdAt            DateTime              @default(now())
+  accounts             Account[]
+  assessments          Assessment[]
+  auditLogs            AuditLog[]
+  augmentationMessages AugmentationMessage[]
+  augmentationsServed  AugmentationServed[]
+  enrollments          Enrollment[]
+  groupMemberships     GroupMember[]
+  acceptedInvites      OrgInvite[]           @relation("OrgInviteAcceptedBy")
+  createdInvites       OrgInvite[]           @relation("OrgInviteInvitedBy")
+  orgMemberships       OrgMembership[]
+  progresses           Progress[]
+  quizResponses        QuizResponse[]
+  sessions             Session[]
+  org                  Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  badges               UserBadge[]
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  orgId       String
+  title       String
+  description String?
+  createdAt   DateTime     @default(now())
+  assignments Assignment[]
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  modules     Module[]
+}
+
+model Module {
+  id          String       @id @default(cuid())
+  courseId    String
+  title       String
+  order       Int          @default(0)
+  assignments Assignment[]
+  lessons     Lesson[]
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Lesson {
+  id                   String                  @id @default(cuid())
+  moduleId             String
+  title                String
+  streamId             String?
+  provider             VideoProvider?
+  videoUrl             String?
+  posterUrl            String?
+  durationS            Int
+  requiresFullWatch    Boolean                 @default(true)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  assessments          Assessment[]
+  augmentationMessages AugmentationMessage[]
+  augmentations        AugmentationServed[]
+  module               Module                  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  runtimeSnapshots     LessonRuntimeSnapshot[]
+  progresses           Progress[]
+  progressDaily        ProgressDaily[]
+  quiz                 Quiz?
+}
+
+model LessonRuntimeSnapshot {
+  orgId       String
+  lessonId    String
+  version     Int
+  runtimeJson Json
+  createdAt   DateTime     @default(now())
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@id([orgId, lessonId, version])
+  @@index([orgId, lessonId, version(sort: Desc)])
+}
+
+model Assignment {
+  id          String       @id @default(cuid())
+  orgId       String
+  groupId     String
+  courseId    String?
+  moduleId    String?
+  dueAt       DateTime?
+  label       String?
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  course      Course?      @relation(fields: [courseId], references: [id])
+  group       OrgGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  module      Module?      @relation(fields: [moduleId], references: [id])
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  assignmentId String
+  status       EnrollmentStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+}
+
+model Progress {
+  id            String       @id @default(cuid())
+  userId        String
+  lessonId      String
+  segments      Json?
+  uniqueSeconds Int?
+  lastTickAt    DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  orgId         String
+  reflectionAt  DateTime?
+  lesson        Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, lessonId])
+  @@index([lessonId, completedAt])
+  @@index([orgId, lessonId, userId])
+}
+
+model ProgressDaily {
+  id               String       @id @default(cuid())
+  orgId            String
+  lessonId         String
+  date             DateTime
+  viewers          Int          @default(0)
+  avgPercent       Float        @default(0)
+  completes        Int          @default(0)
+  uniqueSecondsSum Int          @default(0)
+  createdAt        DateTime     @default(now())
+  lesson           Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, lessonId, date])
+  @@index([date])
+  @@index([orgId, date])
+}
+
+model AugmentationMessage {
+  id        String       @id @default(cuid())
+  orgId     String
+  userId    String
+  lessonId  String
+  role      String
+  content   String
+  evidence  Json?
+  createdAt DateTime     @default(now())
+  lesson    Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, userId, lessonId, createdAt])
+}
+
+model AugmentationServed {
+  id             String       @id @default(cuid())
+  userId         String
+  lessonId       String
+  augmentationId String
+  objectiveId    String
+  assetRef       String
+  ruleIndex      Int
+  diagnosticJson Json?
+  plannedAt      DateTime     @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  orgId          String
+  kind           String
+  lesson         Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, augmentationId])
+  @@index([userId, lessonId])
+  @@index([lessonId])
+  @@index([orgId, lessonId, createdAt])
+}
+
+model Quiz {
+  id        String         @id @default(cuid())
+  lessonId  String         @unique
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+}
+
+model QuizQuestion {
+  id         String         @id @default(cuid())
+  quizId     String
+  type       QuestionType
+  prompt     String
+  options    Json?
+  correctKey String?
+  quiz       Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  responses  QuizResponse[]
+}
+
+model QuizResponse {
+  id         String       @id @default(cuid())
+  userId     String
+  questionId String
+  answer     String
+  isCorrect  Boolean
+  createdAt  DateTime     @default(now())
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id             String         @id @default(cuid())
+  userId         String
+  lessonId       String
+  type           AssessmentType
+  startedAt      DateTime       @default(now())
+  completedAt    DateTime?
+  isPassed       Boolean        @default(false)
+  score          Int?
+  diagnosticJson Json?
+  raw            Json?
+  updatedAt      DateTime       @updatedAt
+  lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, type])
+  @@index([userId])
+  @@index([lessonId])
+}
+
+model Badge {
+  id         String      @id @default(cuid())
+  code       String      @unique
+  name       String
+  criteria   Json
+  imageUrl   String?
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrgGroup {
+  id           String           @id @default(cuid())
+  orgId        String
+  name         String
+  description  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+  assignments  Assignment[]
+  members      GroupMember[]
+  org          Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  inviteGroups OrgInviteGroup[]
+}
+
+model OrgMembership {
+  id        String           @id @default(cuid())
+  userId    String
+  orgId     String
+  role      OrgRole          @default(LEARNER)
+  source    MembershipSource @default(manual)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  org       Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+}
+
+model OrgInvite {
+  id           String           @id @default(cuid())
+  orgId        String
+  email        String
+  role         OrgRole
+  tokenHash    String           @unique
+  expiresAt    DateTime
+  invitedById  String?
+  acceptedById String?
+  acceptedAt   DateTime?
+  consumedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  acceptedBy   User?            @relation("OrgInviteAcceptedBy", fields: [acceptedById], references: [id])
+  invitedBy    User?            @relation("OrgInviteInvitedBy", fields: [invitedById], references: [id])
+  org          Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  groups       OrgInviteGroup[]
+
+  @@index([orgId, email])
+  @@index([orgId, consumedAt])
+}
+
+model OrgInviteGroup {
+  id       String    @id @default(cuid())
+  inviteId String
+  groupId  String
+  group    OrgGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  invite   OrgInvite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteId, groupId])
+}
+
+model GroupMember {
+  id           String   @id @default(cuid())
+  groupId      String
+  userId       String
+  groupManager Boolean  @default(false)
+  group        OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model ImportJob {
+  id             String       @id @default(cuid())
+  orgId          String
+  source         ImportSource
+  fileName       String
+  fileData       Bytes?
+  status         ImportStatus @default(queued)
+  processedCount Int          @default(0)
+  successCount   Int          @default(0)
+  errorCount     Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  completedAt    DateTime?
+  lastError      String?
+  resultsJson    Json?
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model Domain {
+  id         String       @id @default(cuid())
+  orgId      String
+  value      String       @unique
+  createdAt  DateTime     @default(now())
+  verifiedAt DateTime?
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([value])
+}
+
+model AuditLog {
+  id        String       @id @default(cuid())
+  orgId     String
+  actorId   String?
+  action    String
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime     @default(now())
+  actor     User?        @relation(fields: [actorId], references: [id])
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
 enum UserRole {
   ADMIN
   INSTRUCTOR
@@ -75,492 +510,4 @@ enum ImportStatus {
   succeeded
   failed
   cancelled
-}
-
-// ------------- Models -------------
-model Organization {
-  id           String   @id @default(cuid())
-  name         String
-  themePrimary String?
-  themeAccent  String?
-  loginBlurb   String?
-  createdAt    DateTime @default(now())
-
-  // back-relations
-  users            User[]
-  courses          Course[]
-  groups           OrgGroup[]
-  assignments      Assignment[]
-  memberships      OrgMembership[]
-  domains          Domain[]
-  auditLogs        AuditLog[]
-  invites          OrgInvite[]
-  importJobs       ImportJob[]
-  runtimeSnapshots LessonRuntimeSnapshot[]
-  progressDaily    ProgressDaily[]
-  progresses       Progress[]
-  augmentationMessages AugmentationMessage[]
-  augmentationsServed  AugmentationServed[]
-}
-
-model User {
-  id           String       @id @default(cuid())
-  orgId        String
-  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  email        String       @unique
-  name         String?
-  image        String?
-  passwordHash String?
-  role         UserRole     @default(LEARNER)
-  source       UserSource?  @default(sso)
-  createdAt    DateTime     @default(now())
-
-  // back-relations
-  accounts            Account[]
-  sessions            Session[]
-  progresses          Progress[]
-  assessments         Assessment[]
-  augmentationMessages AugmentationMessage[]
-  augmentationsServed AugmentationServed[]
-  quizResponses       QuizResponse[]
-  badges              UserBadge[]
-  enrollments         Enrollment[]
-  groupMemberships    GroupMember[]
-  orgMemberships      OrgMembership[]
-  auditLogs           AuditLog[]
-  createdInvites      OrgInvite[]          @relation("OrgInviteInvitedBy")
-  acceptedInvites     OrgInvite[]          @relation("OrgInviteAcceptedBy")
-}
-
-model Course {
-  id          String       @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  createdAt   DateTime     @default(now())
-
-  // back-relations
-  modules     Module[]
-  assignments Assignment[]
-}
-
-model Module {
-  id       String @id @default(cuid())
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title    String
-  order    Int    @default(0)
-
-  // back-relations
-  lessons     Lesson[]
-  assignments Assignment[]
-}
-
-model Lesson {
-  id       String  @id @default(cuid())
-  moduleId String
-  module   Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title    String
-  // Cloud provider id (Mux/Cloudflare) stays but becomes optional for YouTube-only lessons
-  streamId String?
-
-  // NEW: YouTube support
-  provider          VideoProvider?
-  videoUrl          String?
-  posterUrl         String?
-  durationS         Int
-  requiresFullWatch Boolean        @default(true)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-
-  // one-to-ones
-  quiz Quiz?
-
-  // back-relations
-  progresses       Progress[]
-  assessments      Assessment[]
-  augmentationMessages AugmentationMessage[]
-  augmentations    AugmentationServed[]
-  runtimeSnapshots LessonRuntimeSnapshot[]
-  progressDaily    ProgressDaily[]
-}
-
-model LessonRuntimeSnapshot {
-  orgId       String
-  lessonId    String
-  version     Int
-  runtimeJson Json
-  createdAt   DateTime @default(now())
-
-  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  lesson Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@id([orgId, lessonId, version])
-  @@index([orgId, lessonId, version(sort: Desc)])
-}
-
-model Assignment {
-  id    String       @id @default(cuid())
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  groupId String
-  group   OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  courseId String?
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
-
-  moduleId String?
-  module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-
-  dueAt DateTime?
-  label String?
-
-  createdBy String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  // back-relations
-  enrollments Enrollment[]
-}
-
-model Enrollment {
-  id           String           @id @default(cuid())
-  userId       String
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignmentId String
-  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  status       EnrollmentStatus @default(ACTIVE)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  deletedAt    DateTime?
-
-  @@unique([assignmentId, userId])
-}
-
-model Progress {
-  id            String   @id @default(cuid())
-  orgId         String
-  userId        String
-  lessonId      String
-  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson        Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  segments      Json? // [{s:number,e:number}] seconds
-  uniqueSeconds Int?
-  lastTickAt    DateTime?
-  completedAt   DateTime?
-  reflectionAt  DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([userId, lessonId])
-  @@index([userId, lessonId])
-  @@index([lessonId, completedAt])
-  @@index([orgId, lessonId, userId])
-}
-
-model ProgressDaily {
-  id               String   @id @default(cuid())
-  orgId            String
-  lessonId         String
-  date             DateTime
-  viewers          Int      @default(0)
-  avgPercent       Float    @default(0)
-  completes        Int      @default(0)
-  uniqueSecondsSum Int      @default(0)
-  createdAt        DateTime @default(now())
-
-  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  lesson Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([orgId, lessonId, date])
-  @@index([date])
-  @@index([orgId, date])
-}
-
-model AugmentationMessage {
-  id        String   @id @default(cuid())
-  orgId     String
-  userId    String
-  lessonId  String
-  role      String
-  content   String
-  evidence  Json?
-  createdAt DateTime @default(now())
-
-  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([orgId, userId, lessonId, createdAt])
-}
-
-model AugmentationServed {
-  id             String   @id @default(cuid())
-  orgId          String
-  userId         String
-  lessonId       String
-  augmentationId String
-  objectiveId    String
-  assetRef       String
-  ruleIndex      Int
-  diagnosticJson Json?
-  plannedAt      DateTime @default(now())
-  completedAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  kind           String
-
-  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId, augmentationId])
-  @@index([userId, lessonId])
-  @@index([lessonId])
-  @@index([orgId, lessonId, createdAt])
-}
-
-model Quiz {
-  id       String @id @default(cuid())
-  lessonId String @unique
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  // back-relations
-  questions QuizQuestion[]
-}
-
-model QuizQuestion {
-  id         String       @id @default(cuid())
-  quizId     String
-  quiz       Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  type       QuestionType
-  prompt     String
-  options    Json? // for MCQ
-  correctKey String? // for MCQ
-
-  // back-relations
-  responses QuizResponse[]
-}
-
-model QuizResponse {
-  id         String @id @default(cuid())
-  userId     String
-  questionId String
-
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  answer    String
-  isCorrect Boolean
-  createdAt DateTime @default(now())
-}
-
-model Assessment {
-  id             String         @id @default(cuid())
-  userId         String
-  lessonId       String
-  type           AssessmentType
-  startedAt      DateTime       @default(now())
-  completedAt    DateTime?
-  isPassed       Boolean        @default(false)
-  score          Int?
-  diagnosticJson Json?
-  raw            Json?
-  updatedAt      DateTime       @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId, type])
-  @@index([userId])
-  @@index([lessonId])
-}
-
-model Badge {
-  id       String  @id @default(cuid())
-  code     String  @unique
-  name     String
-  criteria Json
-  imageUrl String?
-
-  // back-relations
-  userBadges UserBadge[]
-}
-
-model UserBadge {
-  id      String @id @default(cuid())
-  userId  String
-  badgeId String
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-
-  earnedAt DateTime @default(now())
-}
-
-model OrgGroup {
-  id          String       @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  deletedAt   DateTime?
-
-  // back-relations
-  members      GroupMember[]
-  assignments  Assignment[]
-  inviteGroups OrgInviteGroup[]
-}
-
-model OrgMembership {
-  id        String           @id @default(cuid())
-  userId    String
-  orgId     String
-  role      OrgRole          @default(LEARNER)
-  source    MembershipSource @default(manual)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, orgId])
-}
-
-model OrgInvite {
-  id           String    @id @default(cuid())
-  orgId        String
-  email        String
-  role         OrgRole
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  invitedById  String?
-  acceptedById String?
-  acceptedAt   DateTime?
-  consumedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  org        Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  invitedBy  User?            @relation("OrgInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
-  acceptedBy User?            @relation("OrgInviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
-  groups     OrgInviteGroup[]
-
-  @@index([orgId, email])
-  @@index([orgId, consumedAt])
-}
-
-model OrgInviteGroup {
-  id       String @id @default(cuid())
-  inviteId String
-  groupId  String
-
-  invite OrgInvite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
-  group  OrgGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@unique([inviteId, groupId])
-}
-
-model GroupMember {
-  id           String  @id @default(cuid())
-  groupId      String
-  userId       String
-  groupManager Boolean @default(false)
-
-  group OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, userId])
-}
-
-model ImportJob {
-  id             String       @id @default(cuid())
-  orgId          String
-  source         ImportSource
-  fileName       String
-  fileData       Bytes?
-  status         ImportStatus @default(queued)
-  processedCount Int          @default(0)
-  successCount   Int          @default(0)
-  errorCount     Int          @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  completedAt    DateTime?
-  lastError      String?
-  resultsJson    Json?
-
-  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  @@index([orgId])
-}
-
-model Domain {
-  id         String    @id @default(cuid())
-  orgId      String
-  value      String    @unique
-  createdAt  DateTime  @default(now())
-  verifiedAt DateTime?
-
-  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  @@index([orgId])
-  @@index([value])
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  orgId     String
-  actorId   String?
-  action    String
-  targetId  String?
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  actor User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([orgId, createdAt])
-}
-
-model Account {
-  id                       String  @id @default(cuid())
-  userId                   String
-  type                     String
-  provider                 String
-  providerAccountId        String
-  refresh_token            String? @db.Text
-  access_token             String? @db.Text
-  expires_at               Int?
-  token_type               String?
-  scope                    String?
-  id_token                 String? @db.Text
-  session_state            String?
-  refresh_token_expires_in Int?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
 }
