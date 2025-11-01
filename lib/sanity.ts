@@ -66,7 +66,9 @@ function buildSanityClient(): SanityClient {
   const { projectId, dataset, token } = getSanityConfig();
   if (!projectId || !dataset) {
     const missing = getMissingSanityEnvVars();
-    throw new Error(`Cannot create Sanity client. Missing env vars: ${missing.join(", ")}`);
+    throw new Error(
+      `Cannot create Sanity client. Missing env vars: ${missing.join(", ")}`
+    );
   }
 
   return createClient({
@@ -113,7 +115,10 @@ function resolveSanityStudioBaseUrl() {
   return `https://${projectId}.sanity.studio`;
 }
 
-export function getSanityStudioDocumentUrl(docType: string, docId: string): string | undefined {
+export function getSanityStudioDocumentUrl(
+  docType: string,
+  docId: string
+): string | undefined {
   if (!docType || !docId) {
     return undefined;
   }
@@ -139,7 +144,232 @@ export async function fetchPublishedCourses(
     typeof options.limit === "number" && Number.isFinite(options.limit)
       ? Math.max(0, Math.floor(options.limit))
       : undefined;
-  const rangeClause = sanitizedLimit !== undefined ? `[0...${sanitizedLimit}]` : "";
+  const rangeClause =
+    sanitizedLimit !== undefined ? `[0...${sanitizedLimit}]` : "";
   const query = `*[_type == "course"]${rangeClause}{..., modules[]->{..., lessons[]->}}`;
   return client.fetch<SanityCourseDocument[]>(query);
+}
+
+type SanityModuleWithRelations = SanityModuleDocument & {
+  course?: SanityCourseDocument | null;
+  lessons?: (SanityLessonDocument & { module?: unknown })[] | null;
+};
+
+type SanityLessonWithRelations = SanityLessonDocument & {
+  module?:
+    | (SanityModuleDocument & { course?: SanityCourseDocument | null })
+    | null;
+};
+
+export async function fetchChangedSince(
+  sinceISO: string,
+  limit?: number
+): Promise<SanityCourseDocument[]> {
+  const client = getSanityClient();
+  const sanitizedLimit =
+    typeof limit === "number" && Number.isFinite(limit)
+      ? Math.max(0, Math.floor(limit))
+      : undefined;
+  const range = sanitizedLimit !== undefined ? `[0...${sanitizedLimit}]` : "";
+  const query = `
+      {
+        "courses": *[_type=="course" && _updatedAt > $since]${range}{..., modules[]->{..., lessons[]->}},
+        "modules": *[_type=="module" && _updatedAt > $since]${range}{..., course->, lessons[]->},
+        "lessons": *[_type=="lesson" && _updatedAt > $since]${range}{..., module->{course->}}
+      }
+    `;
+  const {
+    courses = [],
+    modules = [],
+    lessons = []
+  } = await client.fetch<{
+    courses?: SanityCourseDocument[];
+    modules?: SanityModuleWithRelations[];
+    lessons?: SanityLessonWithRelations[];
+  }>(query, { since: sinceISO });
+
+  const byCourse = new Map<string, SanityCourseDocument>();
+  const getId = (doc: { _id?: string; _ref?: string } | null | undefined) =>
+    typeof doc?._id === "string"
+      ? doc._id
+      : typeof doc?._ref === "string"
+        ? doc._ref
+        : undefined;
+
+  const dedupeById = <T extends { _id?: string; _ref?: string }>(
+    arr: T[]
+  ): T[] => {
+    const seen = new Set<string>();
+    const out: T[] = [];
+    for (const item of arr) {
+      const id = getId(item);
+      if (!id || seen.has(id)) {
+        continue;
+      }
+      seen.add(id);
+      out.push(item);
+    }
+    return out;
+  };
+
+  const normalizeLessons = (
+    lessonDocs?: (SanityLessonDocument & { module?: unknown })[] | null
+  ): SanityLessonDocument[] => {
+    if (!Array.isArray(lessonDocs)) {
+      return [];
+    }
+    const sanitized = lessonDocs
+      .map((lessonDoc) => {
+        if (!lessonDoc) {
+          return undefined;
+        }
+        const { module: _ignoredModule, ...restLesson } = lessonDoc;
+        return { ...(restLesson as SanityLessonDocument) };
+      })
+      .filter((lesson): lesson is SanityLessonDocument => Boolean(lesson));
+    return dedupeById(sanitized);
+  };
+
+  const sanitizeLesson = (
+    lessonDoc: (SanityLessonDocument & { module?: unknown }) | null | undefined
+  ): SanityLessonDocument | undefined => {
+    const [first] = normalizeLessons(lessonDoc ? [lessonDoc] : []);
+    return first;
+  };
+
+  const sanitizeModule = (
+    moduleDoc: (SanityModuleDocument & { course?: unknown }) | null | undefined
+  ): SanityModuleDocument | undefined => {
+    if (!moduleDoc) {
+      return undefined;
+    }
+    const {
+      course: _ignoredCourse,
+      lessons,
+      ...restModule
+    } = moduleDoc as SanityModuleWithRelations;
+    const normalizedLessons = normalizeLessons(lessons ?? null);
+    const sanitized: SanityModuleDocument = {
+      ...(restModule as SanityModuleDocument)
+    };
+    if (normalizedLessons.length > 0) {
+      sanitized.lessons = normalizedLessons;
+    }
+    return sanitized;
+  };
+
+  const addCourse = (course: SanityCourseDocument) => {
+    const id = getId(course);
+    if (!id) {
+      return;
+    }
+    const existing = byCourse.get(id);
+    const modulesFromCourse = Array.isArray(course.modules)
+      ? dedupeById(
+          course.modules
+            .map((moduleDoc) => sanitizeModule(moduleDoc))
+            .filter((moduleDoc): moduleDoc is SanityModuleDocument =>
+              Boolean(moduleDoc)
+            )
+        )
+      : [];
+    if (existing) {
+      const existingModules = Array.isArray(existing.modules)
+        ? existing.modules
+        : [];
+      const mergedModules = dedupeById([
+        ...existingModules,
+        ...modulesFromCourse
+      ]);
+      byCourse.set(id, { ...existing, ...course, modules: mergedModules });
+    } else {
+      byCourse.set(id, { ...course, modules: modulesFromCourse });
+    }
+  };
+
+  for (const course of courses) {
+    addCourse(course);
+  }
+
+  for (const moduleDoc of modules) {
+    const courseId = getId(moduleDoc?.course);
+    if (!courseId) {
+      continue;
+    }
+    const baseCourse = byCourse.get(courseId) ?? {
+      _id: courseId,
+      title: moduleDoc?.course?.title,
+      modules: []
+    };
+    const sanitizedModule = sanitizeModule(moduleDoc);
+    if (!sanitizedModule) {
+      byCourse.set(courseId, baseCourse);
+      continue;
+    }
+    const modulesForCourse = Array.isArray(baseCourse.modules)
+      ? baseCourse.modules
+      : [];
+    const mergedModules = dedupeById([...modulesForCourse, sanitizedModule]);
+    byCourse.set(courseId, { ...baseCourse, modules: mergedModules });
+  }
+
+  for (const lessonDoc of lessons) {
+    const moduleRef = lessonDoc?.module;
+    const courseRef = moduleRef?.course;
+    const courseId = getId(courseRef);
+    const moduleId = getId(moduleRef);
+    const lessonId = getId(lessonDoc);
+    if (!courseId || !moduleId || !lessonId) {
+      continue;
+    }
+
+    const sanitizedLesson = sanitizeLesson(lessonDoc);
+    if (!sanitizedLesson) {
+      continue;
+    }
+
+    const baseCourse = byCourse.get(courseId) ?? {
+      _id: courseId,
+      title: courseRef?.title,
+      modules: []
+    };
+
+    const modulesForCourse = Array.isArray(baseCourse.modules)
+      ? baseCourse.modules
+      : [];
+    const moduleIndex = modulesForCourse.findIndex(
+      (moduleEntry) => getId(moduleEntry) === moduleId
+    );
+    if (moduleIndex === -1) {
+      const sanitizedModule = sanitizeModule(
+        moduleRef as SanityModuleWithRelations
+      ) ?? {
+        _id: moduleId,
+        lessons: []
+      };
+      sanitizedModule.lessons = Array.isArray(sanitizedModule.lessons)
+        ? dedupeById([...sanitizedModule.lessons, sanitizedLesson])
+        : [sanitizedLesson];
+      modulesForCourse.push(sanitizedModule);
+    } else {
+      const moduleEntry = modulesForCourse[moduleIndex];
+      const lessonsForModule = Array.isArray(moduleEntry.lessons)
+        ? moduleEntry.lessons
+        : [];
+      const hasLesson = lessonsForModule.some(
+        (existingLesson) => getId(existingLesson) === lessonId
+      );
+      if (!hasLesson) {
+        moduleEntry.lessons = dedupeById([
+          ...lessonsForModule,
+          sanitizedLesson
+        ]);
+        modulesForCourse[moduleIndex] = moduleEntry;
+      }
+    }
+    const mergedModules = dedupeById(modulesForCourse);
+    byCourse.set(courseId, { ...baseCourse, modules: mergedModules });
+  }
+
+  return Array.from(byCourse.values());
 }
