@@ -106,4 +106,4 @@ async function ensureCors() {
   }
 }
 
-await ensureCors();
+void ensureCors();
