@@ -131,3 +131,9 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting and type-check
 ## Recommended lint guardrails
 
 Enable ESLint rules such as `no-console` and `no-unused-vars` (along with [`unused-imports/no-unused-imports`](https://github.com/sweepline/eslint-plugin-unused-imports)) to keep dead code and debug logging from slipping back into the codebase. Add them to `.eslintrc.js` once the project is ready to enforce the stricter posture.
+
+## Sanity Sync
+
+- Admin → Content Sync: you can run a dry-run, set a "Since (ISO)" timestamp for incremental syncs, and optionally a Limit.
+- The sync writes a LessonRuntimeSnapshot per lesson so newly synced lessons play immediately.
+- If you only changed one lesson, use “Since” with the last edited timestamp from Sanity Studio to keep runs fast.
