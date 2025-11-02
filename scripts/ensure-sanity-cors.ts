@@ -1,3 +1,4 @@
+import "dotenv/config";
 import process from "node:process";
 
 import { env } from "@/lib/env";
@@ -5,10 +6,11 @@ import { env } from "@/lib/env";
 const projectId = env.SANITY_PROJECT_ID;
 
 const managementToken =
-  env.SANITY_MANAGEMENT_TOKEN ??
-  env.SANITY_DEPLOY_STUDIO_TOKEN ??
-  env.SANITY_MANAGE_TOKEN ??
-  env.SANITY_READ_TOKEN;
+  env.SANITY_MANAGEMENT_TOKEN ||
+  env.SANITY_DEPLOY_STUDIO_TOKEN ||
+  env.SANITY_MANAGE_TOKEN ||
+  env.SANITY_READ_TOKEN ||
+  undefined;
 
 const defaultOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const userDefinedOrigins = (env.SANITY_DEV_CORS_ORIGINS ?? "")
@@ -23,7 +25,9 @@ function log(message: string) {
 }
 
 if (!projectId) {
-  log("No Sanity project id found in the environment, skipping CORS check.");
+  console.warn(
+    "[sanity-cors] No Sanity project id found in the environment, skipping CORS check."
+  );
   process.exit(0);
 }
 
