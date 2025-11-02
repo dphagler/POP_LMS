@@ -1,7 +1,9 @@
-export const revalidate = 0
+"use client";
 
-import StudioPageClient from './StudioPageClient'
+import { NextStudio } from "next-sanity/studio";
+
+import config from "@/sanity.config";
 
 export default function StudioPage() {
-  return <StudioPageClient />
+  return <NextStudio config={config} />;
 }
