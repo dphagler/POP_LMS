@@ -1,0 +1,7 @@
+# Follow-up questions
+
+1. **Duplicated `getNextLesson` implementations.** There is a mock response in `lib/server-actions/lesson.ts` that always returns the `"lesson-mock"` placeholder, while the real assignment-aware logic lives in `lib/server-actions/lesson.runtime.ts`. Should we delete or rewire the mock export before launch so the learner dashboard pulls from the production pathfinder logic?
+2. **AI chat probe scoring.** `submitChatProbe` currently requires the `FEATURE_CHAT_PROBE_MOCK_RUBRIC` flag and fabricates a placeholder diagnostic. Do we have a target scoring service or rubric integration planned, and what inputs/outputs should that contract support once we replace the mock?
+3. **Augmentations data source.** `getAugmentations` still returns a hard-coded follow-up asset. What system will own live augmentation rules (e.g., Sanity, custom authoring UI, or an AI service), and how should we authenticate/authorize requests when we connect to it?
+4. **Interview simulation scope.** The marketing page promises AI-powered interview practice with non-verbal feedback, but I only see marketing copy for that capability. Do we intend to integrate an external provider (e.g., via WebRTC) or build an in-house module, and how should that experience surface in the learner workspace?
+5. **Gamification roadmap.** The streak badge logic awards a single “3-Day Streak” badge. Are additional streak tiers or leaderboard rewards planned so we can map gamification to the metrics promised in the business plan?

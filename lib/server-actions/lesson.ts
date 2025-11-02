@@ -1,18 +1,20 @@
-'use server';
+"use server";
 
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 import type {
-  AugmentationRule,
   DiagnosticResult,
   LessonObjective,
-  LessonRuntime,
-} from '../lesson/contracts';
-import type { Augmentation } from '../lesson/diagnostics';
-import { prisma } from '../prisma';
-import { lessonEvents } from '../analytics/lessonEvents';
-import { getLessonRuntime } from './lesson.runtime';
-import { syncLessonCompletion } from '../lesson-progress';
-import { env } from '@/lib/env';
+  LessonRuntime
+} from "../lesson/contracts";
+import type { Augmentation } from "../lesson/diagnostics";
+import { prisma } from "../prisma";
+import { lessonEvents } from "../analytics/lessonEvents";
+import {
+  getLessonRuntime,
+  getNextLesson as getNextLessonRuntime
+} from "./lesson.runtime";
+import { syncLessonCompletion } from "../lesson-progress";
+import { env } from "@/lib/env";
 
 interface GetNextLessonInput {
   userId: string;
@@ -25,10 +27,10 @@ interface SubmitChatProbeInput {
   chatTranscript: string[];
 }
 
-const DEVICE_TYPE = 'web';
+const DEVICE_TYPE = "web";
 
 const USE_CHAT_PROBE_MOCK_RUBRIC =
-  (env.FEATURE_CHAT_PROBE_MOCK_RUBRIC ?? '').toLowerCase() === 'true';
+  (env.FEATURE_CHAT_PROBE_MOCK_RUBRIC ?? "").toLowerCase() === "true";
 
 interface GetAugmentationsInput {
   userId: string;
@@ -36,67 +38,52 @@ interface GetAugmentationsInput {
 }
 
 const mockObjective: LessonObjective = {
-  id: 'objective-mock',
-  summary: 'Demonstrate the ability to recall core lesson concepts.',
-};
-
-const mockAugmentationRule: AugmentationRule = {
-  targets: [mockObjective.id],
-  whenExpr: "level !== 'MET'",
-  assetRef: 'asset:mock-reference',
+  id: "objective-mock",
+  summary: "Demonstrate the ability to recall core lesson concepts."
 };
 
 export const getNextLesson = async ({
   userId,
-  assignmentId,
+  assignmentId
 }: GetNextLessonInput): Promise<LessonRuntime> => {
-  void userId;
-  void assignmentId;
+  const runtime = await getNextLessonRuntime({ userId, assignmentId });
 
-  return {
-    id: 'lesson-mock',
-    title: 'Mock Lesson Runtime',
-    objectives: [mockObjective],
-    streamId: 'stream-mock',
-    videoId: null,
-    videoProvider: 'cloudflare',
-    posterUrl: null,
-    durationSec: 1800,
-    requiresFullWatch: true,
-    assessmentType: 'QUIZ',
-    augmentations: [mockAugmentationRule],
-  };
+  if (!runtime) {
+    throw new Error("No pending lessons found for the assignment");
+  }
+
+  return runtime;
 };
 
 export const submitChatProbe = async ({
   userId,
   lessonId,
-  chatTranscript,
+  chatTranscript
 }: SubmitChatProbeInput): Promise<{
   diagnostic: DiagnosticResult[];
   rationaleShort: string;
 }> => {
   if (!USE_CHAT_PROBE_MOCK_RUBRIC) {
-    throw new Error('Chat probe scoring is not enabled');
+    throw new Error("Chat probe scoring is not enabled");
   }
 
   const transcript = Array.isArray(chatTranscript)
     ? chatTranscript
-        .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
         .filter((entry) => entry.length > 0)
     : [];
 
   if (transcript.length === 0) {
-    throw new Error('Chat transcript is required');
+    throw new Error("Chat transcript is required");
   }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { orgId: true },
+    select: { orgId: true }
   });
 
   if (!user?.orgId) {
-    throw new Error('User not found or missing organization context');
+    throw new Error("User not found or missing organization context");
   }
 
   const runtime = await getLessonRuntime({ userId, lessonId });
@@ -106,24 +93,25 @@ export const submitChatProbe = async ({
     objectives.length > 0
       ? objectives.map((objective) => ({
           objectiveId: objective.id,
-          level: 'PARTIAL',
-          score: 0.5,
+          level: "PARTIAL",
+          score: 0.5
         }))
       : [
           {
             objectiveId: mockObjective.id,
-            level: 'PARTIAL',
-            score: 0.5,
-          },
+            level: "PARTIAL",
+            score: 0.5
+          }
         ];
 
-  const rationaleShort = 'Mock rubric evaluation pending Phase 5 scorer integration.';
+  const rationaleShort =
+    "Mock rubric evaluation pending Phase 5 scorer integration.";
 
   const payload = {
     userId,
     orgId: user.orgId,
     lessonId,
-    deviceType: DEVICE_TYPE,
+    deviceType: DEVICE_TYPE
   } as const;
 
   let emitStart = false;
@@ -131,18 +119,18 @@ export const submitChatProbe = async ({
   const diagnosticJsonResults = diagnostic.map((result) => ({
     objectiveId: result.objectiveId,
     level: result.level,
-    score: result.score ?? null,
+    score: result.score ?? null
   })) satisfies Prisma.JsonArray;
 
   const diagnosticJson: Prisma.JsonObject = {
     results: diagnosticJsonResults,
     rationaleShort,
-    usingMockRubric: true,
+    usingMockRubric: true
   };
 
   const rawPayload: Prisma.JsonObject = {
     transcript,
-    featureFlag: 'FEATURE_CHAT_PROBE_MOCK_RUBRIC',
+    featureFlag: "FEATURE_CHAT_PROBE_MOCK_RUBRIC"
   };
 
   try {
@@ -152,37 +140,44 @@ export const submitChatProbe = async ({
           userId_lessonId_type: {
             userId,
             lessonId,
-            type: 'chat',
-          },
+            type: "chat"
+          }
         },
-        select: { id: true },
+        select: { id: true }
       });
 
       if (existingAssessment) {
-        throw new Error('Chat probe already submitted; reset required before retrying');
+        throw new Error(
+          "Chat probe already submitted; reset required before retrying"
+        );
       }
 
       const assessment = await tx.assessment.create({
         data: {
           userId,
           lessonId,
-          type: 'chat',
+          type: "chat",
           completedAt: new Date(),
           diagnosticJson,
-          raw: rawPayload,
+          raw: rawPayload
         },
-        select: { id: true },
+        select: { id: true }
       });
 
       if (!assessment) {
-        throw new Error('Failed to create chat assessment');
+        throw new Error("Failed to create chat assessment");
       }
 
       emitStart = true;
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new Error('Chat probe already submitted; reset required before retrying');
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new Error(
+        "Chat probe already submitted; reset required before retrying"
+      );
     }
     throw error;
   }
@@ -190,19 +185,19 @@ export const submitChatProbe = async ({
   await syncLessonCompletion({ userId, lessonId });
 
   if (emitStart) {
-    lessonEvents.emit('assessment_start', payload);
+    lessonEvents.emit("assessment_start", payload);
   }
-  lessonEvents.emit('assessment_submit', payload);
+  lessonEvents.emit("assessment_submit", payload);
 
   return {
     diagnostic,
-    rationaleShort,
+    rationaleShort
   };
 };
 
 export const getAugmentations = async ({
   userId,
-  lessonId,
+  lessonId
 }: GetAugmentationsInput): Promise<Augmentation[]> => {
   void userId;
   void lessonId;
@@ -210,13 +205,13 @@ export const getAugmentations = async ({
   return [
     {
       objective: mockObjective,
-      assetRef: 'asset:mock-followup',
+      assetRef: "asset:mock-followup",
       ruleIndex: 0,
       diagnostic: {
         objectiveId: mockObjective.id,
-        level: 'PARTIAL',
-        score: 0.5,
-      },
-    },
+        level: "PARTIAL",
+        score: 0.5
+      }
+    }
   ];
 };
