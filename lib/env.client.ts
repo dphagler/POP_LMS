@@ -45,6 +45,10 @@ const resolvedAugmentEnable =
 
 export const publicEnv = {
   ...rawEnv,
+  NEXT_PUBLIC_SANITY_PROJECT_ID:
+    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "",
+  NEXT_PUBLIC_SANITY_DATASET:
+    process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
   AUGMENT_ENABLE: resolvedAugmentEnable,
   augmentEnabled: resolvedAugmentEnable === "true"

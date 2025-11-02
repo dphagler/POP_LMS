@@ -104,10 +104,18 @@ const resolvedNextAuthSecret =
     : "development_secret_value_please_change");
 
 const resolvedSanityProjectId =
-  rawEnv.NEXT_PUBLIC_SANITY_PROJECT_ID || rawEnv.SANITY_PROJECT_ID || "";
+  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ??
+  process.env.SANITY_PROJECT_ID ??
+  "";
 
 const resolvedSanityDataset =
-  rawEnv.NEXT_PUBLIC_SANITY_DATASET || rawEnv.SANITY_DATASET || "production";
+  process.env.NEXT_PUBLIC_SANITY_DATASET ??
+  process.env.SANITY_DATASET ??
+  "production";
+
+const resolvedSanityReadToken = process.env.SANITY_READ_TOKEN ?? "";
+
+const resolvedSanityWebhookSecret = process.env.SANITY_WEBHOOK_SECRET ?? "";
 
 export const env = {
   ...rawEnv,
@@ -115,6 +123,8 @@ export const env = {
   NEXTAUTH_SECRET: resolvedNextAuthSecret,
   SANITY_PROJECT_ID: resolvedSanityProjectId,
   SANITY_DATASET: resolvedSanityDataset,
+  SANITY_READ_TOKEN: resolvedSanityReadToken,
+  SANITY_WEBHOOK_SECRET: resolvedSanityWebhookSecret,
   authEmailEnabled: rawEnv.AUTH_EMAIL_ENABLED === "true",
   streamEnabled: rawEnv.STREAM_ENABLED === "true",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
@@ -124,20 +134,3 @@ export const env = {
 } as const;
 
 export type ServerEnv = typeof env;
-
-const globalForSanityLog = globalThis as typeof globalThis & {
-  __LOGGED_SANITY_ENV__?: boolean;
-};
-
-if (
-  process.env.NODE_ENV !== "production" &&
-  !globalForSanityLog.__LOGGED_SANITY_ENV__
-) {
-  globalForSanityLog.__LOGGED_SANITY_ENV__ = true;
-  // eslint-disable-next-line no-console
-  console.log(
-    "[sanity] projectId=%s dataset=%s (server)",
-    env.SANITY_PROJECT_ID,
-    env.SANITY_DATASET
-  );
-}

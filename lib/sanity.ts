@@ -6,6 +6,32 @@ import { publicEnv } from "@/lib/env.client";
 
 const SANITY_API_VERSION = "2024-08-01";
 
+const isServerRuntime = typeof window === "undefined";
+
+const projectId = isServerRuntime
+  ? env.SANITY_PROJECT_ID
+  : publicEnv.NEXT_PUBLIC_SANITY_PROJECT_ID;
+
+const dataset = isServerRuntime
+  ? env.SANITY_DATASET
+  : publicEnv.NEXT_PUBLIC_SANITY_DATASET;
+
+const token = isServerRuntime ? env.SANITY_READ_TOKEN || undefined : undefined;
+
+const globalForSanityEnvLog = globalThis as typeof globalThis & {
+  __SANITY_ENV_LOGGED__?: boolean;
+};
+
+if (
+  isServerRuntime &&
+  process.env.NODE_ENV !== "production" &&
+  !globalForSanityEnvLog.__SANITY_ENV_LOGGED__
+) {
+  globalForSanityEnvLog.__SANITY_ENV_LOGGED__ = true;
+  // eslint-disable-next-line no-console
+  console.log("[sanity] server project=%s dataset=%s", projectId, dataset);
+}
+
 type SanityClient = ReturnType<typeof createClient>;
 
 let cachedServerClient: SanityClient | null = null;
@@ -27,19 +53,13 @@ function getSanityServerConfig(): SanityRuntimeConfig {
   };
 }
 
-function getSanityBrowserConfig(): SanityRuntimeConfig {
-  return {
-    projectId: publicEnv.NEXT_PUBLIC_SANITY_PROJECT_ID,
-    dataset: publicEnv.NEXT_PUBLIC_SANITY_DATASET,
-    token: undefined,
-    useCdn: true
-  };
-}
-
 function getSanityRuntimeConfig(): SanityRuntimeConfig {
-  return typeof window === "undefined"
-    ? getSanityServerConfig()
-    : getSanityBrowserConfig();
+  return {
+    projectId,
+    dataset,
+    token,
+    useCdn: !isServerRuntime
+  };
 }
 
 export type SanityLessonDocument = {
