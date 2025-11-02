@@ -103,15 +103,30 @@ const resolvedNextAuthSecret =
     ? undefined
     : "development_secret_value_please_change");
 
+const coalesceNonEmpty = (
+  ...values: Array<string | undefined | null>
+): string | undefined => {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return undefined;
+};
+
 const resolvedSanityProjectId =
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ??
-  process.env.SANITY_PROJECT_ID ??
-  "";
+  coalesceNonEmpty(
+    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    process.env.SANITY_PROJECT_ID
+  ) ?? "";
 
 const resolvedSanityDataset =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ??
-  process.env.SANITY_DATASET ??
-  "production";
+  coalesceNonEmpty(
+    process.env.NEXT_PUBLIC_SANITY_DATASET,
+    process.env.SANITY_DATASET
+  ) ?? "production";
 
 const resolvedSanityReadToken = process.env.SANITY_READ_TOKEN ?? "";
 
