@@ -131,13 +131,18 @@ function buildSanityClient(): SanityClient {
     );
   }
 
-  return createClient({
+  const config: Parameters<typeof createClient>[0] = {
     projectId,
     dataset,
     apiVersion: SANITY_API_VERSION,
-    useCdn,
-    token
-  });
+    useCdn
+  };
+
+  if (token) {
+    return createClient({ ...config, token });
+  }
+
+  return createClient(config);
 }
 
 export function getSanityClient(): SanityClient {
