@@ -2,7 +2,6 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { getMissingSanityEnvVars } from "@/lib/sanity";
 import { createRequestLogger, serializeError } from "@/lib/logger";
 
 const REQUIRED_ENV_CHECKS: Array<{ key: string; check: () => unknown }> = [
@@ -13,7 +12,9 @@ const REQUIRED_ENV_CHECKS: Array<{ key: string; check: () => unknown }> = [
 ];
 
 export async function GET(request: Request) {
-  const { logger, requestId } = createRequestLogger(request, { route: "health" });
+  const { logger, requestId } = createRequestLogger(request, {
+    route: "health"
+  });
   const details: Array<Record<string, unknown>> = [];
 
   const missingEnvVars: string[] = [];
@@ -30,15 +31,6 @@ export async function GET(request: Request) {
     }
   }
 
-  const missingSanityVars = getMissingSanityEnvVars();
-  if (missingSanityVars.length > 0) {
-    missingEnvVars.push(...missingSanityVars);
-    logger.warn({
-      event: "health.sanity_env_missing",
-      missingEnvVars: missingSanityVars
-    });
-  }
-
   const envOk = missingEnvVars.length === 0;
   details.push({ component: "env", ok: envOk, missing: missingEnvVars });
 
@@ -51,7 +43,11 @@ export async function GET(request: Request) {
       event: "health.database_error",
       error: serializeError(error)
     });
-    details.push({ component: "database", ok: false, error: serializeError(error) });
+    details.push({
+      component: "database",
+      ok: false,
+      error: serializeError(error)
+    });
   }
 
   if (databaseOk) {

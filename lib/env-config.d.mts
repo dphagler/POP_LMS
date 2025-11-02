@@ -15,22 +15,6 @@ export type ServerEnv = {
   AUTH_EMAIL_TOKEN_MAX_AGE: number;
   DATABASE_URL: string;
   SHADOW_DATABASE_URL?: string;
-  NEXT_PUBLIC_SANITY_PROJECT_ID: string;
-  NEXT_PUBLIC_SANITY_DATASET: string;
-  NEXT_PUBLIC_SANITY_API_VERSION: string;
-  NEXT_PUBLIC_SANITY_STUDIO_URL?: string;
-  SANITY_PROJECT_ID?: string;
-  SANITY_DATASET?: string;
-  SANITY_READ_TOKEN?: string;
-  SANITY_STUDIO_BASE_URL?: string;
-  SANITY_STUDIO_URL?: string;
-  SANITY_STUDIO_PROJECT_ID?: string;
-  SANITY_STUDIO_DATASET?: string;
-  SANITY_STUDIO_API_VERSION?: string;
-  SANITY_DEPLOY_STUDIO_TOKEN?: string;
-  SANITY_MANAGEMENT_TOKEN?: string;
-  SANITY_MANAGE_TOKEN?: string;
-  SANITY_DEV_CORS_ORIGINS?: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string;
   NEXT_PUBLIC_POSTHOG_HOST?: string;
   POSTHOG_SERVER_KEY?: string;
@@ -57,9 +41,6 @@ export type ClientEnv = {
   NEXT_PUBLIC_POSTHOG_HOST?: string;
   NEXT_PUBLIC_VIDEO_PROVIDER_DEFAULT: "youtube" | "cloudflare";
   NEXT_PUBLIC_TELEMETRY_DEBUG: "1" | "true" | "0" | "false";
-  NEXT_PUBLIC_SANITY_PROJECT_ID: string;
-  NEXT_PUBLIC_SANITY_DATASET: string;
-  NEXT_PUBLIC_SANITY_STUDIO_URL?: string;
 };
 
 export declare const serverEnvSchema: z.ZodType<ServerEnv>;

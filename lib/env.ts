@@ -28,22 +28,6 @@ export const ServerEnv = z.object({
     .positive()
     .default(10 * 60),
   SHADOW_DATABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().default(""),
-  NEXT_PUBLIC_SANITY_DATASET: z.string().default("production"),
-  NEXT_PUBLIC_SANITY_API_VERSION: z.string().default("2025-10-21"),
-  NEXT_PUBLIC_SANITY_STUDIO_URL: z.string().url().optional(),
-  SANITY_PROJECT_ID: z.string().optional(),
-  SANITY_DATASET: z.string().optional(),
-  SANITY_READ_TOKEN: z.string().optional(),
-  SANITY_STUDIO_BASE_URL: z.string().url().optional(),
-  SANITY_STUDIO_URL: z.string().url().optional(),
-  SANITY_STUDIO_PROJECT_ID: z.string().optional(),
-  SANITY_STUDIO_DATASET: z.string().optional(),
-  SANITY_STUDIO_API_VERSION: z.string().optional(),
-  SANITY_DEPLOY_STUDIO_TOKEN: z.string().optional(),
-  SANITY_MANAGEMENT_TOKEN: z.string().optional(),
-  SANITY_MANAGE_TOKEN: z.string().optional(),
-  SANITY_DEV_CORS_ORIGINS: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
   POSTHOG_SERVER_KEY: z.string().optional(),
@@ -116,30 +100,10 @@ const coalesceNonEmpty = (
   return undefined;
 };
 
-const resolvedSanityProjectId =
-  coalesceNonEmpty(
-    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-    process.env.SANITY_PROJECT_ID
-  ) ?? "";
-
-const resolvedSanityDataset =
-  coalesceNonEmpty(
-    process.env.NEXT_PUBLIC_SANITY_DATASET,
-    process.env.SANITY_DATASET
-  ) ?? "production";
-
-const resolvedSanityReadToken = process.env.SANITY_READ_TOKEN ?? "";
-
-const resolvedSanityWebhookSecret = process.env.SANITY_WEBHOOK_SECRET ?? "";
-
 export const env = {
   ...rawEnv,
   DATABASE_URL: resolvedDatabaseUrl,
   NEXTAUTH_SECRET: resolvedNextAuthSecret,
-  SANITY_PROJECT_ID: resolvedSanityProjectId,
-  SANITY_DATASET: resolvedSanityDataset,
-  SANITY_READ_TOKEN: resolvedSanityReadToken,
-  SANITY_WEBHOOK_SECRET: resolvedSanityWebhookSecret,
   authEmailEnabled: rawEnv.AUTH_EMAIL_ENABLED === "true",
   streamEnabled: rawEnv.STREAM_ENABLED === "true",
   telemetryDebugEnabled: isTruthyFlag(rawEnv.NEXT_PUBLIC_TELEMETRY_DEBUG),
