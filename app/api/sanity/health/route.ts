@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 
 import { env } from "@/lib/env";
-import { publicEnv } from "@/lib/env.client";
 
+export const revalidate = 0;
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    projectId: {
-      server: env.SANITY_PROJECT_ID || "(empty)",
-      client: publicEnv.NEXT_PUBLIC_SANITY_PROJECT_ID || "(empty)"
+  return NextResponse.json(
+    {
+      projectId: env.SANITY_PROJECT_ID ?? "",
+      dataset: env.SANITY_DATASET ?? "",
+      apiVersion: env.NEXT_PUBLIC_SANITY_API_VERSION ?? "",
+      clientSideProjectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ?? ""
     },
-    dataset: {
-      server: env.SANITY_DATASET || "(empty)",
-      client: publicEnv.NEXT_PUBLIC_SANITY_DATASET || "(empty)"
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0"
+      }
     }
-  });
+  );
 }
