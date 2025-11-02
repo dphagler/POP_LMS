@@ -10,6 +10,7 @@ import structure from './sanity/structure'               // <- optional custom D
 export default defineConfig({
   name: 'pop-lms-studio',
   title: 'POP LMS Studio',
+  apiVersion: '2024-10-01',
   projectId,
   dataset,
   basePath: '/studio',           // where Studio will live if you embed it later
