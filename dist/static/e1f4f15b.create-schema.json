@@ -17,8 +17,39 @@
         "type": "string"
       },
       {
+        "options": {
+          "source": "title"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
         "name": "description",
         "type": "text"
+      },
+      {
+        "initialValue": 0,
+        "name": "order",
+        "type": "number"
+      },
+      {
+        "initialValue": true,
+        "name": "published",
+        "type": "boolean"
       },
       {
         "of": [
@@ -61,9 +92,55 @@
         "type": "text"
       },
       {
+        "options": {
+          "source": "title"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
         "initialValue": 0,
         "name": "order",
         "type": "number"
+      },
+      {
+        "initialValue": true,
+        "name": "published",
+        "type": "boolean"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "to": [
+          {
+            "type": "course"
+          }
+        ],
+        "name": "course",
+        "type": "reference"
       },
       {
         "of": [
@@ -106,6 +183,31 @@
         "type": "text"
       },
       {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "to": [
+          {
+            "type": "module"
+          }
+        ],
+        "name": "module",
+        "type": "reference"
+      },
+      {
+        "initialValue": true,
+        "name": "published",
+        "type": "boolean"
+      },
+      {
         "initialValue": 0,
         "validation": [
           {
@@ -122,17 +224,48 @@
         "type": "number"
       },
       {
+        "options": {
+          "list": [
+            {
+              "title": "YouTube",
+              "value": "youtube"
+            },
+            {
+              "title": "Cloudflare",
+              "value": "cloudflare"
+            }
+          ]
+        },
+        "initialValue": "youtube",
+        "name": "provider",
+        "type": "string"
+      },
+      {
         "validation": [
           {
             "rules": [
               {
-                "flag": "presence",
-                "constraint": "required"
+                "flag": "uri",
+                "constraint": {
+                  "options": {
+                    "scheme": [
+                      "/^http$/",
+                      "/^https$/"
+                    ],
+                    "allowRelative": false,
+                    "relativeOnly": false,
+                    "allowCredentials": false
+                  }
+                }
               }
             ],
             "level": "error"
           }
         ],
+        "name": "videoUrl",
+        "type": "url"
+      },
+      {
         "name": "streamId",
         "type": "string"
       },
@@ -142,6 +275,7 @@
         "title": "YouTube ID"
       },
       {
+        "initialValue": 0,
         "validation": [
           {
             "rules": [
