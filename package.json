@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.5.2",
   "scripts": {
-    "dev": "tsx scripts/ensure-sanity-cors.ts || true && next dev",
+    "dev": "next dev",
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",
