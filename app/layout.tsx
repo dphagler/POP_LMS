@@ -4,19 +4,20 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
+import { resolveOrgTheme } from "@/lib/org-theme";
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-sans",
-  display: "swap",
+  display: "swap"
 });
 
 const heading = Space_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-heading",
-  display: "swap",
+  display: "swap"
 });
 
 export const metadata: Metadata = {
@@ -24,18 +25,20 @@ export const metadata: Metadata = {
   description: "Production-ready starter for the POP Initiative LMS"
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: {
   children: ReactNode;
 }) {
+  const { theme } = await resolveOrgTheme();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(sans.variable, heading.variable)}
         suppressHydrationWarning
       >
-        <Providers>{children}</Providers>
+        <Providers theme={theme}>{children}</Providers>
       </body>
     </html>
   );

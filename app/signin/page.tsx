@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth, signIn } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { EmailSignInForm, type EmailSignInFormState } from "./email-signin-form";
+import { resolveOrgTheme } from "@/lib/org-theme";
+import { DEFAULT_LOGIN_BLURB, DEFAULT_LOGO_URL } from "@/lib/ui/theme";
+import {
+  EmailSignInForm,
+  type EmailSignInFormState
+} from "./email-signin-form";
 
 type SignInSearchParams = { callbackUrl?: string };
 
@@ -25,12 +30,26 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     redirect(resolvedSearchParams?.callbackUrl ?? "/app");
   }
 
+  const { theme, source, org } = await resolveOrgTheme();
+  const showOrgBranding = source === "domain";
+  const brandingLogo = theme.metadata.logoUrl ?? DEFAULT_LOGO_URL;
+  const displayedLogo = showOrgBranding ? brandingLogo : DEFAULT_LOGO_URL;
+  const loginMessage = showOrgBranding
+    ? theme.metadata.loginBlurb
+    : DEFAULT_LOGIN_BLURB;
+  const isRemoteLogo = /^https?:\/\//i.test(displayedLogo);
+  const logoAlt = showOrgBranding ? `${org.name} logo` : "POP Initiative";
+
   const emailSignInEnabled =
-    env.authEmailEnabled && Boolean(env.RESEND_API_KEY) && Boolean(env.AUTH_EMAIL_FROM);
+    env.authEmailEnabled &&
+    Boolean(env.RESEND_API_KEY) &&
+    Boolean(env.AUTH_EMAIL_FROM);
 
   async function handleGoogleSignIn() {
     "use server";
-    await signIn("google", { redirectTo: resolvedSearchParams?.callbackUrl ?? "/app" });
+    await signIn("google", {
+      redirectTo: resolvedSearchParams?.callbackUrl ?? "/app"
+    });
   }
 
   async function handleEmailSignIn(
@@ -84,7 +103,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         message: "Check your email for a magic link to continue."
       } satisfies EmailSignInFormState;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to send magic link.";
+      const message =
+        error instanceof Error ? error.message : "Unable to send magic link.";
       return {
         status: "error",
         message: normalizeEmailErrorMessage(message)
@@ -106,39 +126,59 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       <PageContainer className="flex justify-center">
         <Card className="w-full max-w-md border border-base-300/60 bg-base-100/90 shadow-[0_35px_90px_-50px_rgba(79,70,229,0.6)] backdrop-blur">
           <CardContent className="flex flex-col items-center gap-7 p-10 text-center">
-            <Image src="/logo.svg" alt="POP Initiative" width={80} height={80} className="rounded-full" />
-          <div className="space-y-3">
-            <h1 className="text-balance text-2xl font-semibold text-foreground">Welcome back</h1>
-            <p className="text-sm text-muted-foreground">
-              Choose how you’d like to sign in to your POP Initiative account. Your progress syncs across web and mobile.
-            </p>
-          </div>
-          <form action={handleGoogleSignIn} className="w-full">
-            <Button type="submit" className="w-full shadow-md shadow-primary/20">
-              Continue with Google
-            </Button>
-          </form>
-          {emailSignInEnabled ? (
-            <div className="w-full space-y-4 text-left">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">Or use a magic link</p>
-                <p className="text-xs text-muted-foreground">
-                  We’ll email you a single-use link that expires shortly after it’s sent.
-                </p>
-              </div>
-              <EmailSignInForm action={handleEmailSignIn} initialState={initialEmailState} />
+            <Image
+              src={displayedLogo}
+              alt={logoAlt}
+              width={80}
+              height={80}
+              className="rounded-full"
+              priority
+              unoptimized={isRemoteLogo}
+            />
+            <div className="space-y-3">
+              <h1 className="text-balance text-2xl font-semibold text-foreground">
+                {showOrgBranding
+                  ? `Welcome back to ${org.name}`
+                  : "Welcome back"}
+              </h1>
+              <p className="text-sm text-muted-foreground">{loginMessage}</p>
             </div>
-          ) : null}
-          {!emailSignInEnabled ? (
-            <p className="w-full text-left text-xs text-muted-foreground">
-              Email sign-in is disabled by configuration.
-            </p>
-          ) : null}
-          <div className="w-full rounded-2xl border border-dashed border-base-300/70 bg-base-100/70 p-4 text-left text-xs text-muted-foreground">
-            <p className="font-semibold text-foreground">Need an invite?</p>
-            <p>Reach out to your program admin to get connected to POP Initiative.</p>
-          </div>
-        </CardContent>
+            <form action={handleGoogleSignIn} className="w-full">
+              <Button
+                type="submit"
+                className="w-full shadow-md shadow-primary/20"
+              >
+                Continue with Google
+              </Button>
+            </form>
+            {emailSignInEnabled ? (
+              <div className="w-full space-y-4 text-left">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">Or use a magic link</p>
+                  <p className="text-xs text-muted-foreground">
+                    We’ll email you a single-use link that expires shortly after
+                    it’s sent.
+                  </p>
+                </div>
+                <EmailSignInForm
+                  action={handleEmailSignIn}
+                  initialState={initialEmailState}
+                />
+              </div>
+            ) : null}
+            {!emailSignInEnabled ? (
+              <p className="w-full text-left text-xs text-muted-foreground">
+                Email sign-in is disabled by configuration.
+              </p>
+            ) : null}
+            <div className="w-full rounded-2xl border border-dashed border-base-300/70 bg-base-100/70 p-4 text-left text-xs text-muted-foreground">
+              <p className="font-semibold text-foreground">Need an invite?</p>
+              <p>
+                Reach out to your program admin to get connected to POP
+                Initiative.
+              </p>
+            </div>
+          </CardContent>
         </Card>
       </PageContainer>
     </PageFadeIn>
