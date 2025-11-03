@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { Box } from "@chakra-ui/react";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/streak";
@@ -7,7 +9,7 @@ import { logServerError } from "@/lib/server-logger";
 import LearnerDashboardClient, {
   type LearnerDashboardAssignment,
   type LearnerDashboardBadge,
-  type LearnerDashboardProgress,
+  type LearnerDashboardProgress
 } from "./learner-dashboard-client";
 
 import type { Prisma, UserRole } from "@prisma/client";
@@ -16,18 +18,18 @@ const assignmentInclude = {
   module: {
     include: {
       lessons: true,
-      course: true,
-    },
+      course: true
+    }
   },
   course: {
     include: {
       modules: {
         include: {
-          lessons: true,
-        },
-      },
-    },
-  },
+          lessons: true
+        }
+      }
+    }
+  }
 } as const satisfies Prisma.AssignmentInclude;
 
 type AssignmentWithRelations = Prisma.AssignmentGetPayload<{
@@ -35,7 +37,7 @@ type AssignmentWithRelations = Prisma.AssignmentGetPayload<{
 }>;
 
 const progressInclude = {
-  lesson: true,
+  lesson: true
 } as const satisfies Prisma.ProgressInclude;
 
 type ProgressWithLesson = Prisma.ProgressGetPayload<{
@@ -43,7 +45,7 @@ type ProgressWithLesson = Prisma.ProgressGetPayload<{
 }>;
 
 const userBadgeInclude = {
-  badge: true,
+  badge: true
 } as const satisfies Prisma.UserBadgeInclude;
 
 type UserBadgeWithBadge = Prisma.UserBadgeGetPayload<{
@@ -85,19 +87,19 @@ async function renderLearnerDashboard() {
         where: {
           orgId,
           enrollments: {
-            some: { userId },
-          },
+            some: { userId }
+          }
         },
-        include: assignmentInclude,
+        include: assignmentInclude
       }),
       prisma.userBadge.findMany({
         where: { userId },
-        include: userBadgeInclude,
+        include: userBadgeInclude
       }),
       prisma.progress.findMany({
         where: { userId },
-        include: progressInclude,
-      }),
+        include: progressInclude
+      })
     ]);
 
     streak = await computeStreak(userId);
@@ -107,66 +109,81 @@ async function renderLearnerDashboard() {
     return <LearnerDashboardClient status="error" isAdmin={isAdmin} />;
   }
 
-  const assignmentsData: LearnerDashboardAssignment[] = assignments.map((assignment) => ({
-    id: assignment.id,
-    module: assignment.module
-      ? {
-          lessons: assignment.module.lessons.map((lesson) => ({
-            id: lesson.id,
-            title: lesson.title,
-            durationS: lesson.durationS,
-          })),
-        }
-      : null,
-    course: assignment.course
-      ? {
-          modules: assignment.course.modules.map((module) => ({
-            lessons: module.lessons.map((lesson) => ({
+  const assignmentsData: LearnerDashboardAssignment[] = assignments.map(
+    (assignment) => ({
+      id: assignment.id,
+      module: assignment.module
+        ? {
+            lessons: assignment.module.lessons.map((lesson) => ({
               id: lesson.id,
               title: lesson.title,
-              durationS: lesson.durationS,
-            })),
-          })),
-        }
-      : null,
-  }));
+              durationS: lesson.durationS
+            }))
+          }
+        : null,
+      course: assignment.course
+        ? {
+            modules: assignment.course.modules.map((module) => ({
+              lessons: module.lessons.map((lesson) => ({
+                id: lesson.id,
+                title: lesson.title,
+                durationS: lesson.durationS
+              }))
+            }))
+          }
+        : null
+    })
+  );
 
   const badgesData: LearnerDashboardBadge[] = badges.map((badge) => ({
     id: badge.id,
     badge: {
-      name: badge.badge.name,
-    },
+      name: badge.badge.name
+    }
   }));
 
-  const progressData: LearnerDashboardProgress[] = progresses.map((progress) => {
-    const duration = Math.max(progress.lesson?.durationS ?? 0, 0);
-    const watchedSeconds = Math.max(
-      Math.min(progress.uniqueSeconds ?? 0, duration),
-      0,
-    );
+  const progressData: LearnerDashboardProgress[] = progresses.map(
+    (progress) => {
+      const duration = Math.max(progress.lesson?.durationS ?? 0, 0);
+      const watchedSeconds = Math.max(
+        Math.min(progress.uniqueSeconds ?? 0, duration),
+        0
+      );
 
-    return {
-      id: progress.id,
-      lessonId: progress.lessonId,
-      isComplete: Boolean(progress.completedAt),
-      watchedSeconds,
-      lesson: progress.lesson
-        ? {
-            id: progress.lesson.id,
-            title: progress.lesson.title,
-          }
-        : null,
-    };
-  });
+      return {
+        id: progress.id,
+        lessonId: progress.lessonId,
+        isComplete: Boolean(progress.completedAt),
+        watchedSeconds,
+        lesson: progress.lesson
+          ? {
+              id: progress.lesson.id,
+              title: progress.lesson.title
+            }
+          : null
+      };
+    }
+  );
 
   return (
-    <LearnerDashboardClient
-      status="loaded"
-      isAdmin={isAdmin}
-      streak={streak}
-      assignments={assignmentsData}
-      badges={badgesData}
-      progresses={progressData}
-    />
+    <>
+      <Box
+        aria-hidden="true"
+        bg="brand.primary"
+        h="1"
+        borderRadius="full"
+        mb={4}
+        transition="opacity 0.2s ease-in-out"
+        _hover={{ opacity: 0.8 }}
+      />
+      <LearnerDashboardClient
+        status="loaded"
+        isAdmin={isAdmin}
+        streak={streak}
+        assignments={assignmentsData}
+        badges={badgesData}
+        progresses={progressData}
+      />
+    </>
   );
 }
